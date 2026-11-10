@@ -63,15 +63,21 @@ DPAD_UP_RIGHT = (85.0, 240.0)
 DPAD_DOWN_LEFT = (35.0, 290.0)
 DPAD_DOWN_RIGHT = (85.0, 290.0)
 
-BTN_ATTACK = (420.0, 270.0)
-BTN_SKILL1 = (355.0, 270.0)
-BTN_SKILL2 = (365.0, 215.0)
-BTN_SKILL3 = (420.0, 185.0)
-BTN_ITEM = (455.0, 140.0)
-BTN_START = (240.0, 280.0)
-BTN_CENTER = (240.0, 280.0)
-BTN_MENU = (450.0, 25.0)
-BTN_STATUS = (50.0, 25.0)
+# In-game HUD Buttons (confirmed via newres/ui/hud.bin inspection)
+BTN_ATTACK = (407.0, 233.0)  # Primary attack button (sprite 472)
+BTN_TALK = (385.0, 246.0)    # Contextual NPC talk / interact button (sprite 473)
+BTN_TALK_ALT = (395.0, 220.0) # Secondary action button
+BTN_SKILL1 = (447.0, 134.0)  # Skill button 1
+BTN_SKILL2 = (447.0, 184.0)  # Skill button 2
+BTN_SKILL3 = (447.0, 84.0)   # Skill button 3
+BTN_ITEM = (415.0, 45.0)     # Quick item potion button
+BTN_MENU = (240.0, 289.0)    # In-game HUD bottom menu bar
+BTN_STATUS = (23.0, 22.0)    # Character avatar / status button
+BTN_BACK = (50.0, 40.0)      # In-game menu top-left circular return button
+BTN_CENTER = (240.0, 280.0)  # Title carousel center ("START GAME" / "CONTINUE")
+
+# In-game Menu options (CHARACTER, EQUIPMENT, SKILLS, ITEMS, QUESTS, SYSTEM)
+MENU_ITEMS_Y = [45.0, 90.0, 135.0, 180.0, 225.0, 270.0]
 
 
 def log_boot(msg: str):
@@ -98,6 +104,12 @@ class PCRunner:
         self.joysticks = []
         self.facing_x = 0.0
         self.facing_y = 1.0  # default facing down
+        self.menu_mode = False
+        self.menu_index = 0
+        self.menu_cooldown = 0
+        self.carousel_cooldown = 0
+        self.pending_tap_ups: list[str] = []
+        self.on_title = True
 
         log_boot("Calling _init_window")
         self._init_window()
@@ -184,6 +196,35 @@ class PCRunner:
         t.phase = 3  # phase 3 = ended
         self.rt.send(self.touch_responder, "touchesEnded:withEvent:", set_obj, evt_obj)
 
+    def tap_once(self, tag: str, coord: tuple[float, float]):
+        self.touch_down(tag, coord)
+        if tag not in self.pending_tap_ups:
+            self.pending_tap_ups.append(tag)
+
+    def swipe_carousel(self, direction: str):
+        if self.carousel_cooldown > 0 or not self.touch_responder:
+            return
+        self.carousel_cooldown = 14  # Cooldown between carousel swipes (~230ms)
+        if direction == "right":  # Next option (drag right-to-left)
+            start_x, end_x = 320.0, 160.0
+        else:  # Previous option (drag left-to-right)
+            start_x, end_x = 160.0, 320.0
+        y = 280.0
+
+        t = Touch(start_x, y, 0)
+        t_obj = self.rt.objc.new_obj("UITouch", t)
+        evt_obj = self.rt.objc.new_obj("UIEvent", {"touches": [t_obj]})
+        set_obj = self.rt.objc.new_obj("NSSet", [t_obj])
+        self.rt.send(self.touch_responder, "touchesBegan:withEvent:", set_obj, evt_obj)
+        for step in range(1, 5):
+            interp_x = start_x + (end_x - start_x) * (step / 4.0)
+            t.prev_x, t.prev_y = t.x, t.y
+            t.x = interp_x
+            t.phase = 1
+            self.rt.send(self.touch_responder, "touchesMoved:withEvent:", set_obj, evt_obj)
+        t.phase = 3
+        self.rt.send(self.touch_responder, "touchesEnded:withEvent:", set_obj, evt_obj)
+
     def window_to_game_coord(self, wx: int, wy: int) -> tuple[float, float]:
         if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
             return self.rt.gl_bridge.window_to_game_coord(wx, wy)
@@ -193,6 +234,15 @@ class PCRunner:
 
     # ------------------------------------------------------------- Input poll
     def poll_input(self):
+        # Tick down cooldowns and release transient one-frame taps
+        if self.carousel_cooldown > 0:
+            self.carousel_cooldown -= 1
+        if self.menu_cooldown > 0:
+            self.menu_cooldown -= 1
+        for tag in list(self.pending_tap_ups):
+            self.touch_up(tag)
+        self.pending_tap_ups.clear()
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.running = False
@@ -202,6 +252,12 @@ class PCRunner:
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
                 gx, gy = self.window_to_game_coord(event.pos[0], event.pos[1])
                 self.touch_down("mouse", (gx, gy))
+                # Check if mouse clicked menu toggle or back button
+                if abs(gx - BTN_MENU[0]) < 60.0 and abs(gy - BTN_MENU[1]) < 25.0:
+                    self.menu_mode = True
+                    self.menu_index = 0
+                elif self.menu_mode and abs(gx - BTN_BACK[0]) < 35.0 and abs(gy - BTN_BACK[1]) < 35.0:
+                    self.menu_mode = False
 
             elif event.type == MOUSEBUTTONUP and event.button == 1:
                 self.touch_up("mouse")
@@ -228,10 +284,15 @@ class PCRunner:
                         cur = self.rt.audio_mixer.master_volume
                         self.rt.audio_mixer.set_master_volume(cur - 0.1)
                         print(f"[HL3 Audio] Volume: {int(self.rt.audio_mixer.master_volume * 100)}%")
-                elif event.key == K_m:
-                    if hasattr(self.rt, "audio_mixer"):
-                        muted = self.rt.audio_mixer.toggle_mute()
-                        print(f"[HL3 Audio] Mute: {'ON' if muted else 'OFF'}")
+                elif event.key in (K_ESCAPE, K_TAB):
+                    # In-game menu toggle
+                    if self.menu_mode:
+                        self.menu_mode = False
+                        self.tap_once("menu_back", BTN_BACK)
+                    else:
+                        self.menu_mode = True
+                        self.menu_index = 0
+                        self.tap_once("menu_open", BTN_MENU)
 
             # Gamepad Hot-plug
             elif event.type == JOYDEVICEADDED:
@@ -243,10 +304,99 @@ class PCRunner:
                 except Exception as e:
                     print(f"[HL3 PC] Gamepad error: {e}")
 
-        # Polling Keyboard states for continuous button / D-Pad mapping
+        # Polling Keyboard states
         keys = pygame.key.get_pressed()
 
-        # D-Pad Movement mapping (smooth continuous vector input)
+        # Check title screen status via top-right artwork pixel
+        try:
+            px = glReadPixels(450, 295, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE)
+            self.on_title = (px[0] > 40 and px[1] > 40)
+        except Exception:
+            pass
+
+        # -------------------------------------------------- Mode 1: In-Game Menu
+        if self.menu_mode:
+            up_pressed = keys[K_UP] or keys[K_w]
+            down_pressed = keys[K_DOWN] or keys[K_s]
+            for js in self.joysticks:
+                if js.get_numhats() > 0:
+                    hx, hy = js.get_hat(0)
+                    if hy > 0:
+                        up_pressed = True
+                    elif hy < 0:
+                        down_pressed = True
+                if js.get_numaxes() >= 2:
+                    if js.get_axis(1) < -0.5:
+                        up_pressed = True
+                    elif js.get_axis(1) > 0.5:
+                        down_pressed = True
+
+            if self.menu_cooldown == 0:
+                if up_pressed:
+                    self.menu_index = (self.menu_index - 1) % len(MENU_ITEMS_Y)
+                    self.tap_once("menu_btn", (240.0, MENU_ITEMS_Y[self.menu_index]))
+                    self.menu_cooldown = 12
+                elif down_pressed:
+                    self.menu_index = (self.menu_index + 1) % len(MENU_ITEMS_Y)
+                    self.tap_once("menu_btn", (240.0, MENU_ITEMS_Y[self.menu_index]))
+                    self.menu_cooldown = 12
+
+            # Confirm selection on active item only
+            select_active = keys[K_RETURN] or keys[K_SPACE]
+            for js in self.joysticks:
+                if js.get_numbuttons() > 0 and js.get_button(0):
+                    select_active = True
+                    break
+            if select_active and self.menu_cooldown == 0:
+                self.tap_once("menu_sel", (240.0, MENU_ITEMS_Y[self.menu_index]))
+                self.menu_cooldown = 15
+
+            # Cancel / Back
+            back_active = False
+            for js in self.joysticks:
+                if js.get_numbuttons() > 1 and js.get_button(1):
+                    back_active = True
+                    break
+            if back_active and self.menu_cooldown == 0:
+                self.tap_once("menu_back", BTN_BACK)
+                self.menu_mode = False
+                self.menu_cooldown = 15
+            return
+
+        # -------------------------------------------------- Mode 2: Title Screen
+        if self.on_title:
+            go_left = keys[K_LEFT] or keys[K_a]
+            go_right = keys[K_RIGHT] or keys[K_d]
+            for js in self.joysticks:
+                if js.get_numhats() > 0:
+                    hx, hy = js.get_hat(0)
+                    if hx < 0:
+                        go_left = True
+                    elif hx > 0:
+                        go_right = True
+                if js.get_numaxes() >= 2:
+                    if js.get_axis(0) < -0.5:
+                        go_left = True
+                    elif js.get_axis(0) > 0.5:
+                        go_right = True
+
+            if go_left:
+                self.swipe_carousel("left")
+            elif go_right:
+                self.swipe_carousel("right")
+
+            title_confirm = keys[K_RETURN] or keys[K_SPACE] or keys[K_z]
+            for js in self.joysticks:
+                if js.get_numbuttons() > 0 and js.get_button(0):
+                    title_confirm = True
+                    break
+            if title_confirm:
+                self.touch_down("title_confirm", BTN_CENTER)
+            else:
+                self.touch_up("title_confirm")
+            return
+
+        # -------------------------------------------------- Mode 3: Field Gameplay
         dx, dy = 0.0, 0.0
         if keys[K_LEFT] or keys[K_a]:
             dx -= 1.0
@@ -257,7 +407,6 @@ class PCRunner:
         if keys[K_DOWN] or keys[K_s]:
             dy += 1.0
 
-        # Check Gamepad Analog Stick & D-Pad Hat
         for js in self.joysticks:
             if js.get_numhats() > 0:
                 hx, hy = js.get_hat(0)
@@ -283,10 +432,8 @@ class PCRunner:
             mag = min(1.0, length)
             nx = (dx / length) * mag
             ny = (dy / length) * mag
-            # Track normalized facing direction for NPC interaction
             self.facing_x = dx / length
             self.facing_y = dy / length
-            # D-Pad stick center is (60.0, 265.0) with radius 35.0 (hitbox is 45.0)
             target_x = 60.0 + nx * 35.0
             target_y = 265.0 + ny * 35.0
 
@@ -297,7 +444,6 @@ class PCRunner:
             if "dpad" in self.active_touches:
                 self.touch_up("dpad")
 
-        # Action Buttons
         def check_btn(tag, coord, k_cond, j_btn_idx):
             active = k_cond
             if not active:
@@ -311,33 +457,43 @@ class PCRunner:
             else:
                 self.touch_up(tag)
 
-        # Talk / Interact Target (NPC or speech bubble in front of player at (240, 160))
+        # In-World NPC interaction coordinate in front of player
         interact_coord = (
             240.0 + self.facing_x * 45.0,
             160.0 + self.facing_y * 45.0 - 15.0,
         )
 
-        # Talk / Interact: E, Enter, Space, J, or Gamepad Button 0 [A]
-        # In Heroes Lore 3, talking is initiated by touching the NPC or their speech bubble in the game world.
-        interact_active = keys[K_e] or keys[K_RETURN] or keys[K_SPACE] or keys[K_j]
-        check_btn("interact", interact_coord, interact_active, 0)
+        # Talk / Interact: E, Enter, or Gamepad Button 0 [A]
+        # Directly touches the on-screen Talk button at (385.0, 246.0) (Sprite 473)
+        # AND the in-world interaction point in front of the player
+        talk_active = keys[K_e] or keys[K_RETURN]
+        check_btn("talk_hud", BTN_TALK, talk_active, 0)
+        check_btn("talk_alt", BTN_TALK_ALT, talk_active, 0)
+        check_btn("interact", interact_coord, talk_active, 0)
 
-        # Attack / Confirm (J, Space, Gamepad Button 0 [A])
-        check_btn("attack", BTN_ATTACK, keys[K_j] or keys[K_SPACE], 0)
-        # Center Touch to Start / Dialogue advance (Enter, Z, E)
-        check_btn("center", BTN_CENTER, keys[K_RETURN] or keys[K_z] or keys[K_e], None)
-        # Skill 1 (U, 1, Gamepad Button 2 [X])
-        check_btn("skill1", BTN_SKILL1, keys[K_u] or keys[K_1], 2)
-        # Skill 2 (I, 2, Gamepad Button 3 [Y])
-        check_btn("skill2", BTN_SKILL2, keys[K_i] or keys[K_2], 3)
-        # Skill 3 (O, 3, Gamepad Button 5 [RB])
-        check_btn("skill3", BTN_SKILL3, keys[K_o] or keys[K_3], 5)
+        # Attack: J, Space, or Gamepad Button 2 [X] / Button 0 [A]
+        attack_active = keys[K_j] or keys[K_SPACE]
+        check_btn("attack", BTN_ATTACK, attack_active, 2)
+
+        # Skill 1 (U, 1, Gamepad Button 3 [Y])
+        check_btn("skill1", BTN_SKILL1, keys[K_u] or keys[K_1], 3)
+        # Skill 2 (I, 2, Gamepad Button 5 [RB])
+        check_btn("skill2", BTN_SKILL2, keys[K_i] or keys[K_2], 5)
+        # Skill 3 (O, 3)
+        check_btn("skill3", BTN_SKILL3, keys[K_o] or keys[K_3], None)
         # Item (K, Q, Gamepad Button 4 [LB])
         check_btn("item", BTN_ITEM, keys[K_k] or keys[K_q], 4)
-        # Menu (Escape, Tab, Gamepad Button 7 [Start] / Button 1 [B])
-        check_btn("menu", BTN_MENU, keys[K_ESCAPE] or keys[K_TAB], 7)
-        # Status (P, Gamepad Button 6 [Select])
-        check_btn("status", BTN_STATUS, keys[K_p], 6)
+        # Status (P, C, Gamepad Button 6 [Select])
+        check_btn("status", BTN_STATUS, keys[K_p] or keys[K_c], 6)
+
+        # Gamepad Start button opens in-game menu
+        for js in self.joysticks:
+            if js.get_numbuttons() > 7 and js.get_button(7):
+                if not self.menu_mode:
+                    self.menu_mode = True
+                    self.menu_index = 0
+                    self.tap_once("menu_open", BTN_MENU)
+                break
 
     def capture_screenshot(self) -> Path:
         pixels = glReadPixels(0, 0, self.win_w, self.win_h, GL_RGBA, GL_UNSIGNED_BYTE)

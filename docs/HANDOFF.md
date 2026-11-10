@@ -9,28 +9,30 @@
 
 ## O que foi feito e validado nesta sessão
 
-1. **Correção de Textos e Sprites Ausentes nos Menus (Tela Título, Seleção de Personagem e Seleção de Classe)**:
-   - Diagnóstico: Em `tools/hl3rt/gl_bridge.py`, a função `scissor(x, y, w, h)` invertia o eixo Y (`sy = vy + int(((self.game_h - (y + h)) / self.game_h) * vh)`), assumindo que o binário guest passava coordenadas UIKit (origem no topo). Contudo, o executável iOS usa OpenGL ES 1.1 direto e passa coordenadas de janela padrão OpenGL (base para cima, onde Y=0 é o rodapé). Essa inversão movia o retângulo de corte da tela de título (`y=1, h=100`) para o topo da tela (`y=219..319`), descartando os vértices do texto do botão do carrossel ("START GAME"); a caixa de descrição do personagem (`y=21, h=130`) para o topo (`y=169..299`), descartando 100% do texto de lore ("NATION: NEO SOLTIA..."); e as caixas scissored de seleção de classe eram cortadas fora da viewport (descartando os 3 chibi sprites e o botão de checkmark).
-   - Solução: Removida a inversão Y em `gl_bridge.py:scissor()`, mapeando diretamente `sy = vy + int((y / self.game_h) * vh)`.
-   - Resultado: Textos dos botões do carrossel, texto de lore do personagem ("NATION: NEO SOLTIA..."), os 3 sprites chibi da seleção de classe e o botão de confirmação (checkmark) renderizam perfeitamente, idênticos à versão mobile.
+1. **Navegação do Carrossel da Tela Título via Teclado e Gamepad**:
+   - Diagnóstico: O carrossel da tela de título não responde a eventos simples de D-Pad porque o D-Pad virtual não existe na tela inicial. O carrossel do motor exige um gesto de arrasto horizontal (swipe) para girar os itens.
+   - Solução: Implementado método `swipe_carousel` em `tools/run_pc.py` que emula um arrasto horizontal com interpolação de toque (`touchesBegan -> touchesMoved -> touchesEnded`) e cooldown de 14 frames. As setas `Esquerda` e `Direita` (ou `A` / `D`, Gamepad D-pad e Analógico Esquerdo) agora giram o carrossel suavemente entre as opções (START GAME, CONTINUE, etc.). `Enter`, `Espaço` e botão `A` do controle acionam o centro do carrossel (`240.0, 280.0`).
 
-2. **Implementação de Conversa e Interação com NPCs via Teclado e Gamepad**:
-   - Diagnóstico: No motor iOS original, falar com NPCs é acionado via hit-test no espaço de mundo (`0x7575c` -> `[r1, #0xc]`), tocando no NPC ou no balão de fala acima dele. No host de PC, as teclas estavam mapeadas apenas para posições estáticas da HUD: ataque (`420, 270`) e centro (`240, 280`). Nenhuma tecla ou botão despachava toque na posição do NPC/balão de fala à frente do personagem (`(240, 160)`).
-   - Solução:
-     1. Adicionado rastreamento contínuo do vetor de direção do jogador `(facing_x, facing_y)`.
-     2. Mapeada tecla dedicada de Interação / Fala `E`, e expandidos `Enter`, `Espaço`, `J` e botão A do Gamepad para despacharem toque na coordenada de interação à frente do personagem (`(240.0 + self.facing_x * 45.0, 160.0 + self.facing_y * 45.0 - 15.0)`).
-     3. Durante diálogos, `E`, `Enter`, `Espaço` e `J` avançam os textos sem interrupção. Se o jogador não estiver próximo a um NPC, `Espaço`/`J` executam o ataque normal normalmente.
-   - Resultado: Conversação com qualquer NPC e avanço de diálogos funcionam diretamente pelo teclado e controle, sem necessidade de clicar com o mouse.
+2. **Correção do Clique Duplo no Menu In-Game e Isolamento da Navegação**:
+   - Diagnóstico: Ao pressionar `Enter` com o menu in-game aberto, o script despachava toque em `interact_coord` (em `(240, 145)`) e em `BTN_CENTER` (em `(240, 280)`). Como os botões do menu ficam centralizados em `X=240`, `(240, 145)` caía exatamente sobre `SKILLS` e `(240, 280)` sobre `SYSTEM`, acionando ambos ao mesmo tempo. Além disso, no campo aberto, `(240, 280)` é a barra inferior de menu, fazendo com que pressionar `Enter` abrisse o menu por engano.
+   - Solução: Criado modo isolado para o menu in-game (`self.menu_mode`).
+     - Setas `Cima` / `Baixo` (ou `W` / `S`, Gamepad D-pad/Stick) navegam entre os 6 itens (`Y = [45, 90, 135, 180, 225, 270]`), destacando visualmente apenas o item ativo.
+     - `Enter`, `Espaço` ou botão `A` confirmam estritamente o item selecionado pelo cursor, sem clique duplo.
+     - `Escape`, `Tab` ou botão `B`/`Start` do controle fecham o menu via botão de retorno `(50.0, 40.0)`.
+     - No campo de jogo, `Enter` atua exclusivamente para falar e interagir, nunca abrindo o menu acidentalmente.
 
-3. **Reempacotamento e Validação da Build Standalone (`dist/HeroesLore3_PC/`)**:
-   - O executável standalone `dist/HeroesLore3_PC/HeroesLore3.exe` foi totalmente recompilado com os novos módulos e pós-processado com `strip_cfg` (limpeza da flag CFG `0x4000`).
-   - Validada a execução estável do executável standalone a 60 FPS com os textos do carrossel renderizados (2704 pixels de texto no botão "START GAME").
+3. **Mapeamento do Botão Virtual de Fala com NPCs (Sprite 473 em 385, 246)**:
+   - Diagnóstico: A engenharia reversa do binário `newres/ui/hud.bin` revelou que a HUD possui botões gêmeos no cluster de ação:
+     - No offset `0x0982`: Controle tipo `0x32` / Tag `0xd6`, Sprite 472 em `(407.0, 233.0)` -> Botão principal de Ataque.
+     - No offset `0x0a32`: Controle tipo `0x32` / Tag `0xd7`, Sprite 473 em `(385.0, 246.0)` -> Botão virtual de Fala com NPCs que surge na tela quando o jogador se aproxima de um NPC!
+     Nenhuma tecla estava mapeada para `(385.0, 246.0)`, de modo que clicar com o mouse sobre o botão virtual funcionava, mas o teclado errava a coordenada.
+   - Solução: Mapeadas as teclas `E`, `Enter`, `Espaço` e botão `A` do Gamepad para acionarem diretamente `BTN_TALK = (385.0, 246.0)`, além do ponto de interação no mundo. Ao se aproximar de qualquer NPC, pressionar `E` ou `Enter` ativa a conversa de imediato e avança as falas.
 
-4. **Testes Automatizados e Governança**:
-   - 23 testes unitários passando em ~6.2 segundos (`python -m unittest discover -s tests -v`).
-   - `python tools/verify_workspace.py` passa com 100% de integridade.
-   - Registrado `ADR-012` em `docs/DECISIONS.md`.
-   - Atualizado `docs/STATUS.json` e `docs/STATUS.md`.
+4. **Reempacotamento e Validação da Build Standalone (`dist/HeroesLore3_PC/`)**:
+   - Recompilado `dist/HeroesLore3_PC/HeroesLore3.exe` com PyInstaller e pós-processamento `strip_cfg`.
+   - Execução validada em modo standalone portátil sem erros.
+   - 24 testes unitários automatizados passando com 100% de sucesso.
+   - Registrado `ADR-013` em `docs/DECISIONS.md`.
 
 ## Próximo Passo (`S08`: True Widescreen e Expansão de Viewport)
 

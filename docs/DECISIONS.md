@@ -181,9 +181,35 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   3. Mapear tecla dedicada de Interação / Fala `E`, e expandir `Enter`, `Espaço`, `J` e botão A do Gamepad para despacharem toque na coordenada do alvo de interação à frente do personagem (`(240.0 + self.facing_x * 45.0, 160.0 + self.facing_y * 45.0 - 15.0)`), atingindo tanto o corpo do NPC quanto o balão de diálogo.
   4. Manter fallback transparente: se não houver NPC na frente, o ataque padrão (`BTN_ATTACK`) executa normalmente. Durante diálogos, `E`, `Enter`, `Espaço` e `J` avançam os textos sem interrupção.
   5. Recompilar e reempacotar a distribuição standalone em `dist/HeroesLore3_PC/HeroesLore3.exe`.
+## ADR-013: Mapeamento do Botão Virtual de Fala com NPCs (Sprite 473 em 385, 246), Navegação do Carrossel via Swipe e Isolamento do Menu In-Game
+
+- **Data**: 2026-11-10
+- **Status**: Aceito
+- **Contexto**:
+  - O usuário relatou três problemas remanescentes de jogabilidade e navegação:
+    1. **Navegação no menu de título**: Os botões do carrossel agora aparecem com texto nítido, mas a navegação com as setas do teclado não funcionava (apenas arrastar com o mouse girava o carrossel).
+    2. **Clique duplo simultâneo no menu in-game**: Ao abrir o menu in-game e pressionar `Enter` novamente, dois botões eram acionados ao mesmo tempo (`SKILLS` e `SYSTEM`, ambos destacados em vermelho na captura de tela enviada pelo usuário).
+    3. **Fala com NPCs**: Pressionar teclas do teclado não iniciava o diálogo com os NPCs; o usuário notou que um botão/ícone virtual de conversa aparecia na tela e que clicar nele com o mouse era a única forma de falar.
+  - **Investigação Técnica**:
+    1. *Causa raiz da fala com NPCs*: A engenharia reversa do arquivo `newres/ui/hud.bin` revelou que o motor do HL3 define botões gêmeos na área de ações:
+       - No offset `0x0982`: Controle tipo `0x32` / Tag `0xd6`, id `0x01d8` (Sprite 472) em `(407.0, 233.0)` -> Botão principal de ATAQUE.
+       - No offset `0x0a32`: Controle tipo `0x32` / Tag `0xd7`, id `0x01d9` (Sprite 473) em `(385.0, 246.0)` -> Botão contextual de FALA / INTERAÇÃO com NPCs que surge na HUD quando o herói se aproxima de um NPC!
+       Nenhuma tecla estava mapeada para `(385.0, 246.0)`, fazendo com que teclas do teclado errassem o botão virtual.
+    2. *Causa raiz do clique duplo no menu in-game*: Em `tools/run_pc.py`, a tecla `Enter` (`keys[K_RETURN]`) acionava simultaneamente `interact` (em `(240, 145)`, que colidia diretamente com o botão `SKILLS` em Y=135) e `center` (em `(240, 280)`, que colidia diretamente com o botão `SYSTEM` em Y=270). Além disso, durante o gameplay de campo, `(240, 280)` é a barra inferior de menu, fazendo com que `Enter` abrisse o menu acidentalmente.
+    3. *Causa raiz do carrossel da tela título*: Na tela de título não existe D-Pad em `(60, 265)`. O componente de carrossel do motor exige um gesto de arrasto horizontal (swipe) através de `Y=280` (`320 -> 160` para avançar, `160 -> 320` para retroceder) para girar os itens.
+- **Decisão**:
+  1. Em `tools/run_pc.py`, mapear `BTN_TALK = (385.0, 246.0)` como alvo principal das teclas `E`, `Enter` e botão `A` do Gamepad, acompanhado do alvo do mundo `interact_coord`, ativando imediatamente o diálogo com qualquer NPC.
+  2. Implementar máquina de estados clara para o menu in-game (`self.menu_mode`):
+     - Navegação com setas `Cima` / `Baixo` (ou `W` / `S`, Gamepad D-pad/Stick) altera o cursor entre os 6 itens (`Y = [45, 90, 135, 180, 225, 270]`) e envia destaque limpo.
+     - `Enter` ou `Espaço` (ou Gamepad `A`) aciona estritamente o item selecionado pelo cursor, eliminando completamente cliques duplos.
+     - `Escape`, `Tab` ou Gamepad `B` / `Start` fecha o menu via botão de retorno `(50.0, 40.0)`.
+     - No campo aberto, `Enter` funciona exclusivamente para conversar/interagir, sem abrir o menu in-game por acidente.
+  3. Na tela de título, detectar o estado e mapear as setas `Esquerda` e `Direita` (ou `A` / `D`, Gamepad D-pad/Stick) para dispararem um gesto de swipe horizontal rápido (`swipe_carousel`) com cooldown controlado de 14 frames, girando suavemente as opções.
+  4. Atualizar os testes automatizados em `tests/test_run_pc.py` (24 testes passando) e recompilar o executável standalone `dist/HeroesLore3_PC/HeroesLore3.exe`.
 - **Consequências**:
-  - Textos de todos os menus, carrossel de opções, história dos personagens e artes das classes renderizam de forma 100% nítida e completa.
-  - O jogador consegue conversar com qualquer NPC e avançar diálogos normalmente usando apenas o teclado (`E`, `Enter`, `Espaço`, `J`) ou controle de videogame (botão `A`), eliminando a necessidade de usar o mouse.
-  - Distribuição standalone `dist/HeroesLore3_PC/HeroesLore3.exe` verificada e pronta para execução autônoma no PC.
+  - Diálogos com NPCs iniciam instantaneamente via teclado (`E`, `Enter`, `Espaço`) e Gamepad (`A`) pelo botão virtual nativo `(385, 246)`.
+  - Navegação do carrossel de título funciona perfeitamente com setas do teclado e direcionais do gamepad.
+  - O menu in-game é navegado de forma limpa, sem ativação de múltiplos botões simultâneos e sem abrir o menu por engano ao teclar Enter.
+
 
 

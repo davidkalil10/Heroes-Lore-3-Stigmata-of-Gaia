@@ -9,7 +9,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from run_pc import PCRunner, BTN_ATTACK, BTN_CENTER, DPAD_UP
+from run_pc import (
+    PCRunner,
+    BTN_ATTACK,
+    BTN_CENTER,
+    BTN_TALK,
+    BTN_MENU,
+    BTN_BACK,
+    DPAD_UP,
+    MENU_ITEMS_Y,
+)
 
 
 class S04PCPlayableTests(unittest.TestCase):
@@ -31,6 +40,26 @@ class S04PCPlayableTests(unittest.TestCase):
         runner.touch_up("attack")
         runner.touch_down("center", BTN_CENTER)
         runner.touch_up("center")
+
+    def test_talk_and_menu_controls(self):
+        runner = PCRunner(scale=1, headless_frames=1)
+        # Verify NPC talk button is at (385.0, 246.0)
+        self.assertEqual(BTN_TALK, (385.0, 246.0))
+        # Verify menu items has 6 entries
+        self.assertEqual(len(MENU_ITEMS_Y), 6)
+        # Verify carousel swipe left and right execute without fault
+        runner.swipe_carousel("left")
+        runner.carousel_cooldown = 0
+        runner.swipe_carousel("right")
+        # Verify tap_once queues and releases properly
+        runner.tap_once("test_tap", (240.0, 135.0))
+        self.assertIn("test_tap", runner.active_touches)
+        self.assertIn("test_tap", runner.pending_tap_ups)
+        # Next poll releases pending taps
+        for tag in list(runner.pending_tap_ups):
+            runner.touch_up(tag)
+        runner.pending_tap_ups.clear()
+        self.assertNotIn("test_tap", runner.active_touches)
 
     def test_run_frames_and_screenshot(self):
         runner = PCRunner(scale=1, headless_frames=30)
