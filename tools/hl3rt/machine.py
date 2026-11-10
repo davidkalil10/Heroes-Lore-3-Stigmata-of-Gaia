@@ -124,6 +124,21 @@ class Machine:
     def rd32(self, addr: int) -> int:
         return struct.unpack("<I", self.uc.mem_read(addr, 4))[0]
 
+    def rd16(self, addr: int) -> int:
+        return struct.unpack("<H", self.uc.mem_read(addr, 2))[0]
+
+    def rds16(self, addr: int) -> int:
+        return struct.unpack("<h", self.uc.mem_read(addr, 2))[0]
+
+    def rd8(self, addr: int) -> int:
+        return self.uc.mem_read(addr, 1)[0]
+
+    def rds8(self, addr: int) -> int:
+        return struct.unpack("<b", self.uc.mem_read(addr, 1))[0]
+
+    def rdf32(self, addr: int) -> float:
+        return struct.unpack("<f", self.uc.mem_read(addr, 4))[0]
+
     def wr32(self, addr: int, value: int):
         self.uc.mem_write(addr, struct.pack("<I", value & 0xFFFFFFFF))
 

@@ -129,6 +129,9 @@ def build():
     build_dir = ROOT / "build"
     output_dir = dist_dir / "HeroesLore3_PC"
 
+    icon_ico = ROOT / "assets" / "icon.ico"
+    icon_png = ROOT / "assets" / "icon.png"
+
     # PyInstaller command
     cmd = [
         sys.executable,
@@ -170,8 +173,14 @@ def build():
         f"{ROOT / 'project.json'};.",
         "--add-data",
         f"{ROOT / 'config'};config",
-        str(ROOT / "tools" / "run_pc.py"),
     ]
+
+    if (ROOT / "assets").exists():
+        cmd.extend(["--add-data", f"{ROOT / 'assets'};assets"])
+    if icon_ico.exists():
+        cmd.extend(["--icon", str(icon_ico)])
+
+    cmd.append(str(ROOT / "tools" / "run_pc.py"))
 
     print(f"[Build] Running PyInstaller...")
     subprocess.check_call(cmd, cwd=str(ROOT))
@@ -211,6 +220,10 @@ def build():
 
     # Copy tools directory
     shutil.copytree(ROOT / "tools", output_dir / "tools", dirs_exist_ok=True)
+
+    # Copy assets directory (including icon.png and icon.ico)
+    if (ROOT / "assets").exists():
+        shutil.copytree(ROOT / "assets", output_dir / "assets", dirs_exist_ok=True)
 
     # Write README.txt
     (output_dir / "README.txt").write_text(README_CONTENT, encoding="utf-8")

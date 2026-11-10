@@ -4,7 +4,7 @@ from PyInstaller.utils.hooks import collect_dynamic_libs
 from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools', 'tools'), ('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/project.json', '.'), ('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/config', 'config')]
+datas = [('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools', 'tools'), ('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/project.json', '.'), ('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/config', 'config'), ('C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/assets', 'assets')]
 binaries = []
 hiddenimports = ['OpenGL.platform.win32', 'OpenGL.arrays.ctypesarrays', 'OpenGL.arrays.strings', 'OpenGL.arrays.numbers', 'PIL.Image']
 datas += collect_data_files('OpenGL')
@@ -47,6 +47,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/assets/icon.ico'],
 )
 coll = COLLECT(
     exe,

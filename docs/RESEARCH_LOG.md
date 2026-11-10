@@ -158,17 +158,33 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   5. **Atualização da Distribuição Standalone `dist/HeroesLore3_PC/HeroesLore3.exe`**:
      - Recompilado e testado com sucesso (30 frames apresentados, código 0). Todos os 24 testes unitários passando.
 
+---
+
+## 2026-11-10 - Sessão 09: Controlador Orientado à Memória do Motor Guest (AppManager / UI_Mgr / GameCtx), Coordenadas Exatas da Árvore de Controles e Ícone Oficial
 
 - **Descobertas verificáveis e correções críticas**:
-  1. **Linhas de Grade / Costuras de Textura no Fundo da Tela Inicial ("ficou esquisito")**:
-     - Causa raiz: O fundo da tela inicial é desenhado a partir de uma malha 10x5 de quads com textura `newres/sprites/menu_bkg.pvr`. As bordas dos blocos de 48x64 possuem pixels adjacentes transparentes no canal alfa com componentes RGB não-nulas (`255, 255, 255, 0`). Na amostragem `GL_LINEAR` padrão em resoluções aumentadas no PC (960x640), a GPU interpolava os texels úteis com os vizinhos transparentes fora dos limites do quad, gerando linhas de grade claras de 1 a 2 pixels ao longo de todas as bordas dos quads.
-     - Solução: Forçado `GL_NEAREST` em `tools/hl3rt/gl_bridge.py` para `GL_TEXTURE_MIN_FILTER` e `GL_TEXTURE_MAG_FILTER`. O fundo e todas as fitas agora renderizam com superfície 100% lisa, sem linhas de emenda e com nitidez pixel-perfect idêntica ao jogo rodando no celular.
-  2. **Movimentação do Personagem com Setas / WASD ("não vai nas direções corretamente")**:
-     - Causa raiz:
-       1. O centro do D-Pad virtual configurado no host estava em `(80.0, 240.0)`, enquanto a tabela real de controles do motor (`0x100090a0` / `0x10009330`) define o centro em `(60.0, 265.0)` com raio de hitbox `45.0`. A diferença de 20px no eixo X e 25px no eixo Y causava um desvio angular severo em todas as direções (pressionar CIMA ia para Cima-Direita; ESQUERDA ia para Esquerda-Cima, etc.).
-       2. O motor calcula velocidade e direção acumulando o vetor contínuo em `onTouchMoved` (`0x16a04`): `dx = (touch.x - center.x) / radius` e `dy = (touch.y - center.y) / radius`. O host anterior emitia apenas `touchesBegan` pontual e nunca emitia `touchesMoved`, ignorando mudanças de direção durante o pressionamento contínuo das teclas.
-     - Solução: Em `tools/run_pc.py`, alinhado o centro do stick em `(60.0, 265.0)` e implementado cálculo contínuo de vetor normalizado `(nx, ny)` com raio seguro de 35.0px. O host agora dispara `touchesBegan` no centro e despacha `touchesMoved` continuamente a cada frame para o ponto de arrasto, atualizando instantaneamente na mudança de direção e enviando `touchesEnded` ao soltar as teclas ou o analógico.
-  3. **Desacoplamento de `previousLocationInView:` em `tools/hl3rt/hle_uikit.py`**:
-     - Separado o tratamento de `locationInView:` e `previousLocationInView:` no shim UIKit, garantindo retorno exato de `(prev_x, prev_y)`.
-  4. **Atualização da Distribuição Standalone `dist/HeroesLore3_PC/`**:
-     - Recompilado e reempacotado o executável standalone `HeroesLore3.exe` com as novas correções incorporadas no bytecode e limpando a flag CFG `0x4000`. Validada inicialização, loop de 60 FPS e todos os 23 testes unitários.
+  1. **Estruturas de Dados do Motor em Memória Guest (Ground Truth)**:
+     - `AppManager*` ponteiro global estático em `*(uint32_t*)0x000d7dd4` (`0x10008e80`).
+     - `app_state` no deslocamento `+0x78`: `1` = Menus de Título e Criação de Personagem, `2` = In-Game (Campo, Diálogo, Cutscenes), `8` = Menu de Pausa In-Game.
+     - `ui_main` (`UI_Mgr*`) no deslocamento `+0x40`:
+       - `main_form` em `+0x98`, com `form_id` em `+0x14` (`41` = Seleção de Personagem, `42` = Seleção de Classe, `43` = Resumo, `44` = Cutscenes).
+       - `main_popup` em `+0xa0`: popups de confirmação sobrepostos.
+     - `ui_hud` (`UI_Mgr*`) no deslocamento `+0x44`:
+       - `hud_form` em `+0x98`: formulário de HUD (`id=70`).
+       - `hud_popup` em `+0xa0`: tutoriais pop-up (`id=130`).
+     - `GameCtx` em `0x000d8270`:
+       - `sub_state` em `*(int8_t*)0x000de30c`: `0` = Menus, `3` = Campo Aberto / Exploração, `4`/`22` = Cutscene e Diálogo com NPCs, `7` = Mensagem de Campo.
+       - `can_talk` em `*(uint8_t*)0x000de0ad`: flag definida pela rotina de colisão `0x90894` quando o herói colide com a hitbox 72x72 de um NPC (`0x41550`).
+       - `combat_mode` em `*(uint8_t*)0x000de0ac`: `0` = Vila Pacífica (sem armas empunhadas), `1` = Modo de Combate / Campo com Inimigos.
+  2. **Causa Raiz Exata do Botão de Fala com NPCs**:
+     - No modo pacífico (`combat_mode == 0`), o botão de fala (id `7025`) tem centro em `(450.0, 258.0)` com bounding box `(421..479, 237..279)`. O código anterior disparava em `(445.0, 286.0)` (`y=286` é 7 pixels abaixo da borda inferior do botão, caindo em espaço vazio!).
+     - No modo de combate (`combat_mode == 1`), o botão de ataque (id `7007`) assume `(450.0, 258.0)` e o botão de fala contextual (id `7026`) desloca-se para `(397.0, 239.0)`.
+  3. **Causa Raiz da Falha nas Setas de Seleção de Classe**:
+     - O botão `<` (id `4207`) localiza-se em `(73.0, 71.0)` e o botão `>` (id `4206`) em `(400.0, 71.0)`. As coordenadas anteriores `(99, 88)` e `(389, 86)` caíam fora da área ativa dos botões.
+  4. **Cursor de Pause e Eventos Discretos de Teclado**:
+     - Eliminada a variável desincronizada `self.step`. O cursor do menu de pausa agora verifica rigorosamente `app_state == 8 and form_id == 2`.
+     - Ações de menu e navegação foram migradas de `pygame.key.get_pressed()` para eventos discretos `KEYDOWN`, eliminando cliques duplos simultâneos ao teclar `Enter`.
+  5. **Ícone Oficial do Jogo**:
+     - Extraído `Payload/Heroes Lore.app/Icon.png` do IPA original e gerados `assets/icon.png` e `assets/icon.ico`.
+     - Aplicado como ícone da janela Pygame (`pygame.display.set_icon`) e embutido no executável standalone `dist/HeroesLore3_PC/HeroesLore3.exe` via PyInstaller.
+

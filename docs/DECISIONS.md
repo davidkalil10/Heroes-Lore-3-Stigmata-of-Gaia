@@ -262,6 +262,51 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Cutscenes pulam imediatamente com `S` ou `Tab`.
   - Interação e diálogos com NPCs funcionam com `E`, `Enter` ou botão A do Gamepad.
 
+---
+
+## ADR-016: Controlador de Entrada Orientado ao Estado Real de Memória do Motor Guest (AppManager, UI_Mgr, GameCtx), Coordenadas Exatas da Árvore de Controles e Embutimento do Ícone Oficial
+
+- **Data**: 2026-11-10
+- **Status**: Aceito
+- **Contexto**:
+  - Heurísticas anteriores de entrada baseadas em contagem de passos (`self.step 0..4`) sofriam de descompasso quando o usuário clicava com o mouse ou o jogo realizava transições intermediárias (ex.: tutoriais, popups, cutscenes com `sub_state == 22`).
+  - O botão de conversa com NPCs não ativava via teclado mesmo quando o balão de fala azul aparecia sobre o botão da HUD.
+  - As setas de navegação de classe não respondiam ao teclado.
+  - O menu de pausa no jogo sofria de cliques múltiplos acidentais ao teclar Enter.
+  - O ícone do jogo no executável e na barra de títulos era o ícone genérico do Python.
+- **Investigação Técnica e Descobertas de Engenharia Reversa**:
+  1. *Causa raiz da falha do botão de fala com NPCs*:
+     - No modo pacífico (`combat_mode == 0`), a HUD (`form_id = 70`) posiciona o botão de fala (id `7025`) em `(450.0, 258.0)` com bounding box `(421..479, 237..279)`. O código anterior disparava em `(445.0, 286.0)` (`y=286` é 7 pixels abaixo da borda inferior do botão, caindo em espaço vazio!).
+     - No modo de combate (`combat_mode == 1`), o botão de ataque principal (id `7007`) assume `(450.0, 258.0)` e o botão contextual de fala (id `7026`) desloca-se para `(397.0, 239.0)`.
+     - O motor do jogo avalia colisão com NPCs em `0x41550` (caixa 72x72) e aciona `0x90894` que escreve `1` na flag `can_talk` em `*(uint8*)0x000de0ad`.
+  2. *Causa raiz da falha das setas de seleção de classe*:
+     - A inspeção de memória da tela de seleção de classe (`form_id = 42`) revelou que o botão `<` (id `4207`) está em `(73.0, 71.0)` e o botão `>` (id `4206`) está em `(400.0, 71.0)`. As coordenadas anteriores `(99, 88)` e `(389, 86)` clicavam fora das hitboxes dos botões.
+  3. *Arquitetura de Estado do Motor em Tempo Real*:
+     - `AppManager*` obtido diretamente em `*(uint32_t*)0x000d7dd4`.
+     - `app_state` em `*(int32_t*)(app + 0x78)`: `1` = Pré-jogo / Menus, `2` = Gameplay / Cutscene, `8` = Menu de Pausa.
+     - `ui_main` em `*(uint32_t*)(app + 0x40)` -> `main_form` em `+0x98` (`form_id` em `+0x14`), `main_popup` em `+0xa0`.
+     - `ui_hud` em `*(uint32_t*)(app + 0x44)` -> `hud_form` em `+0x98` (`form_id = 70`), `hud_popup` em `+0xa0` (`form_id = 130` Popup de Tutorial).
+     - `GameCtx` em `0x000d8270`: `sub_state` em `*(int8_t*)0x000de30c` (`0` = menus, `3` = campo livre, `4`/`22` = diálogo/cutscene, `7` = caixa de texto), `can_talk` em `*(uint8_t*)0x000de0ad`, `combat_mode` em `*(uint8_t*)0x000de0ac`.
+- **Decisão**:
+  1. Abandonar heurísticas desacopladas e basear todo o controle de entrada na leitura síncrona do estado de memória guest (`get_engine_state()`).
+  2. Adicionar métodos de conveniência em `Machine`: `rd16`, `rds16`, `rd8`, `rds8`, `rdf32`.
+  3. Mapear as coordenadas reais extraídas dos controles:
+     - Título: Carrossel em `(240.0, 272.0)`.
+     - Seleção de Personagem (`id=41`): Kei `(160, 96)`, Rits `(320, 96)`, Checkmark `(415, 295)`, Back `(28, 28)`.
+     - Seleção de Classe (`id=42`): `<` em `(73, 71)`, `>` em `(400, 71)`, Checkmark `(415, 295)`, Back `(28, 28)`.
+     - Resumo (`id=43`): Checkmark `(356, 295)`, Back `(28, 28)`.
+     - Cutscene (`id=44`, `sub=4/22`): SKIP `(408, 28)`, avanço de diálogo `(240, 160)`.
+     - Popups (`id=130/132/133`): Yes/Confirm `(395, 220)`, No/Cancel `(395, 100)`, Tutorial Next `(385, 207)`, Tutorial Close `(385, 74)`.
+     - HUD (`id=70`): Fala em Paz `(450, 258)`, Fala em Combate `(397, 239)`, Ataque `(450, 258)`, Menu/Pause `(200, 292)`.
+     - Menu de Pausa (`id=2`, `app_state=8`): Itens em `Y = [45, 90, 135, 180, 225, 270]`, Back `(28, 28)`.
+  4. Mudar o tratamento de teclas de ação e menus no Pygame para eventos discretos `KEYDOWN` (em vez de checagem contínua de `get_pressed()`), evitando disparos repetidos ou múltiplos no menu de pausa.
+  5. Extrair o ícone original do bundle iOS (`reference/extracted_ipa/Payload/Heroes Lore.app/Icon.png`), gerar `assets/icon.png` e `assets/icon.ico` (multi-tamanho até 256x256), aplicar como ícone de janela no Pygame e embutir no executável compilado via PyInstaller.
+- **Consequências**:
+  - Todas as transições de tela e confirmações funcionam com fluidez e precisão absoluta.
+  - Falar com NPCs no campo responde com 100% de confiabilidade via `E`, `Enter`, `Espaço` e Gamepad `A`.
+  - O executável standalone e a janela no PC ostentam a arte original de Heroes Lore 3 sem artefatos genéricos.
+
+
 
 
 

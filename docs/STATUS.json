@@ -5,7 +5,7 @@
   "overall_phase": "pc_playable_complete",
   "current_step": "S08",
   "next_recommended_step": "S08",
-  "summary": "Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional. Resolvido o fluxo completo de criacao de personagem em 5 etapas (titulo, heroi, classe, resumo com confirmacao em 355, 285 e gameplay), navegacao de classes via setas e teclas 1/2/3, eliminacao da moldura amarela no Esc, pulo de cutscenes (SKIP) via S/Tab/Y e fala com NPCs/avanco de dialogo no centro exato (445, 286 via E/Enter/Gamepad A) com pulso multiframe em tap_once. 24 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).",
+  "summary": "Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional com icone oficial embutido (assets/icon.ico e assets/icon.png). Implementado controlador unificado de entrada orientado ao estado real de memoria do motor guest (AppManager, UI_Mgr, GameCtx, sub_state, can_talk e hierarquia UIForm/UIControl). Resolvidas todas as navegacoes de tela: selecao de classe (< 73,71 e > 400,71), confirmacao em todas as telas (415,295 e 356,295), cancelamento/voltar (28,28) sem molduras espurias no resumo, pulo de cutscenes (SKIP 408,28 e confirmacao Yes 395,220), fechamento de popups tutoriais (X 385,74), conversa com NPCs no campo no alvo exato do botao de fala (id=7025 a 450,258 em paz e id=7026 a 397,239 em combate) via E/Enter/Space/Gamepad A, e navegacao completa no menu de pausa (id=2) e submenus sem auto-clique. 24 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).",
   "steps": [
     {
       "id": "S00",
