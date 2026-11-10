@@ -49,26 +49,33 @@ CONTROLES
 1. TECLADO:
    * Movimentação: Setas direcionais ou W, A, S, D
    * Falar com NPC / Interagir: Tecla E, Enter ou Barra de Espaço
-   * Ataque / Confirmar Menu: Tecla J ou Barra de Espaço
-   * Iniciar Jogo (START GAME na tela título): Enter ou Barra de Espaço
+   * Ataque Principal: Tecla J ou Barra de Espaço
+   * Pular Cutscenes (SKIP): Tecla S ou Tab
+   * Iniciar Jogo (START GAME no título): Enter ou Barra de Espaço
+   * Seleção de Personagem: Seta Esquerda (A) = Kei, Seta Direita (D) = Rits, Enter = Confirmar, Esc/Backspace = Voltar
+   * Seleção de Classe: Setas Esquerda/Direita = Mudar Classe, Enter = Confirmar, Esc/Backspace = Voltar
+   * Menu de Pausa: Setas Cima/Baixo = Navegar sem ativar, Enter = Ativar opção focada, Esc/Backspace = Fechar
    * Habilidade 1: Tecla U ou 1
    * Habilidade 2: Tecla I ou 2
    * Habilidade 3: Tecla O ou 3
    * Usar Item / Poção: Tecla K ou Q
    * Menu / Pausa: Tecla Esc ou Tab
    * Status do Personagem: Tecla P
+   * Atalhos de Modo de Tela: F1 (Alternar Título/Seleção/Jogo), F2 (Forçar Jogo), F3 (Forçar Título)
    * Volume: Teclas + / = (Aumentar), - (Diminuir), M (Mudo)
    * F11: Alternar Tela Cheia / Janela
    * F12: Capturar Screenshot
 
 2. CONTROLE / GAMEPAD (Xbox, PlayStation, etc.):
    * Movimentação: D-Pad ou Analógico Esquerdo
-   * Ataque / Confirmar (A / X): Botão A (Xbox) / X (PS)
-   * Habilidade 1: Botão X (Xbox) / Quadrado (PS)
-   * Habilidade 2: Botão Y (Xbox) / Triângulo (PS)
-   * Habilidade 3: Botão RB / R1
+   * Falar com NPC / Confirmar: Botão A (Xbox) / X (PS)
+   * Ataque: Botão X (Xbox) / Quadrado (PS)
+   * Pular Cutscenes (SKIP): Botão Y ou Botão Start
+   * Cancelar / Voltar: Botão B (Xbox) / Círculo (PS)
+   * Habilidade 1: Botão Y (Xbox) / Triângulo (PS)
+   * Habilidade 2: Botão RB / R1
    * Usar Poção / Item: Botão LB / L1
-   * Menu / Pausa: Botão Start / Options ou Botão B / Círculo
+   * Menu / Pausa: Botão Start / Options
    * Status: Botão Select / Share
 
 3. MOUSE / TOUCH DIRETO:

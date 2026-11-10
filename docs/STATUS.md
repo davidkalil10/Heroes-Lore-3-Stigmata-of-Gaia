@@ -10,7 +10,7 @@ Este arquivo é gerado automaticamente a partir de `docs/STATUS.json` por `pytho
 
 ## Resumo Executivo
 
-Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional. Mapeado botao virtual de conversa com NPCs (Sprite 473 em 385, 246 no hud.bin via E/Enter/Espaco/Gamepad A), resolvida navegacao do carrossel de titulo com setas via swipe e isolada a navegacao do menu in-game evitando cliques duplos. 24 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).
+Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional. Mapeado botao virtual de conversa com NPCs no centro exato (425.0, 280.0 via E/Enter/Gamepad A), implementada navegacao de selecao de personagem (Kei/Rits) e de classe com setas/Enter/Esc, pulo de cutscenes (SKIP via S/Tab) e cursor visual dourado no menu de pausa sem ativacao prematura. 24 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).
 
 ## Etapas
 

@@ -211,5 +211,38 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Navegação do carrossel de título funciona perfeitamente com setas do teclado e direcionais do gamepad.
   - O menu in-game é navegado de forma limpa, sem ativação de múltiplos botões simultâneos e sem abrir o menu por engano ao teclar Enter.
 
+---
+
+## ADR-014: Alinhamento de Precisão do Botão de Fala (425.0, 280.0), Navegação em Seleção de Personagem/Classe, Pulo de Cutscenes (SKIP) e Cursor Visual no Menu de Pausa
+
+- **Data**: 2026-11-10
+- **Status**: Aceito
+- **Contexto**:
+  - O usuário relatou três pontos restantes com imagens comparativas da execução:
+    1. Nas telas de seleção de personagem (Kei/Rits) e de classe, permitir navegação com as setas do teclado, confirmação com Enter e cancelamento com Esc, além de suporte aos botões de pular cutscene (SKIP).
+    2. No menu de pausa, ao tentar navegar com as setas para cima/baixo, a opção era ativada imediatamente em vez de apenas mover o cursor/foco.
+    3. Ao se aproximar de um NPC no mapa de jogo, o botão virtual azul de conversa surgia no canto inferior direito, mas as teclas do teclado não iniciavam a conversa (sendo necessário clicar nele com o mouse).
+  - **Investigação Técnica**:
+    1. *Causa raiz da fala com NPC*: Na captura real do usuário (`media_1794324014624_479f1886.jpg`), a medição exata do botão virtual circular azul (com ícone de balão de fala e silhueta) no espaço de jogo 480x320 revelou uma bounding box `X: [373..467]`, `Y: [241..320]` com centro geométrico em `(425.0, 280.0)`. A coordenada anterior `(385.0, 246.0)` situava-se na quina superior-esquerda externa, fora do raio de colisão do botão circular. Além disso, o envio simultâneo de toques na HUD e no chão gerava conflito no despachador de eventos do iOS. O mouse funcionava porque o usuário clicava no centro do botão `(425, 280)`.
+    2. *Causa raiz da ativação prematura no menu de pausa*: Em `tools/run_pc.py`, ao pressionar setas Cima/Baixo dentro de `menu_mode`, o código chamava `self.tap_once("menu_btn", (240.0, MENU_ITEMS_Y[self.menu_index]))`. Como no motor de toque um `tap_once` representa clique completo (`touchesBegan` + `touchesEnded`), a opção era ativada e sua tela aberta imediatamente ao tocar a seta.
+    3. *Navegação de seleção e SKIP*: As telas de seleção de personagem (`KEI_CARD` em `(150, 100)`, `RITS_CARD` em `(330, 100)`), seleção de classe (`CLASS_LEFT` em `(92, 100)`, `CLASS_RIGHT` em `(350, 100)`), botões de confirmação (`BTN_CONFIRM` em `(420, 280)`) e botão de pular cutscene (`BTN_SKIP` em `(440, 25)`) necessitavam de integração de teclado e controle.
+- **Decisão**:
+  1. Em `tools/run_pc.py`, atualizar `BTN_TALK = (425.0, 280.0)` centralizado perfeitamente sobre o botão virtual azul da HUD, disparado exclusivamente pelas teclas `E`, `Enter` e botão `A` do Gamepad.
+  2. No menu de pausa (`menu_mode`), remover chamadas a `tap_once` ao mover com setas: as setas agora apenas alteram `self.menu_index`. A ativação da opção ocorre exclusivamente ao teclar `Enter`, `Espaço` ou botão `A` do Gamepad.
+  3. Adicionar renderização de cursor e destaque visual nativo em OpenGL (`_draw_menu_cursor`) antes de `pygame.display.flip()`: uma moldura dourada e setas indicadoras `▶   ◀` acompanham a opção focada.
+  4. Implementar máquina de estados de cena (`title`, `char_select`, `class_select`, `game`):
+     - `char_select`: Setas Esquerda/Direita (ou A/D) selecionam Kei `(150, 100)` ou Rits `(330, 100)`; Enter/Espaço confirma `(420, 280)`; Esc/Backspace volta `(30, 30)`.
+     - `class_select`: Setas Esquerda/Direita (ou A/D) ciclam classes via setas nativas `(92, 100)` e `(350, 100)`; Enter/Espaço confirma `(420, 280)`; Esc/Backspace volta `(30, 30)`.
+     - `game` / cutscenes: Tecla `S`, `Tab` ou Gamepad `Start`/`Y` dispara o botão SKIP nativo `(440, 25)` e confirmação `(420, 280)`.
+     - Atalhos `F1` (ciclar modo), `F2` (forçar modo jogo), `F3` (forçar título).
+  5. Atualizar os testes automatizados em `tests/test_run_pc.py` (24 testes passando).
+  6. Recompilar a distribuição portátil `dist/HeroesLore3_PC/HeroesLore3.exe` e validar execução.
+- **Consequências**:
+  - Conversa com NPCs inicia de imediato com teclado (`E`, `Enter`, `Espaço`) e Gamepad (`A`) pelo botão virtual nativo `(425, 280)`.
+  - O menu de pausa agora permite navegar livremente entre as opções com setas Cima/Baixo e cursor visual dourado, acionando apenas quando `Enter` é pressionado.
+  - As telas de seleção de personagem e classe respondem a setas e confirmação/cancelamento, e cutscenes podem ser puladas com `S` ou `Tab`.
+  - O executável standalone em `dist/HeroesLore3_PC/HeroesLore3.exe` está 100% atualizado e pronto para jogar.
+
+
 
 
