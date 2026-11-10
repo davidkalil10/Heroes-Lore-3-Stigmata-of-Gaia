@@ -43,8 +43,8 @@ class S04PCPlayableTests(unittest.TestCase):
 
     def test_talk_and_menu_controls(self):
         runner = PCRunner(scale=1, headless_frames=1)
-        # Verify NPC talk button is at (425.0, 280.0) matching exact on-screen HUD button
-        self.assertEqual(BTN_TALK, (425.0, 280.0))
+        # Verify NPC talk button is at (445.0, 286.0) matching exact on-screen HUD button
+        self.assertEqual(BTN_TALK, (445.0, 286.0))
         # Verify menu items has 6 entries
         self.assertEqual(len(MENU_ITEMS_Y), 6)
         # Verify carousel swipe left and right execute without fault

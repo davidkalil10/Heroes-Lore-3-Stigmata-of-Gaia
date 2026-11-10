@@ -137,7 +137,27 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
 
 ---
 
-## 2026-11-09 - Sessão 07: Correção de Linhas de Grade (Costuras de Textura) e Movimentação Fluida com D-Pad Contínuo
+## 2026-11-10 - Sessão 08: Máquina de Estados de Criação de Personagem (5 Passos), Resolução da Tela de Resumo, Pulo de Cutscenes e Toque Multiframe
+
+- **Descobertas verificáveis e correções críticas**:
+  1. **Descoberta do Fluxo Completo de Criação de Personagem (4 Telas Distintas)**:
+     - `Step 0`: Tela de Título com Carrossel (`START GAME` / `CONTINUE`) em `(240.0, 280.0)`.
+     - `Step 1`: Seleção de Herói (Kei em `(150, 100)` ou Rits em `(330, 100)`), confirmação em `(415, 284)`.
+     - `Step 2`: Seleção de Classe com setas `<` `(99, 88)` e `>` `(389, 86)` e chibis `(160, 80)`, `(244, 80)`, `(338, 80)`, confirmação em `(415, 284)`.
+     - `Step 3`: Resumo do Personagem (`KEI`, `NATION NEO SOLTIA`, `CLASS BERSERKER`). A ilustração de corpo inteiro de Kei ocupa a metade direita da tela (`X: 240..480`), deslocando o botão verde de confirmação para o canto inferior direito da caixa de informações em `(355.0, 285.0)` (60 pixels à esquerda do botão de classe!).
+     - `Step 4`: Cutscenes de abertura (Penhasco de batalha) e Gameplay na Vila de Gaia.
+  2. **Causa Raiz da Moldura Amarela Indevida ao Teclar Esc**:
+     - O código tratava `game` logo após `class_select`, ignorando o `Step 3`. Ao teclar `Esc` na tela de resumo, caía na condição de pause menu (`self.menu_mode = True`), desenhando a moldura dourada do cursor de pause sobre a arte de Kei e travando a entrada do teclado.
+     - Correção: Implementado `step = 3` (`summary`) onde `Esc` estritamente recua para a seleção de classe via `BTN_BACK (27, 17)`. Adicionada guarda estrita em `_draw_menu_cursor`: o cursor só pode ser desenhado se `self.menu_mode and self.step == 4`.
+  3. **Mecânica de Pulso Multiframe em `tap_once`**:
+     - A rotina anterior de `tap_once` enviava `touchesBegan` no frame $N$ e `touchesEnded` no frame $N+1$ (16ms). Como teclas físicas permanecem pressionadas por 50..120ms, o código enviava Began-Ended-Began-Ended em rajadas desordenadas a cada frame, causando descarte de eventos pelo motor iOS.
+     - Correção: Implementado `self.pending_tap_ups: dict[str, int]` com contagem regressiva de sustentação configurável (`hold_frames=2` ou `3`). O toque agora é mantido ativamente por 2 a 3 ciclos completos de `onTimer:`, simulando com perfeição um toque físico na tela capacitiva.
+  4. **Alinhamento do Botão de Fala com NPCs e Pulo de Cutscenes**:
+     - O botão de conversa com NPCs (balão azul medido em `media_1794324014624_479f1886.jpg`) tem centro em `(445.0, 286.0)` / `(435.0, 275.0)` e responde imediatamente a `E`, `Enter` e Gamepad `A`.
+     - O botão SKIP de cutscene (círculo marrom com "X" medido em `media_1794325928187_84a8c6e0.jpg`) tem centro em `(410.0, 28.0)` com texto em `(410.0, 45.0)` e responde imediatamente a `S`, `Tab`, Gamepad `Y` e `Start`.
+  5. **Atualização da Distribuição Standalone `dist/HeroesLore3_PC/HeroesLore3.exe`**:
+     - Recompilado e testado com sucesso (30 frames apresentados, código 0). Todos os 24 testes unitários passando.
+
 
 - **Descobertas verificáveis e correções críticas**:
   1. **Linhas de Grade / Costuras de Textura no Fundo da Tela Inicial ("ficou esquisito")**:

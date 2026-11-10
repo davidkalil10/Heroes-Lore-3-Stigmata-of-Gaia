@@ -63,26 +63,31 @@ DPAD_UP_RIGHT = (85.0, 240.0)
 DPAD_DOWN_LEFT = (35.0, 290.0)
 DPAD_DOWN_RIGHT = (85.0, 290.0)
 
-# In-game HUD Buttons (confirmed via newres/ui/hud.bin inspection)
+# In-game HUD Buttons (confirmed via newres/ui/hud.bin and screenshot measurements)
 BTN_ATTACK = (407.0, 233.0)  # Primary attack button (sprite 472)
-BTN_TALK = (425.0, 280.0)    # Contextual NPC talk / interact button (sprite 473, exact center)
-BTN_TALK_ALT = (385.0, 246.0) # Secondary action / sprite origin alias
+BTN_TALK = (445.0, 286.0)    # Contextual NPC talk button (speech bubble center)
+BTN_TALK_ALT = (435.0, 275.0) # Speech bubble origin / alternate tap
 BTN_SKILL1 = (447.0, 134.0)  # Skill button 1
 BTN_SKILL2 = (447.0, 184.0)  # Skill button 2
 BTN_SKILL3 = (447.0, 84.0)   # Skill button 3
 BTN_ITEM = (415.0, 45.0)     # Quick item potion button
 BTN_MENU = (240.0, 289.0)    # In-game HUD bottom menu bar
 BTN_STATUS = (23.0, 22.0)    # Character avatar / status button
-BTN_BACK = (30.0, 30.0)      # Top-left circular return button (menus, char/class select)
+BTN_BACK = (27.0, 17.0)      # Top-left circular return button (menus, char/class/summary select)
 BTN_CENTER = (240.0, 280.0)  # Title carousel center ("START GAME" / "CONTINUE")
 
-# Character & Class Selection and Cutscenes touch targets
+# Character & Class Selection, Summary and Cutscenes touch targets
 KEI_CARD = (150.0, 100.0)     # Kei character selection card
 RITS_CARD = (330.0, 100.0)    # Rits character selection card
-CLASS_LEFT = (92.0, 100.0)    # Class selection previous arrow
-CLASS_RIGHT = (350.0, 100.0)  # Class selection next arrow
-BTN_CONFIRM = (420.0, 280.0)  # Bottom-right green checkmark confirmation button
-BTN_SKIP = (440.0, 25.0)      # Top-right cutscene skip button
+CLASS_LEFT = (99.0, 88.0)     # Class selection previous arrow <
+CLASS_RIGHT = (389.0, 86.0)   # Class selection next arrow >
+CLASS_CHIBI1 = (160.0, 80.0)  # Class 1 chibi (Berserker)
+CLASS_CHIBI2 = (244.0, 80.0)  # Class 2 chibi
+CLASS_CHIBI3 = (338.0, 80.0)  # Class 3 chibi
+BTN_CONFIRM = (415.0, 284.0)  # Bottom-right green checkmark confirmation button (char & class select)
+SUMMARY_CONFIRM = (355.0, 285.0) # Green checkmark on character summary screen (Kei illustration on right)
+BTN_SKIP = (410.0, 28.0)      # Cutscene SKIP brown circular button center
+BTN_SKIP_ALT = (410.0, 45.0)  # Cutscene SKIP text area below button
 
 # In-game Menu options (CHARACTER, EQUIPMENT, SKILLS, ITEMS, QUESTS, SYSTEM)
 MENU_ITEMS_Y = [45.0, 90.0, 135.0, 180.0, 225.0, 270.0]
@@ -117,8 +122,8 @@ class PCRunner:
         self.menu_cooldown = 0
         self.carousel_cooldown = 0
         self.scene_cooldown = 0
-        self.pending_tap_ups: list[str] = []
-        self.scene = "title"  # "title", "char_select", "class_select", "game"
+        self.pending_tap_ups: dict[str, int] = {}
+        self.step = 0  # 0: title, 1: char_select, 2: class_select, 3: summary, 4: game
 
         log_boot("Calling _init_window")
         self._init_window()
@@ -127,6 +132,19 @@ class PCRunner:
         log_boot("Calling _init_joysticks")
         self._init_joysticks()
         log_boot("PCRunner init complete")
+
+    @property
+    def scene(self) -> str:
+        names = ["title", "char_select", "class_select", "summary", "game"]
+        return names[self.step] if 0 <= self.step < len(names) else "game"
+
+    @scene.setter
+    def scene(self, val: str):
+        names = ["title", "char_select", "class_select", "summary", "game"]
+        if val in names:
+            self.step = names.index(val)
+        elif val == "game":
+            self.step = 4
 
     def _init_window(self):
         pygame.init()
@@ -137,7 +155,7 @@ class PCRunner:
         self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
 
     def _draw_menu_cursor(self):
-        if not self.menu_mode:
+        if not self.menu_mode or self.step != 4:
             return
         try:
             vx, vy, vw, vh = self.rt.gl_bridge.viewport_rect if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge else (0, 0, self.win_w, self.win_h)
@@ -261,10 +279,9 @@ class PCRunner:
         t.phase = 3  # phase 3 = ended
         self.rt.send(self.touch_responder, "touchesEnded:withEvent:", set_obj, evt_obj)
 
-    def tap_once(self, tag: str, coord: tuple[float, float]):
+    def tap_once(self, tag: str, coord: tuple[float, float], hold_frames: int = 2):
         self.touch_down(tag, coord)
-        if tag not in self.pending_tap_ups:
-            self.pending_tap_ups.append(tag)
+        self.pending_tap_ups[tag] = max(1, hold_frames)
 
     def swipe_carousel(self, direction: str):
         if self.carousel_cooldown > 0 or not self.touch_responder:
@@ -299,16 +316,23 @@ class PCRunner:
 
     # ------------------------------------------------------------- Input poll
     def poll_input(self):
-        # Tick down cooldowns and release transient one-frame taps
+        # Tick down cooldowns and release timed taps
         if self.carousel_cooldown > 0:
             self.carousel_cooldown -= 1
         if self.menu_cooldown > 0:
             self.menu_cooldown -= 1
         if self.scene_cooldown > 0:
             self.scene_cooldown -= 1
-        for tag in list(self.pending_tap_ups):
+
+        tags_to_release = []
+        for tag, rem in list(self.pending_tap_ups.items()):
+            if rem <= 1:
+                tags_to_release.append(tag)
+                del self.pending_tap_ups[tag]
+            else:
+                self.pending_tap_ups[tag] = rem - 1
+        for tag in tags_to_release:
             self.touch_up(tag)
-        self.pending_tap_ups.clear()
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -320,22 +344,22 @@ class PCRunner:
                 gx, gy = self.window_to_game_coord(event.pos[0], event.pos[1])
                 self.touch_down("mouse", (gx, gy))
                 # Check if mouse clicked menu toggle or back button
-                if abs(gx - BTN_MENU[0]) < 60.0 and abs(gy - BTN_MENU[1]) < 25.0:
+                if self.step == 4 and abs(gx - BTN_MENU[0]) < 60.0 and abs(gy - BTN_MENU[1]) < 25.0:
                     self.menu_mode = True
                     self.menu_index = 0
                 elif self.menu_mode and abs(gx - BTN_BACK[0]) < 35.0 and abs(gy - BTN_BACK[1]) < 35.0:
                     self.menu_mode = False
-                elif self.scene == "title" and abs(gx - BTN_CENTER[0]) < 80.0 and abs(gy - BTN_CENTER[1]) < 40.0:
-                    self.scene = "char_select"
-                elif self.scene == "char_select" and abs(gx - BTN_CONFIRM[0]) < 40.0 and abs(gy - BTN_CONFIRM[1]) < 40.0:
-                    self.scene = "class_select"
-                elif self.scene == "class_select" and abs(gx - BTN_CONFIRM[0]) < 40.0 and abs(gy - BTN_CONFIRM[1]) < 40.0:
-                    self.scene = "game"
+                elif self.step == 0 and abs(gx - BTN_CENTER[0]) < 80.0 and abs(gy - BTN_CENTER[1]) < 40.0:
+                    self.step = 1
+                elif self.step == 1 and abs(gx - BTN_CONFIRM[0]) < 40.0 and abs(gy - BTN_CONFIRM[1]) < 40.0:
+                    self.step = 2
+                elif self.step == 2 and abs(gx - BTN_CONFIRM[0]) < 40.0 and abs(gy - BTN_CONFIRM[1]) < 40.0:
+                    self.step = 3
+                elif self.step == 3 and abs(gx - SUMMARY_CONFIRM[0]) < 45.0 and abs(gy - SUMMARY_CONFIRM[1]) < 45.0:
+                    self.step = 4
                 elif abs(gx - BTN_BACK[0]) < 35.0 and abs(gy - BTN_BACK[1]) < 35.0:
-                    if self.scene == "char_select":
-                        self.scene = "title"
-                    elif self.scene == "class_select":
-                        self.scene = "char_select"
+                    if self.step in (1, 2, 3):
+                        self.step -= 1
 
             elif event.type == MOUSEBUTTONUP and event.button == 1:
                 self.touch_up("mouse")
@@ -353,16 +377,14 @@ class PCRunner:
                 elif event.key == K_F12:
                     self.capture_screenshot()
                 elif event.key == K_F1:
-                    scenes = ["title", "char_select", "class_select", "game"]
-                    cur_idx = scenes.index(self.scene) if self.scene in scenes else 0
-                    self.scene = scenes[(cur_idx + 1) % len(scenes)]
-                    print(f"[HL3 Mode] Switched scene mode to: {self.scene}")
+                    self.step = (self.step + 1) % 5
+                    print(f"[HL3 Mode] Switched step to {self.step} ({self.scene})")
                 elif event.key == K_F2:
-                    self.scene = "game"
-                    print("[HL3 Mode] Scene mode forced to: game")
+                    self.step = 4
+                    print("[HL3 Mode] Scene mode forced to: game (step 4)")
                 elif event.key == K_F3:
-                    self.scene = "title"
-                    print("[HL3 Mode] Scene mode forced to: title")
+                    self.step = 0
+                    print("[HL3 Mode] Scene mode forced to: title (step 0)")
                 elif event.key in (K_EQUALS, K_PLUS, getattr(pygame, "K_KP_PLUS", K_PLUS)):
                     if hasattr(self.rt, "audio_mixer"):
                         cur = self.rt.audio_mixer.master_volume
@@ -377,22 +399,25 @@ class PCRunner:
                     # In-game menu toggle or Back
                     if self.menu_mode:
                         self.menu_mode = False
-                        self.tap_once("menu_back", BTN_BACK)
-                    elif self.scene == "char_select":
-                        self.scene = "title"
-                        self.tap_once("char_back", BTN_BACK)
-                    elif self.scene == "class_select":
-                        self.scene = "char_select"
-                        self.tap_once("class_back", BTN_BACK)
-                    else:
+                        self.tap_once("menu_back", BTN_BACK, hold_frames=2)
+                    elif self.step == 1:
+                        self.step = 0
+                        self.tap_once("char_back", BTN_BACK, hold_frames=2)
+                    elif self.step == 2:
+                        self.step = 1
+                        self.tap_once("class_back", BTN_BACK, hold_frames=2)
+                    elif self.step == 3:
+                        self.step = 2
+                        self.tap_once("summary_back", BTN_BACK, hold_frames=2)
+                    elif self.step == 4:
                         self.menu_mode = True
                         self.menu_index = 0
-                        self.tap_once("menu_open", BTN_MENU)
-                elif event.key == K_s:
+                        self.tap_once("menu_open", BTN_MENU, hold_frames=2)
+                elif event.key == K_s and self.step == 4:
                     # Cutscene / Dialogue SKIP
-                    if self.scene == "game":
-                        self.tap_once("skip", BTN_SKIP)
-                        self.tap_once("skip_alt", BTN_CONFIRM)
+                    self.tap_once("skip", BTN_SKIP, hold_frames=2)
+                    self.tap_once("skip_alt", BTN_SKIP_ALT, hold_frames=2)
+                    self.tap_once("skip_conf", BTN_CONFIRM, hold_frames=2)
 
             # Gamepad Hot-plug
             elif event.type == JOYDEVICEADDED:
@@ -439,23 +464,23 @@ class PCRunner:
                     select_active = True
                     break
             if select_active and self.menu_cooldown == 0:
-                self.tap_once("menu_sel", (240.0, MENU_ITEMS_Y[self.menu_index]))
+                self.tap_once("menu_sel", (240.0, MENU_ITEMS_Y[self.menu_index]), hold_frames=2)
                 self.menu_cooldown = 15
 
             # Cancel / Back
-            back_active = keys[K_BACKSPACE]
+            back_active = keys[K_BACKSPACE] or keys[K_ESCAPE]
             for js in self.joysticks:
                 if js.get_numbuttons() > 1 and js.get_button(1):
                     back_active = True
                     break
             if back_active and self.menu_cooldown == 0:
-                self.tap_once("menu_back", BTN_BACK)
+                self.tap_once("menu_back", BTN_BACK, hold_frames=2)
                 self.menu_mode = False
                 self.menu_cooldown = 15
             return
 
-        # -------------------------------------------------- Mode 2: Title Screen
-        if self.scene == "title":
+        # -------------------------------------------------- Mode 2: Title Screen (step 0)
+        if self.step == 0:
             go_left = keys[K_LEFT] or keys[K_a]
             go_right = keys[K_RIGHT] or keys[K_d]
             for js in self.joysticks:
@@ -482,13 +507,13 @@ class PCRunner:
                     title_confirm = True
                     break
             if title_confirm and self.scene_cooldown == 0:
-                self.tap_once("title_confirm", BTN_CENTER)
-                self.scene = "char_select"
+                self.tap_once("title_confirm", BTN_CENTER, hold_frames=3)
+                self.step = 1
                 self.scene_cooldown = 20
             return
 
-        # -------------------------------------------------- Mode 3: Character Selection (Kei / Rits)
-        if self.scene == "char_select":
+        # -------------------------------------------------- Mode 3: Character Selection Kei / Rits (step 1)
+        if self.step == 1:
             sel_left = keys[K_LEFT] or keys[K_a]
             sel_right = keys[K_RIGHT] or keys[K_d]
             for js in self.joysticks:
@@ -505,10 +530,10 @@ class PCRunner:
                         sel_right = True
 
             if sel_left and self.scene_cooldown == 0:
-                self.tap_once("sel_kei", KEI_CARD)
+                self.tap_once("sel_kei", KEI_CARD, hold_frames=2)
                 self.scene_cooldown = 12
             elif sel_right and self.scene_cooldown == 0:
-                self.tap_once("sel_rits", RITS_CARD)
+                self.tap_once("sel_rits", RITS_CARD, hold_frames=2)
                 self.scene_cooldown = 12
 
             char_confirm = keys[K_RETURN] or keys[K_SPACE] or keys[K_z]
@@ -517,23 +542,23 @@ class PCRunner:
                     char_confirm = True
                     break
             if char_confirm and self.scene_cooldown == 0:
-                self.tap_once("char_confirm", BTN_CONFIRM)
-                self.scene = "class_select"
+                self.tap_once("char_confirm", BTN_CONFIRM, hold_frames=3)
+                self.step = 2
                 self.scene_cooldown = 20
 
-            char_back = keys[K_BACKSPACE]
+            char_back = keys[K_BACKSPACE] or keys[K_ESCAPE]
             for js in self.joysticks:
                 if js.get_numbuttons() > 1 and js.get_button(1):
                     char_back = True
                     break
             if char_back and self.scene_cooldown == 0:
-                self.tap_once("char_back", BTN_BACK)
-                self.scene = "title"
+                self.tap_once("char_back", BTN_BACK, hold_frames=2)
+                self.step = 0
                 self.scene_cooldown = 20
             return
 
-        # -------------------------------------------------- Mode 4: Class Selection
-        if self.scene == "class_select":
+        # -------------------------------------------------- Mode 4: Class Selection (step 2)
+        if self.step == 2:
             go_left = keys[K_LEFT] or keys[K_a]
             go_right = keys[K_RIGHT] or keys[K_d]
             for js in self.joysticks:
@@ -550,11 +575,20 @@ class PCRunner:
                         go_right = True
 
             if go_left and self.scene_cooldown == 0:
-                self.tap_once("class_left", CLASS_LEFT)
-                self.scene_cooldown = 12
+                self.tap_once("class_left", CLASS_LEFT, hold_frames=2)
+                self.scene_cooldown = 14
             elif go_right and self.scene_cooldown == 0:
-                self.tap_once("class_right", CLASS_RIGHT)
-                self.scene_cooldown = 12
+                self.tap_once("class_right", CLASS_RIGHT, hold_frames=2)
+                self.scene_cooldown = 14
+            elif keys[K_1] and self.scene_cooldown == 0:
+                self.tap_once("class_c1", CLASS_CHIBI1, hold_frames=2)
+                self.scene_cooldown = 14
+            elif keys[K_2] and self.scene_cooldown == 0:
+                self.tap_once("class_c2", CLASS_CHIBI2, hold_frames=2)
+                self.scene_cooldown = 14
+            elif keys[K_3] and self.scene_cooldown == 0:
+                self.tap_once("class_c3", CLASS_CHIBI3, hold_frames=2)
+                self.scene_cooldown = 14
 
             class_confirm = keys[K_RETURN] or keys[K_SPACE] or keys[K_z]
             for js in self.joysticks:
@@ -562,22 +596,45 @@ class PCRunner:
                     class_confirm = True
                     break
             if class_confirm and self.scene_cooldown == 0:
-                self.tap_once("class_confirm", BTN_CONFIRM)
-                self.scene = "game"
-                self.scene_cooldown = 25
+                self.tap_once("class_confirm", BTN_CONFIRM, hold_frames=3)
+                self.step = 3
+                self.scene_cooldown = 20
 
-            class_back = keys[K_BACKSPACE]
+            class_back = keys[K_BACKSPACE] or keys[K_ESCAPE]
             for js in self.joysticks:
                 if js.get_numbuttons() > 1 and js.get_button(1):
                     class_back = True
                     break
             if class_back and self.scene_cooldown == 0:
-                self.tap_once("class_back", BTN_BACK)
-                self.scene = "char_select"
+                self.tap_once("class_back", BTN_BACK, hold_frames=2)
+                self.step = 1
                 self.scene_cooldown = 20
             return
 
-        # -------------------------------------------------- Mode 5: Field Gameplay & Cutscenes
+        # -------------------------------------------------- Mode 5: Character Summary (step 3)
+        if self.step == 3:
+            summary_confirm = keys[K_RETURN] or keys[K_SPACE] or keys[K_z]
+            for js in self.joysticks:
+                if js.get_numbuttons() > 0 and js.get_button(0):
+                    summary_confirm = True
+                    break
+            if summary_confirm and self.scene_cooldown == 0:
+                self.tap_once("sum_confirm", SUMMARY_CONFIRM, hold_frames=3)
+                self.step = 4
+                self.scene_cooldown = 25
+
+            summary_back = keys[K_BACKSPACE] or keys[K_ESCAPE]
+            for js in self.joysticks:
+                if js.get_numbuttons() > 1 and js.get_button(1):
+                    summary_back = True
+                    break
+            if summary_back and self.scene_cooldown == 0:
+                self.tap_once("sum_back", BTN_BACK, hold_frames=2)
+                self.step = 2
+                self.scene_cooldown = 20
+            return
+
+        # -------------------------------------------------- Mode 6: Field Gameplay & Cutscenes (step 4)
         dx, dy = 0.0, 0.0
         if keys[K_LEFT] or keys[K_a]:
             dx -= 1.0
@@ -638,25 +695,34 @@ class PCRunner:
             else:
                 self.touch_up(tag)
 
-        # Talk / Interact / Advance Dialogue: E, Enter, or Gamepad Button 0 [A]
-        # Directly touches the on-screen Talk button at (425.0, 280.0) (Sprite 473)
-        talk_active = keys[K_e] or keys[K_RETURN]
-        check_btn("talk_hud", BTN_TALK, talk_active, 0)
-
-        # Attack: J, Space, or Gamepad Button 2 [X]
-        attack_active = keys[K_j] or keys[K_SPACE]
-        check_btn("attack", BTN_ATTACK, attack_active, 2)
-
         # Cutscene SKIP: S, Tab, Gamepad Button 3 [Y] or Gamepad Button 7 [Start]
+        # Dispatches tap to circular brown button and text
         skip_active = keys[K_s] or keys[K_TAB]
         for js in self.joysticks:
             if js.get_numbuttons() > 3 and js.get_button(3):
                 skip_active = True
                 break
         if skip_active and self.scene_cooldown == 0:
-            self.tap_once("skip", BTN_SKIP)
-            self.tap_once("skip_alt", BTN_CONFIRM)
+            self.tap_once("skip", BTN_SKIP, hold_frames=2)
+            self.tap_once("skip_alt", BTN_SKIP_ALT, hold_frames=2)
+            self.tap_once("skip_conf", BTN_CONFIRM, hold_frames=2)
             self.scene_cooldown = 12
+
+        # Talk / Interact / Advance Dialogue: E, Enter, or Gamepad Button 0 [A]
+        # Taps the on-screen Talk button at (445.0, 286.0) with clean 2-frame pulse
+        talk_active = keys[K_e] or keys[K_RETURN]
+        for js in self.joysticks:
+            if js.get_numbuttons() > 0 and js.get_button(0):
+                talk_active = True
+                break
+        if talk_active and self.scene_cooldown == 0:
+            self.tap_once("talk_hud", BTN_TALK, hold_frames=2)
+            self.tap_once("talk_hud_alt", BTN_TALK_ALT, hold_frames=2)
+            self.scene_cooldown = 10
+
+        # Attack: J, Space, or Gamepad Button 2 [X]
+        attack_active = keys[K_j] or keys[K_SPACE]
+        check_btn("attack", BTN_ATTACK, attack_active, 2)
 
         # Skill 1 (U, 1)
         check_btn("skill1", BTN_SKILL1, keys[K_u] or keys[K_1], None)
@@ -669,13 +735,13 @@ class PCRunner:
         # Status (P, C, Gamepad Button 6 [Select])
         check_btn("status", BTN_STATUS, keys[K_p] or keys[K_c], 6)
 
-        # Gamepad Start button opens in-game menu
+        # Gamepad Start button opens in-game menu during gameplay
         for js in self.joysticks:
             if js.get_numbuttons() > 7 and js.get_button(7):
                 if not self.menu_mode and self.menu_cooldown == 0:
                     self.menu_mode = True
                     self.menu_index = 0
-                    self.tap_once("menu_open", BTN_MENU)
+                    self.tap_once("menu_open", BTN_MENU, hold_frames=2)
                     self.menu_cooldown = 15
                 break
 
