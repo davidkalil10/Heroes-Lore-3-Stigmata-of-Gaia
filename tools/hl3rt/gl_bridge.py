@@ -252,9 +252,9 @@ class GLBridge:
 
     def scissor(self, x: int, y: int, w: int, h: int):
         vx, vy, vw, vh = self.viewport_rect
-        # Scale guest scissor box into host viewport space (converting top-down Y to bottom-up GL)
+        # Scale guest scissor box directly into host viewport space (guest coordinates already match GL window bottom-up)
         sx = vx + int((x / self.game_w) * vw)
-        sy = vy + int(((self.game_h - (y + h)) / self.game_h) * vh)
+        sy = vy + int((y / self.game_h) * vh)
         sw = max(1, int((w / self.game_w) * vw))
         sh = max(1, int((h / self.game_h) * vh))
         glScissor(sx, sy, sw, sh)

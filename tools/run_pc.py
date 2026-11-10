@@ -6,6 +6,7 @@ complete keyboard mapping, full gamepad/controller support, and audio playback.
 
 Controls:
   * Movement: D-Pad / Left Stick or Arrow Keys / WASD
+  * Talk / Interact: E / Space / Enter / Gamepad A
   * Attack / Confirm: Gamepad A / J / Space
   * Skill 1: Gamepad X / U / 1
   * Skill 2: Gamepad Y / I / 2
@@ -95,6 +96,8 @@ class PCRunner:
         self.touch_responder = 0
         self.delegate = 0
         self.joysticks = []
+        self.facing_x = 0.0
+        self.facing_y = 1.0  # default facing down
 
         log_boot("Calling _init_window")
         self._init_window()
@@ -280,6 +283,9 @@ class PCRunner:
             mag = min(1.0, length)
             nx = (dx / length) * mag
             ny = (dy / length) * mag
+            # Track normalized facing direction for NPC interaction
+            self.facing_x = dx / length
+            self.facing_y = dy / length
             # D-Pad stick center is (60.0, 265.0) with radius 35.0 (hitbox is 45.0)
             target_x = 60.0 + nx * 35.0
             target_y = 265.0 + ny * 35.0
@@ -305,10 +311,21 @@ class PCRunner:
             else:
                 self.touch_up(tag)
 
+        # Talk / Interact Target (NPC or speech bubble in front of player at (240, 160))
+        interact_coord = (
+            240.0 + self.facing_x * 45.0,
+            160.0 + self.facing_y * 45.0 - 15.0,
+        )
+
+        # Talk / Interact: E, Enter, Space, J, or Gamepad Button 0 [A]
+        # In Heroes Lore 3, talking is initiated by touching the NPC or their speech bubble in the game world.
+        interact_active = keys[K_e] or keys[K_RETURN] or keys[K_SPACE] or keys[K_j]
+        check_btn("interact", interact_coord, interact_active, 0)
+
         # Attack / Confirm (J, Space, Gamepad Button 0 [A])
         check_btn("attack", BTN_ATTACK, keys[K_j] or keys[K_SPACE], 0)
-        # Center Touch to Start (Enter, Z)
-        check_btn("center", BTN_CENTER, keys[K_RETURN] or keys[K_z], None)
+        # Center Touch to Start / Dialogue advance (Enter, Z, E)
+        check_btn("center", BTN_CENTER, keys[K_RETURN] or keys[K_z] or keys[K_e], None)
         # Skill 1 (U, 1, Gamepad Button 2 [X])
         check_btn("skill1", BTN_SKILL1, keys[K_u] or keys[K_1], 2)
         # Skill 2 (I, 2, Gamepad Button 3 [Y])

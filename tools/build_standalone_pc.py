@@ -48,6 +48,7 @@ CONTROLES
 ------------------------------------------------------------------------
 1. TECLADO:
    * Movimentação: Setas direcionais ou W, A, S, D
+   * Falar com NPC / Interagir: Tecla E, Enter ou Barra de Espaço
    * Ataque / Confirmar Menu: Tecla J ou Barra de Espaço
    * Iniciar Jogo (START GAME na tela título): Enter ou Barra de Espaço
    * Habilidade 1: Tecla U ou 1

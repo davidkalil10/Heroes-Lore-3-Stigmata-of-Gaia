@@ -164,26 +164,26 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 
 ---
 
-## ADR-011: Eliminação de Costuras de Texturas com GL_NEAREST e Movimentação Contínua por Vetor do D-Pad Virtual
+## ADR-012: Correção de glScissor (Remoção da Inversão Y) e Implementação de Interação / Fala com NPCs via Teclado e Gamepad
 
-- **Data**: 2026-11-09
+- **Data**: 2026-11-10
 - **Status**: Aceito
 - **Contexto**:
-  - A tela inicial do jogo apresentava linhas de grade (seams/costuras) horizontais e verticais dividindo o fundo em células retangulares de 48x64 pixels ("ficou esquisito" em relação ao original no celular).
-  - A análise detalhada revelou que o fundo é composto por uma matriz de 10x5 quads texturizados a partir do atlas `newres/sprites/menu_bkg.pvr`. Texels adjacentes às bordas de cada célula continham RGB não-nulo com canal alfa zero (ex.: `255, 255, 255, 0`). Na GPU desktop, ao ampliar as texturas com `GL_LINEAR`, o filtro bilinear interpolava com os texels da borda transparente, gerando linhas de grade claras de 1-2 pixels nas emendas.
-  - A movimentação do personagem com setas ou WASD ("não vai nas direções corretamente") apresentava comportamento errático e desalinhado.
-  - O desmonte da tabela de controles do motor (`0x100090a0` / `0x10009330`) e das funções `onTouchBegan` (`0x16938`), `onTouchMoved` (`0x16a04`) e `onTouchEnded` (`0x16ad8`) revelou:
-    1. O D-Pad virtual possui centro em `(60.0, 265.0)` com raio de hitbox `45.0` (o código anterior usava `(80.0, 240.0)`, enviesando todos os eixos: para cima ia para cima-direita, para a esquerda ia para esquerda-cima, etc.).
-    2. O motor calcula o vetor contínuo de direção e velocidade via `dx = (touch.x - center.x) / radius` e `dy = (touch.y - center.y) / radius`.
-    3. O código anterior chamava apenas `touch_down` em coordenadas pontuais sem arrasto contínuo, ignorando transições de direção enquanto as teclas permaneciam pressionadas.
+  - O usuário relatou dois problemas críticos após o ajuste de movimentação:
+    1. Textos e artes ausentes nos menus: na tela título, botões do carrossel ("START GAME", "CONTINUE") não renderizavam texto; na seleção de personagem, a caixa de descrição do lore ("NATION: NEO SOLTIA...") ficava vazia; na seleção de classe, os 3 sprites chibi de pré-visualização, o texto descritivo e o botão de confirmação (checkmark) desapareciam.
+    2. Ao tentar falar com NPCs no jogo, pressionar teclas do teclado (J, Espaço, Enter) não iniciava a conversa, sendo necessário clicar na tela com o mouse sobre o ícone de conversa (balão de diálogo sobre o NPC).
+  - **Investigação Técnica**:
+    1. *Causa raiz dos textos e sprites ausentes*: Em `tools/hl3rt/gl_bridge.py`, a função `scissor(x, y, w, h)` invertia incorretamente o eixo Y (`sy = vy + int(((self.game_h - (y + h)) / self.game_h) * vh)`), assumindo que o binário guest passava coordenadas do UIKit (topo para baixo). Contudo, o jogo iOS utiliza OpenGL ES 1.1 direto e passa coordenadas de janela padrão do OpenGL (base para cima, onde Y=0 é o rodapé). Ao inverter Y, o retângulo de corte da tela de título (`y=1, h=100`) era movido para o topo (`y=219..319`), descartando 100% dos vértices do botão do carrossel; a caixa de texto da seleção de personagem (`y=21, h=130`) era movida para o topo (`y=169..299`), descartando todo o texto de lore; e as caixas scissored de seleção de classe eram cortadas fora da viewport.
+    2. *Causa raiz da interação com NPCs*: No motor iOS original, a interação com NPCs é baseada em hit-test no espaço de mundo (`0x7575c` -> `[r1, #0xc]`), acionada ao tocar diretamente no NPC ou em seu balão de conversa. Em `tools/run_pc.py`, as teclas de teclado e gamepad estavam mapeadas apenas para posições estáticas da HUD: ataque (`420, 270`) e centro (`240, 280`). Nenhuma tecla ou botão enviava toques na área do NPC/balão de fala à frente do personagem (`(240, 160)`).
 - **Decisão**:
-  1. Em `tools/hl3rt/gl_bridge.py`, forçar filtro `GL_NEAREST` em `GL_TEXTURE_MIN_FILTER` e `GL_TEXTURE_MAG_FILTER`. Isso impede interpolação espúria com texels transparentes vizinhos no atlas e preserva a nitidez pixel-perfect 2D do jogo original.
-  2. Em `tools/run_pc.py`, definir o centro exato do D-Pad em `(60.0, 265.0)` e calcular vetores contínuos normalizados `(nx, ny)` com raio seguro de 35.0 pixels (dentro do hitbox de 45.0).
-  3. No primeiro frame de movimento, despachar `touchesBegan` no centro `(60.0, 265.0)` seguido por `touchesMoved` para `(60 + nx*35, 265 + ny*35)`. Em cada frame subsequente com tecla/analógico pressionado, despachar `touchesMoved` atualizando o vetor em tempo real, permitindo transições 100% fluidas entre direções e controle analógico 360°. Ao soltar, despachar `touchesEnded`.
-  4. Em `tools/hl3rt/hle_uikit.py`, desacoplar `locationInView:` e `previousLocationInView:`, garantindo que `previousLocationInView:` retorne fidedignamente `(prev_x, prev_y)`.
+  1. Em `tools/hl3rt/gl_bridge.py`, remover a inversão Y em `scissor()`, mapeando diretamente `sy = vy + int((y / self.game_h) * vh)`.
+  2. Em `tools/run_pc.py`, rastrear o vetor de direção do jogador `(facing_x, facing_y)` atualizado a cada movimento contínuo (WASD, Setas, Analógico, D-Pad).
+  3. Mapear tecla dedicada de Interação / Fala `E`, e expandir `Enter`, `Espaço`, `J` e botão A do Gamepad para despacharem toque na coordenada do alvo de interação à frente do personagem (`(240.0 + self.facing_x * 45.0, 160.0 + self.facing_y * 45.0 - 15.0)`), atingindo tanto o corpo do NPC quanto o balão de diálogo.
+  4. Manter fallback transparente: se não houver NPC na frente, o ataque padrão (`BTN_ATTACK`) executa normalmente. Durante diálogos, `E`, `Enter`, `Espaço` e `J` avançam os textos sem interrupção.
   5. Recompilar e reempacotar a distribuição standalone em `dist/HeroesLore3_PC/HeroesLore3.exe`.
 - **Consequências**:
-  - Fundo, banners e menus 100% lisos e nítidos, com zero linhas de grade visíveis, idênticos à versão mobile.
-  - Movimentação suave, precisa e com resposta imediata em todas as 8 direções e no analógico do gamepad.
-  - Standalone PC distribution totalmente sincronizada e funcional.
+  - Textos de todos os menus, carrossel de opções, história dos personagens e artes das classes renderizam de forma 100% nítida e completa.
+  - O jogador consegue conversar com qualquer NPC e avançar diálogos normalmente usando apenas o teclado (`E`, `Enter`, `Espaço`, `J`) ou controle de videogame (botão `A`), eliminando a necessidade de usar o mouse.
+  - Distribuição standalone `dist/HeroesLore3_PC/HeroesLore3.exe` verificada e pronta para execução autônoma no PC.
+
 

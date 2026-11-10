@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
-  "updated_at": "2026-11-09",
+  "updated_at": "2026-11-10",
   "overall_phase": "pc_playable_complete",
   "current_step": "S08",
   "next_recommended_step": "S08",
-  "summary": "Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional sem dependencias externas! Corrigidos problemas de distorcao grafica (matrix stack overflow), navegacao de toque (UITouch persistente) e crash de Control Flow Guard (0xC0000409). Proxima etapa: S08 (True Widescreen e expansao de viewport).",
+  "summary": "Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional. Corrigida renderizacao de textos e sprites em todos os menus (remocao da inversao Y no glScissor) e implementada interacao/fala com NPCs via teclado (E, Enter, Espaco, J) e gamepad (A). Proxima etapa: S08 (True Widescreen e expansao de viewport).",
   "steps": [
     {
       "id": "S00",
