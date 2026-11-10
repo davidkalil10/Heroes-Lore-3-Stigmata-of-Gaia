@@ -9,28 +9,29 @@
 
 ## O que foi feito e validado nesta sessão
 
-1. **Correção de Distorção Gráfica ("Tudo torto / fatias desalinhadas")**:
-   - Diagnóstico: O binário iOS emite 6 chamadas `glPushMatrix()` por frame sem `glPopMatrix()`. Nos drivers OpenGL desktop para PC, isso estourou a profundidade máxima da pilha de matrizes (`GL_STACK_OVERFLOW`), acumulando matrizes antigas e deslocando verticalmente quads e faixas da interface.
-   - Solução: Implementada contenção de profundidade de matrizes em `tools/hl3rt/gl_bridge.py` e reinicialização para matriz identidade (`glLoadIdentity`) a cada frame em `begin_frame()` tanto na pilha `GL_PROJECTION` quanto `GL_MODELVIEW`.
-   - Adicionado `GL_CLAMP_TO_EDGE` em texturas para eliminar sangramento de 1px nas emendas e corrigida a inversão de coordenadas Y do UIKit para OpenGL desktop em `glScissor`.
-   - Resultado: Alinhamento pixel-perfect de todos os quads, ribbons e elementos visuais.
+1. **Correção de Linhas de Grade e Costuras de Texturas ("Fundo esquisito com linhas/grade")**:
+   - Diagnóstico: O fundo da tela inicial é montado a partir de uma grade 10x5 de quads de 48x64 da textura `newres/sprites/menu_bkg.pvr`. Texels adjacentes aos limites dos quads continham componentes RGB com alfa zero (`255, 255, 255, 0`). Com a amostragem `GL_LINEAR` padrão em resoluções desktop escaladas, a GPU interpolava a borda dos quads com os pixels transparentes externos, produzindo linhas de grade claras de 1 a 2 pixels ao redor de todos os blocos do fundo.
+   - Solução: Forçado `GL_NEAREST` em `tools/hl3rt/gl_bridge.py` para minificação e magnificação de texturas.
+   - Resultado: Superfície perfeitamente lisa e sólida, com zero linhas de emenda e nitidez pixel-perfect idêntica à versão mobile.
 
-2. **Correção da Navegação de Toque e Menus ("Não consigo navegar nem clicar")**:
-   - Diagnóstico: O motor do jogo em `TouchResponder touchesEnded:withEvent:` (`0xbe5c`) exige que o ponteiro `UITouch*` (`r3`) seja idêntico ao ponteiro registrado em `touchesBegan:withEvent:` (`0xc0a4`). O host recriava um novo objeto guest a cada evento, fazendo o jogo descartar `touchesEnded` e manter botões travados no estado pressionado (iluminados em vermelho).
-   - Solução: Implementado rastreamento persistente de toques em `tools/run_pc.py` (`self.active_touches[tag] = (Touch, t_obj, evt_obj, set_obj)`), reutilizando o mesmo endereço guest e atualizando o campo `phase` (0 = began, 1 = moved, 3 = ended).
-   - Coordenadas de clique do botão virtual START atualizadas para o centro do botão "START GAME" `(240.0, 280.0)`.
-   - Validação: Ao clicar em "START GAME" ou pressionar Enter / Barra de Espaço / Botão A do gamepad, a tela avança imediatamente para a tela de Seleção de Personagem (Kei / Rits, nação Askra), comprovado em `reference/analysis/screenshot_20261109_195115.png`.
+2. **Correção Completa da Movimentação do Personagem ("Setas/WASD não vão nas direções certas")**:
+   - Diagnóstico:
+     1. O centro do D-Pad virtual estava em `(80.0, 240.0)`, enquanto a tabela real de controles do motor (`0x100090a0` / `0x10009330`) posiciona o centro do stick em `(60.0, 265.0)` com raio de hitbox `45.0`. A diferença provocava forte viés angular em todas as direções.
+     2. O motor calcula direção e intensidade vetorial via `dx = (touch.x - 60.0) / 45.0` e `dy = (touch.y - 265.0) / 45.0` dentro de `onTouchMoved` (`0x16a04`). O host anterior apenas disparava `touchesBegan` estático e nunca chamava `touchesMoved`, perdendo a direção em transições contínuas.
+   - Solução:
+     1. Corrigido o centro do D-Pad para `(60.0, 265.0)` e raio de arrasto para 35.0px (dentro da zona ativa de 45.0).
+     2. Implementado cálculo contínuo de vetor normalizado `(nx, ny)` para teclado (WASD / Setas) e analógico/D-Pad de gamepads.
+     3. No primeiro frame de movimento, despacha `touchesBegan` no centro e `touchesMoved` para o ponto de arrasto. Em cada frame subsequente, envia `touchesMoved` atualizando o vetor em tempo real. Ao soltar, envia `touchesEnded`.
+   - Resultado: Movimentação suave, precisa e com transição imediata e natural entre direções ortogonais e diagonais.
 
-3. **Correção e Conclusão da Build Standalone para PC (`dist/HeroesLore3_PC/`)**:
-   - Diagnóstico do fechamento da janela: A execução de `HeroesLore3.exe` fechava abruptamente com código `0xC0000409` (`STATUS_STACK_BUFFER_OVERRUN` / `__fastfail`) em `VCRUNTIME140.dll` na função `longjmp`. O bootloader de 64-bit do PyInstaller no Windows possui Control Flow Guard ativado (`IMAGE_DLLCHARACTERISTICS_GUARD_CF = 0x4000`). Como o Unicorn Engine emite JIT de ARMv6 e usa `setjmp`/`longjmp` internamente, o CRT do MSVC aborta o processo por violação de CFG.
-   - Solução: Implementada rotina `strip_cfg` em `tools/build_standalone_pc.py` que limpa o bit `0x4000` do cabeçalho opcional PE de `HeroesLore3.exe`, igualando as características de DLL do `python.exe` (`0x8160`).
-   - Validação: `dist/HeroesLore3_PC/HeroesLore3.exe` roda com sucesso total e código 0, abrindo a janela gráfica, executando a 60 FPS com áudio e controles funcionais.
-   - O pacote distribuível contém: `HeroesLore3.exe`, APK original com assets, `project.json`, `config/audio.json`, pasta de saves `data/internal/Documents/` e manual de controles `README.txt`.
+3. **Reempacotamento e Validação da Build Standalone (`dist/HeroesLore3_PC/`)**:
+   - O executável standalone `dist/HeroesLore3_PC/HeroesLore3.exe` foi totalmente recompilado com os novos módulos de bytecode e pós-processado com `strip_cfg` (limpeza da flag CFG `0x4000`).
+   - Validada a execução estável do executável standalone a 60 FPS com todos os recursos e controles atualizados.
 
 4. **Testes Automatizados e Governança**:
-   - 23 testes unitários passando em ~8 segundos (`python -m unittest discover -s tests -v`).
+   - 23 testes unitários passando em ~6.5 segundos (`python -m unittest discover -s tests -v`).
    - `python tools/verify_workspace.py` passa com 100% de integridade.
-   - Registrados `ADR-009` e `ADR-010` em `docs/DECISIONS.md`.
+   - Registrado `ADR-011` em `docs/DECISIONS.md`.
    - Atualizado `docs/RESEARCH_LOG.md`, `docs/STATUS.json` e `docs/STATUS.md`.
 
 ## Próximo Passo (`S08`: True Widescreen e Expansão de Viewport)

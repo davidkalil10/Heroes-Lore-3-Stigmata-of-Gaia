@@ -339,11 +339,19 @@ def _touch_phase(rt, recv, a):
     return t.phase if isinstance(t, Touch) else 0
 
 
-@im("UITouch", "locationInView:|previousLocationInView:")
+@im("UITouch", "locationInView:")
 def _touch_loc(rt, recv, a):
     t = rt.objc.hobj.get(recv)
     if isinstance(t, Touch):
         return struct.pack("<ff", t.x, t.y)
+    return struct.pack("<ff", 0.0, 0.0)
+
+
+@im("UITouch", "previousLocationInView:")
+def _touch_prev_loc(rt, recv, a):
+    t = rt.objc.hobj.get(recv)
+    if isinstance(t, Touch):
+        return struct.pack("<ff", t.prev_x, t.prev_y)
     return struct.pack("<ff", 0.0, 0.0)
 
 

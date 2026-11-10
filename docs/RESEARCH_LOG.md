@@ -135,3 +135,20 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Causa raiz: O bootloader de 64-bit do PyInstaller no Windows possui a flag `IMAGE_DLLCHARACTERISTICS_GUARD_CF` (`0x4000`, Control Flow Guard) ativada. Durante a emulação ARMv6, a biblioteca nativa `unicorn.dll` invoca `longjmp()` em `VCRUNTIME140.dll` para gerenciar saídas de emulação e blocos de código JIT. O CRT do MSVC valida se o destino do `longjmp` está registrado na tabela de CFG; como o código gerado em JIT pelo Unicorn não consta na tabela, o Windows aciona encerramento imediato via `__fastfail(FAST_FAIL_FATAL_APP_EXIT)` (`0xc0000409`).
      - Solução: Implementada a rotina `strip_cfg` em `tools/build_standalone_pc.py` limpando o bit `0x4000` do cabeçalho PE de `HeroesLore3.exe`, igualando as características de DLL do `python.exe` (`0x8160`), permitindo execução perfeitamente estável e fluida do executável standalone com duplo clique direto.
 
+---
+
+## 2026-11-09 - Sessão 07: Correção de Linhas de Grade (Costuras de Textura) e Movimentação Fluida com D-Pad Contínuo
+
+- **Descobertas verificáveis e correções críticas**:
+  1. **Linhas de Grade / Costuras de Textura no Fundo da Tela Inicial ("ficou esquisito")**:
+     - Causa raiz: O fundo da tela inicial é desenhado a partir de uma malha 10x5 de quads com textura `newres/sprites/menu_bkg.pvr`. As bordas dos blocos de 48x64 possuem pixels adjacentes transparentes no canal alfa com componentes RGB não-nulas (`255, 255, 255, 0`). Na amostragem `GL_LINEAR` padrão em resoluções aumentadas no PC (960x640), a GPU interpolava os texels úteis com os vizinhos transparentes fora dos limites do quad, gerando linhas de grade claras de 1 a 2 pixels ao longo de todas as bordas dos quads.
+     - Solução: Forçado `GL_NEAREST` em `tools/hl3rt/gl_bridge.py` para `GL_TEXTURE_MIN_FILTER` e `GL_TEXTURE_MAG_FILTER`. O fundo e todas as fitas agora renderizam com superfície 100% lisa, sem linhas de emenda e com nitidez pixel-perfect idêntica ao jogo rodando no celular.
+  2. **Movimentação do Personagem com Setas / WASD ("não vai nas direções corretamente")**:
+     - Causa raiz:
+       1. O centro do D-Pad virtual configurado no host estava em `(80.0, 240.0)`, enquanto a tabela real de controles do motor (`0x100090a0` / `0x10009330`) define o centro em `(60.0, 265.0)` com raio de hitbox `45.0`. A diferença de 20px no eixo X e 25px no eixo Y causava um desvio angular severo em todas as direções (pressionar CIMA ia para Cima-Direita; ESQUERDA ia para Esquerda-Cima, etc.).
+       2. O motor calcula velocidade e direção acumulando o vetor contínuo em `onTouchMoved` (`0x16a04`): `dx = (touch.x - center.x) / radius` e `dy = (touch.y - center.y) / radius`. O host anterior emitia apenas `touchesBegan` pontual e nunca emitia `touchesMoved`, ignorando mudanças de direção durante o pressionamento contínuo das teclas.
+     - Solução: Em `tools/run_pc.py`, alinhado o centro do stick em `(60.0, 265.0)` e implementado cálculo contínuo de vetor normalizado `(nx, ny)` com raio seguro de 35.0px. O host agora dispara `touchesBegan` no centro e despacha `touchesMoved` continuamente a cada frame para o ponto de arrasto, atualizando instantaneamente na mudança de direção e enviando `touchesEnded` ao soltar as teclas ou o analógico.
+  3. **Desacoplamento de `previousLocationInView:` em `tools/hl3rt/hle_uikit.py`**:
+     - Separado o tratamento de `locationInView:` e `previousLocationInView:` no shim UIKit, garantindo retorno exato de `(prev_x, prev_y)`.
+  4. **Atualização da Distribuição Standalone `dist/HeroesLore3_PC/`**:
+     - Recompilado e reempacotado o executável standalone `HeroesLore3.exe` com as novas correções incorporadas no bytecode e limpando a flag CFG `0x4000`. Validada inicialização, loop de 60 FPS e todos os 23 testes unitários.

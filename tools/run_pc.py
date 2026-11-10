@@ -51,20 +51,21 @@ from hl3rt.gl_bridge import GLBridge
 from hl3rt.hle_uikit import Touch
 
 # Virtual touch target coordinates (480x320 landscape)
-DPAD_CENTER = (80.0, 240.0)
-DPAD_UP = (80.0, 205.0)
-DPAD_DOWN = (80.0, 275.0)
-DPAD_LEFT = (45.0, 240.0)
-DPAD_RIGHT = (115.0, 240.0)
-DPAD_UP_LEFT = (55.0, 215.0)
-DPAD_UP_RIGHT = (105.0, 215.0)
-DPAD_DOWN_LEFT = (55.0, 265.0)
-DPAD_DOWN_RIGHT = (105.0, 265.0)
+# D-Pad center confirmed at (60.0, 265.0) with radius 45.0 in game engine control table
+DPAD_CENTER = (60.0, 265.0)
+DPAD_UP = (60.0, 230.0)
+DPAD_DOWN = (60.0, 300.0)
+DPAD_LEFT = (25.0, 265.0)
+DPAD_RIGHT = (95.0, 265.0)
+DPAD_UP_LEFT = (35.0, 240.0)
+DPAD_UP_RIGHT = (85.0, 240.0)
+DPAD_DOWN_LEFT = (35.0, 290.0)
+DPAD_DOWN_RIGHT = (85.0, 290.0)
 
-BTN_ATTACK = (415.0, 245.0)
-BTN_SKILL1 = (360.0, 275.0)
-BTN_SKILL2 = (360.0, 215.0)
-BTN_SKILL3 = (415.0, 185.0)
+BTN_ATTACK = (420.0, 270.0)
+BTN_SKILL1 = (355.0, 270.0)
+BTN_SKILL2 = (365.0, 215.0)
+BTN_SKILL3 = (420.0, 185.0)
 BTN_ITEM = (455.0, 140.0)
 BTN_START = (240.0, 280.0)
 BTN_CENTER = (240.0, 280.0)
@@ -72,11 +73,10 @@ BTN_MENU = (450.0, 25.0)
 BTN_STATUS = (50.0, 25.0)
 
 
-def log_boot(msg):
+def log_boot(msg: str):
     try:
-        with open("hl3_boot.log", "a") as _f:
-            _f.write(msg + "\n")
-            _f.flush()
+        with open("hl3_boot.log", "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
     except Exception:
         pass
 
@@ -168,6 +168,7 @@ class PCRunner:
         if not entry or not self.touch_responder:
             return
         t, t_obj, evt_obj, set_obj = entry
+        t.prev_x, t.prev_y = t.x, t.y
         t.x, t.y = coord
         t.phase = 1  # phase 1 = moved
         self.rt.send(self.touch_responder, "touchesMoved:withEvent:", set_obj, evt_obj)
@@ -242,62 +243,53 @@ class PCRunner:
         # Polling Keyboard states for continuous button / D-Pad mapping
         keys = pygame.key.get_pressed()
 
-        # D-Pad Movement mapping
-        dx, dy = 0, 0
+        # D-Pad Movement mapping (smooth continuous vector input)
+        dx, dy = 0.0, 0.0
         if keys[K_LEFT] or keys[K_a]:
-            dx -= 1
+            dx -= 1.0
         if keys[K_RIGHT] or keys[K_d]:
-            dx += 1
+            dx += 1.0
         if keys[K_UP] or keys[K_w]:
-            dy -= 1
+            dy -= 1.0
         if keys[K_DOWN] or keys[K_s]:
-            dy += 1
+            dy += 1.0
 
         # Check Gamepad Analog Stick & D-Pad Hat
         for js in self.joysticks:
             if js.get_numhats() > 0:
                 hx, hy = js.get_hat(0)
                 if hx < 0:
-                    dx = -1
+                    dx = -1.0
                 elif hx > 0:
-                    dx = 1
+                    dx = 1.0
                 if hy > 0:
-                    dy = -1
+                    dy = -1.0
                 elif hy < 0:
-                    dy = 1
+                    dy = 1.0
             if js.get_numaxes() >= 2:
                 ax = js.get_axis(0)
                 ay = js.get_axis(1)
                 deadzone = 0.25
-                if ax < -deadzone:
-                    dx = -1
-                elif ax > deadzone:
-                    dx = 1
-                if ay < -deadzone:
-                    dy = -1
-                elif ay > deadzone:
-                    dy = 1
+                if abs(ax) > deadzone:
+                    dx = float(ax)
+                if abs(ay) > deadzone:
+                    dy = float(ay)
 
-        if dx != 0 or dy != 0:
-            if dx < 0 and dy < 0:
-                pos = DPAD_UP_LEFT
-            elif dx > 0 and dy < 0:
-                pos = DPAD_UP_RIGHT
-            elif dx < 0 and dy > 0:
-                pos = DPAD_DOWN_LEFT
-            elif dx > 0 and dy > 0:
-                pos = DPAD_DOWN_RIGHT
-            elif dx < 0:
-                pos = DPAD_LEFT
-            elif dx > 0:
-                pos = DPAD_RIGHT
-            elif dy < 0:
-                pos = DPAD_UP
-            else:
-                pos = DPAD_DOWN
-            self.touch_down("dpad", pos)
+        if abs(dx) > 0.05 or abs(dy) > 0.05:
+            length = (dx * dx + dy * dy) ** 0.5
+            mag = min(1.0, length)
+            nx = (dx / length) * mag
+            ny = (dy / length) * mag
+            # D-Pad stick center is (60.0, 265.0) with radius 35.0 (hitbox is 45.0)
+            target_x = 60.0 + nx * 35.0
+            target_y = 265.0 + ny * 35.0
+
+            if "dpad" not in self.active_touches:
+                self.touch_down("dpad", (60.0, 265.0))
+            self.touch_move("dpad", (target_x, target_y))
         else:
-            self.touch_up("dpad")
+            if "dpad" in self.active_touches:
+                self.touch_up("dpad")
 
         # Action Buttons
         def check_btn(tag, coord, k_cond, j_btn_idx):

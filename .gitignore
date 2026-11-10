@@ -30,6 +30,15 @@ reference/extracted_ipa/*
 !reference/extracted_ipa/.gitkeep
 reference/disassembly/*
 !reference/disassembly/.gitkeep
+tools/scratch_*.py
+reference/analysis/*.png
+reference/analysis/*.jpg
+reference/analysis/dumped_textures/
+reference/analysis/hud_dump.png
+reference/analysis/hud_1024.png
+reference/analysis/banner_tile.png
+reference/analysis/tile0_crop.png
+HeroesLore3.spec
 data/internal/*
 !data/internal/.gitkeep
 data/external/*

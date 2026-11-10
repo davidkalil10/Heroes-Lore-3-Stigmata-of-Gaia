@@ -136,6 +136,8 @@ class GLBridge:
         try:
             glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         except Exception:
             pass
 
@@ -164,8 +166,16 @@ class GLBridge:
         nbytes = w * h * bpp
         data = self.m.rdbytes(pix_ptr, nbytes)
         glTexImage2D(target, level, ifmt, w, h, border, fmt, tp, data)
+        try:
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        except Exception:
+            pass
 
     def tex_parameter_i(self, target: int, pname: int, param: int):
+        # Force GL_NEAREST to prevent texture atlas bleeding and quad grid seams on scaled resolutions
+        if pname in (GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER):
+            param = GL_NEAREST
         glTexParameteri(target, pname, param)
 
     def tex_parameter_f(self, target: int, pname: int, param: float):

@@ -162,3 +162,28 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Cliques de mouse, teclado (Enter/Espaço) e gamepad (botão A) respondem instantaneamente e avançam perfeitamente para a tela de Seleção de Personagem (Kei / Rits).
   - O executável standalone `HeroesLore3.exe` roda de forma 100% autônoma, suave e estável sem requerer nenhuma ferramenta ou ambiente de desenvolvimento instalado.
 
+---
+
+## ADR-011: Eliminação de Costuras de Texturas com GL_NEAREST e Movimentação Contínua por Vetor do D-Pad Virtual
+
+- **Data**: 2026-11-09
+- **Status**: Aceito
+- **Contexto**:
+  - A tela inicial do jogo apresentava linhas de grade (seams/costuras) horizontais e verticais dividindo o fundo em células retangulares de 48x64 pixels ("ficou esquisito" em relação ao original no celular).
+  - A análise detalhada revelou que o fundo é composto por uma matriz de 10x5 quads texturizados a partir do atlas `newres/sprites/menu_bkg.pvr`. Texels adjacentes às bordas de cada célula continham RGB não-nulo com canal alfa zero (ex.: `255, 255, 255, 0`). Na GPU desktop, ao ampliar as texturas com `GL_LINEAR`, o filtro bilinear interpolava com os texels da borda transparente, gerando linhas de grade claras de 1-2 pixels nas emendas.
+  - A movimentação do personagem com setas ou WASD ("não vai nas direções corretamente") apresentava comportamento errático e desalinhado.
+  - O desmonte da tabela de controles do motor (`0x100090a0` / `0x10009330`) e das funções `onTouchBegan` (`0x16938`), `onTouchMoved` (`0x16a04`) e `onTouchEnded` (`0x16ad8`) revelou:
+    1. O D-Pad virtual possui centro em `(60.0, 265.0)` com raio de hitbox `45.0` (o código anterior usava `(80.0, 240.0)`, enviesando todos os eixos: para cima ia para cima-direita, para a esquerda ia para esquerda-cima, etc.).
+    2. O motor calcula o vetor contínuo de direção e velocidade via `dx = (touch.x - center.x) / radius` e `dy = (touch.y - center.y) / radius`.
+    3. O código anterior chamava apenas `touch_down` em coordenadas pontuais sem arrasto contínuo, ignorando transições de direção enquanto as teclas permaneciam pressionadas.
+- **Decisão**:
+  1. Em `tools/hl3rt/gl_bridge.py`, forçar filtro `GL_NEAREST` em `GL_TEXTURE_MIN_FILTER` e `GL_TEXTURE_MAG_FILTER`. Isso impede interpolação espúria com texels transparentes vizinhos no atlas e preserva a nitidez pixel-perfect 2D do jogo original.
+  2. Em `tools/run_pc.py`, definir o centro exato do D-Pad em `(60.0, 265.0)` e calcular vetores contínuos normalizados `(nx, ny)` com raio seguro de 35.0 pixels (dentro do hitbox de 45.0).
+  3. No primeiro frame de movimento, despachar `touchesBegan` no centro `(60.0, 265.0)` seguido por `touchesMoved` para `(60 + nx*35, 265 + ny*35)`. Em cada frame subsequente com tecla/analógico pressionado, despachar `touchesMoved` atualizando o vetor em tempo real, permitindo transições 100% fluidas entre direções e controle analógico 360°. Ao soltar, despachar `touchesEnded`.
+  4. Em `tools/hl3rt/hle_uikit.py`, desacoplar `locationInView:` e `previousLocationInView:`, garantindo que `previousLocationInView:` retorne fidedignamente `(prev_x, prev_y)`.
+  5. Recompilar e reempacotar a distribuição standalone em `dist/HeroesLore3_PC/HeroesLore3.exe`.
+- **Consequências**:
+  - Fundo, banners e menus 100% lisos e nítidos, com zero linhas de grade visíveis, idênticos à versão mobile.
+  - Movimentação suave, precisa e com resposta imediata em todas as 8 direções e no analógico do gamepad.
+  - Standalone PC distribution totalmente sincronizada e funcional.
+
