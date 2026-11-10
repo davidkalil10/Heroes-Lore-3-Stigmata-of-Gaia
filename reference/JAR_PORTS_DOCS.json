@@ -1,0 +1,133 @@
+{
+  "scope": "Documentation only; original JAR games, not an HL4 runtime",
+  "projects": [
+    {
+      "project": "heroes_lore_recomp",
+      "git_head": "c4a177c0bbcfd8c40963b08192b16636d59e8565",
+      "source_has_local_changes": true,
+      "captured_on": "2026-10-21",
+      "files": [
+        {
+          "path": "AGENTS.md",
+          "sha256": "5a62502d86d2c463037e69faf9e793a79b4b3aee62571cf06ddd3a5ff4027c26"
+        },
+        {
+          "path": "docs/CLASS_INDEX.md",
+          "sha256": "92bdb6178a2e1c326fad42675b85f9afff242f35f23abb0557035ae8c8749f32"
+        },
+        {
+          "path": "docs/CLASS_MAP.md",
+          "sha256": "eb99d9929fec570204ac07cbbb76e751edf49f7ac6a41f9a8d6cd749139d6191"
+        },
+        {
+          "path": "docs/LEARNINGS.md",
+          "sha256": "61e79e183a7e64b7c7bcf5bcd44c1a2ba4716a2d0662b93f4eedafb55d9d03cb"
+        },
+        {
+          "path": "docs/PORTING_GUIDE_BLUEPRINT.md",
+          "sha256": "39a0add6ff6390c34ee10400ed66b035bf62ac5a42444adecae5ddaf42c09056"
+        },
+        {
+          "path": "docs/STATUS.md",
+          "sha256": "6bec9f211ebaa337d81ef3737294da6ee52f6aa46719616b8776c5cca8946ec8"
+        },
+        {
+          "path": "docs/VERSIONING.md",
+          "sha256": "c48944f491c029562d6fae546352c4577702b01e19b185a448f767695d4b8e4a"
+        },
+        {
+          "path": "docs/VR_QUEST_CONCEPT.md",
+          "sha256": "0af2b41a5192d4d97b565e9fe71e550c79e6846414a08af40eb4e6da1710f162"
+        },
+        {
+          "path": "README.md",
+          "sha256": "3769ab022e4e02ecc69da4b2eba4b85602669c7a3acd6b2722cbf9c27c2a0a21"
+        }
+      ]
+    },
+    {
+      "project": "heroes_lore_2_recomp",
+      "git_head": "a926483b204520a998d70545761cb2a5fa0324e9",
+      "source_has_local_changes": false,
+      "captured_on": "2026-10-21",
+      "files": [
+        {
+          "path": "AGENTS.md",
+          "sha256": "6103bf945fc9d843911d95bd588c4b3d23902180eea1d18583a356ce571ad3bc"
+        },
+        {
+          "path": "docs/CLASS_MAP.md",
+          "sha256": "3d27cab0b9a6d5aedd1e2e4392bec3552a6437130e923c59e0ffec189e5cc258"
+        },
+        {
+          "path": "docs/LEARNINGS.md",
+          "sha256": "3d1089acd7fdf4e542b82937055a9aad3e6f196d6207e1c12db2bcd2da5101c7"
+        },
+        {
+          "path": "docs/PORTING_GUIDE_BLUEPRINT.md",
+          "sha256": "73d4cc15792e5d47005594959b59373df690b226b42c92276bd8732d8c4cb6a3"
+        },
+        {
+          "path": "docs/STATUS.md",
+          "sha256": "c4129c017a353c23dce72343c3ae66276186c905bb5184572a7a9bebbcf32e8a"
+        },
+        {
+          "path": "docs/SWITCH_AND_MOBILE_REFINEMENTS.md",
+          "sha256": "d8697789667018923dcd1fb3aff366d80b1908a8d688c00a642097c5bb8b6d79"
+        },
+        {
+          "path": "docs/VERSIONING.md",
+          "sha256": "9063359ab76ae0b2c78becb5fea6f01455745896f88a13347c37838791aff356"
+        },
+        {
+          "path": "PROMPT_INICIAL_HL2.md",
+          "sha256": "8411489dcc1a521bccf3187e21f4c2c8bd017d6e3d4c4ace79aa4b5f2e056f50"
+        },
+        {
+          "path": "README.md",
+          "sha256": "8fd7da16334ae2fce5e34487846289465bb65e3ca78a88aa5c45cfcb349dc8ff"
+        }
+      ]
+    },
+    {
+      "project": "heroes_lore_zero_recomp",
+      "git_head": "9a43ca716964b306e20125169e042a65f56796b5",
+      "source_has_local_changes": false,
+      "captured_on": "2026-10-21",
+      "files": [
+        {
+          "path": "AGENTS.md",
+          "sha256": "770465b014f3459033e3a21ea47d067602282befa8e2b2afdfd6fba5beb6388e"
+        },
+        {
+          "path": "docs/CLASS_MAP.md",
+          "sha256": "d11aecc4a2d1c245076b0dbde0cb595d9109aeb42e1d8ff566f1e23774b3fc87"
+        },
+        {
+          "path": "docs/LEARNINGS.md",
+          "sha256": "b38734dfb7cb0d53b638b0ffd08fab024df9936229bdb2e597b6f4856000e065"
+        },
+        {
+          "path": "docs/LOCALIZATION.md",
+          "sha256": "f9bd12eafd4823b273341e563138ec7de6d55ae23e420b391202d5304a9a3a43"
+        },
+        {
+          "path": "docs/PORTING_GUIDE_BLUEPRINT.md",
+          "sha256": "73d4cc15792e5d47005594959b59373df690b226b42c92276bd8732d8c4cb6a3"
+        },
+        {
+          "path": "docs/STATUS.md",
+          "sha256": "68453455ff3088fd194ee7239ad8a7b8427086f1c09c63178b01f5b3e39eac5c"
+        },
+        {
+          "path": "PROMPT_INICIAL_HL_ZERO.md",
+          "sha256": "d8681cb3a74161b433206f4d2264e0764e12d2cb551eaffb425dfef4d583d590"
+        },
+        {
+          "path": "README.md",
+          "sha256": "419fa3b74618a66e176169a9a835c8724d792b4bbcd8d6ddd66eed0584725040"
+        }
+      ]
+    }
+  ]
+}

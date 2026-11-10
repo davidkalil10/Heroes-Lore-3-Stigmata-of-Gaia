@@ -1,0 +1,46 @@
+{
+  "ServerEnvironment": "live",
+  "CFBundleName": "Heroes Lore",
+  "DTSDKName": "iphoneos4.1",
+  "DTXcode": "0324",
+  "CFBundleDevelopmentRegion": "English",
+  "CFBundleVersion": "1.0.1",
+  "UIStatusBarHidden": true,
+  "CFBundlePackageType": "APPL",
+  "DTPlatformName": "iphoneos",
+  "CFBundleSupportedPlatforms": [
+    "iPhoneOS"
+  ],
+  "CFBundleInfoDictionaryVersion": "6.0",
+  "CFBundleExecutable": "Heroes Lore",
+  "DTCompiler": "4.2",
+  "MinimumOSVersion": "3.0",
+  "CFBundleIdentifier": "com.ea.heroesloresg.bv",
+  "CFBundleResourceSpecification": "ResourceRules.plist",
+  "DTPlatformVersion": "4.1 GM",
+  "CFBundleIconFiles": [
+    "Icon.png",
+    "Icon@2x.png",
+    "Icon-72.png",
+    "Icon-Small.png",
+    "Icon-Small@2x.png",
+    "Icon-Small-50.png"
+  ],
+  "LSRequiresIPhoneOS": true,
+  "CFBundleDisplayName": "Heroes Lore",
+  "UIPrerenderedIcon": "TRUE",
+  "CFBundleLocalizations": [
+    "en",
+    "de",
+    "es",
+    "fr",
+    "it",
+    "ko",
+    "zh"
+  ],
+  "CFBundleSignature": "????",
+  "UIInterfaceOrientation": "UIInterfaceOrientationLandscapeRight",
+  "UIDeviceFamily": [
+    1
+  ]
+}

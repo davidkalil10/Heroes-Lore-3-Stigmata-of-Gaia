@@ -1,0 +1,231 @@
+# Runtime integration handoff — 2026-10-20
+
+## Current state
+
+The user accepted `codex_lab/pc_test` as fluid, fast, and audible and explicitly
+authorized integration and push to GitHub `main`. Those sources now live in the
+main project, retaining the preexisting local blitter and input changes from the
+tested snapshot. `src/` is authoritative; do not reapply the old lab patch.
+
+Changes include seven statically compiled ARM hot regions, SDL Ogg/MP3 audio,
+indexed VFS lookup, real elapsed clock accumulation, and removal of the extra
+manual limiter when renderer vsync is active. Runtime metrics are opt-in during
+graphical gameplay. Save formats and existing player save files were preserved.
+
+`Makefile.switch` now includes `src/audio` and excludes `stb_vorbis.c` from CFILES;
+the decoder is included exactly once by audio.cpp. Android/desktop recursive
+CMake already include audio.cpp. The checked-in generated include means CI does
+not require Python code generation or new external audio packages to compile.
+
+## Verification and continuation
+
+Read `docs/RUNTIME.md` for diagnostics and limitations, and run
+`python tools/verify_runtime.py --exe build/hl5.exe` after runtime changes.
+The integrated PC build passes 14 full ARM state comparisons, VFS oracle checks,
+11 identical rendered images, and nonzero output from the SDL audio mixer.
+The hot-block generator reproduces the checked-in include without changing other
+sources. Windows/Linux Actions run the same runtime validation before packaging. The
+Windows MSYS2 environment explicitly installs UCRT64 Python for this check.
+
+The prior isolated PC benchmark measured a 3.13x mean improvement. The user has
+confirmed gameplay and sound on PC, Android and Switch. This is explicit user
+device feedback for the runtime integration. The user later accepted the aspect
+feature as working too; version 1.1.0 services/input need separate device tests.
+
+For Android/Switch reports collect:
+
+- Commit/artifact identity and device model.
+- Time to title/menu, first map, and map transitions.
+- Music/effect playback, volume, loops, and pause/resume behavior.
+- Gameplay speed, input response, loading spikes, and memory-related failures.
+- Boot logs: Android internal storage `boot.log`; Switch
+  `sdmc:/switch/heroes_lore_5/boot.log` (fallback `sdmc:/heroes_lore_boot.log`).
+
+Known remaining concerns: full music decoding memory/load cost on Switch, other
+interpreted effects, refresh rates above 60 Hz, and startup presentation. The SDL window is now created before Game::boot
+so the initial viewport can use its actual size; the renderer starts afterward.
+Measure before replacing the renderer or changing CPU clocks/physics timing.
+
+The ignored lab retains the accepted executable, original snapshot, reports,
+and integration backup. No personal saves, generated packages, extracted caches,
+or lab files belong in the source commit. CI artifacts come from the main tree.
+
+## Real aspect expansion
+
+Native / Wide / Auto are implemented in the main sources. Read `docs/DISPLAY.md`
+for controls, policy, guest structure offsets and tests. This changes the actual
+game canvas and map cache; never replace it with stretched SDL output. Desktop
+CMake and Android collect the new root-level source automatically; Switch already
+includes `src`. Player save formats are unchanged. Display preference is a separate
+ignored `data/display.ini` (relative to each platform's writable game data root).
+
+Run `ctest --test-dir build --output-on-failure`, the runtime verifier, and
+`python tools/verify_aspect.py --exe build/hl5.exe` (Linux: `build/hl5`). CI now runs
+all three on Windows and Linux and uploads the aspect captures/logs. Exercise map
+transitions, menus, existing saves, dialogue, touch controls, orientation and
+docked/handheld modes on devices before declaring full feature coverage.
+
+## 1.1.0 Settings, platform services and input
+
+The user confirmed the complete preceding aspect/performance/audio integration
+working. Current additions: Auto default, native Nintendo A/B and X/Y labels,
+C/Tab/# and Select/− for skill-row switch, L3 map, R3/F10 Settings, and Google
+Drive backup plus GitHub release update services. See `docs/SERVICES.md` for
+architecture, required tests, recovery, packaging and exact release asset names.
+The existing native options remain reachable when the host panel is closed.
+
+Save restoration uses validated raw guest files with safety backup and a main-thread
+native return-to-title handoff; 1.1.1 removes the old mandatory app reopen. Do not copy Java RMS or live VM-reload code from HL1/HL2/Zero. No
+tests authorize/upload real player saves: Drive and download routes are mocked.
+The user confirmed real backup/restore. New return-to-title behavior and
+OS installers/NRO replacement need v1.1.1 device validation. README was rewritten as the user guide.
+
+
+## 1.1.1 continuation — 2026-10-20
+
+User requested and authorized PT-BR preparation with Google Translate. English
+source assets/dict.bin remain untouched. Locale runtime adds 16k+ cached phrases,
+live English/PT-BR switching, Latin-1 accents, dynamic formatted strings and
+language.ini persistence. See docs/LOCALIZATION.md for hooks and diagnostics.
+Title replaces the original version/prompt presentation with installed version
+and localized instruction. Gear replaces the separate aspect button; Android
+panel scales to screen pixels; RomFS font joins and texture creation are fixed.
+
+Cloud worker only stages validated saves. The main loop destroys old state,
+transactionally replaces files, reconstructs native title/slots, and continues
+without process exit. Details and safety ordering are in docs/SERVICES.md.
+
+Version is 1.1.1 / Android code 3. tools/bump_version.py updates all metadata;
+--check detects drift. Added verify_localization.py checks live dialogue roundtrip,
+format preservation, valid UTF-8 and return-to-title with isolated test saves.
+Keep hardware validation distinct: user must test installed 1.1.0 detecting the
+new release, signature-preserving Android upgrade, NRO replacement, Settings text,
+mobile sizing, live language and restored campaign slot selection.
+
+
+## 1.1.2 continuation — user feedback and UI fixes
+
+User confirmed Android automatic update, live language and restore returning to
+title without closing. Switch automatic update is explicitly left for this release.
+Screenshots exposed fixed native widget widths: long PT labels overlapped grid
+tiles, skill tabs, HUD buttons and equipment values. Added context-aware variants
+and revised stat terminology; full headings remain full. HUD Comprar/Salvar fit
+inside 28 pixels of the original 30-pixel buttons. See LOCALIZATION.md for sites.
+
+Removed native DrawOption→host auto-open completely, including guest-frame state.
+Original Options and gear Settings are independent. Gear growth is capped and
+its footprint stays above the native menu/back button. Removed redundant host
+Game settings row; preserve updated selection indices in service_tests.cpp.
+
+Added verify_ui.py to Windows/Linux CI: native grid/equipment/tabs, English/PT
+HUD differences constrained to button rectangles, and original Options entry/exit
+without host modal. Required prior runtime/aspect/localization/services checks
+remain. Metadata is 1.1.2 / Android code 4; release packages keep existing names.
+
+## 1.1.3 continuation — 2026-10-21
+
+User reported the 1.1.2 gear too small and asked to integrate the port settings
+into original Options, keeping the gamepad shortcut. User also reported most PT
+text reverting to English, including the host panel. Removed gear draw/hit code;
+added an explicit footer action in both native Options screens, preserving F10/R3.
+The six opcode-guarded hooks record paint and intercept only explicit footer input.
+Do not restore the prior auto-open-on-paint behavior. Native values/counts stay
+untouched; selection survives cached frames and closing the host modal.
+
+Inspected the released 1.1.2 ARM64 APK: full locale JSON and manifest are correct.
+Confirmed SDL 2.30.12 opens existing internal-storage files before APK assets.
+The old extractor could read and truncate the same destination during an update.
+Switched all extraction source reads to AAssetManager and staged size/SHA-checked
+replacement. Existing damaged copies are retried. Full PT dictionary is also
+compiled in, generated with the external JSON; no partial compact-only PT state
+should depend on extraction anymore. Details/source reference in SERVICES.md.
+
+Added same-size upgrade/failure-preservation tests and embedded dictionary tests;
+expanded native UI navigation, close/reopen and touch regressions. See the latest
+verification summaries under ignored build/ for local evidence. These checks do
+not constitute Android/Switch hardware execution. User will validate OTA and UI
+on devices; don't claim those tests happened here. Metadata: 1.1.3 / Android code 5.
+
+## 1.1.4 continuation — updater feedback
+
+User accepted 1.1.3 UI but reported startup update checks invisible, no Switch
+download progress, and ENOSYS copying downloaded NRO on Switch 1.1.1. Inspected
+updater.cpp in all three earlier projects: streaming progress and stdio copies
+are present there. Implemented supported fread/fwrite + C rename with staged
+size/magic/SHA validation, retained NRO backup/rollback, RomFS teardown ordering,
+and envSetNextLoad after success. Never resume guest after RomFS is released.
+
+Startup now shows checking and opens a one-shot Update notice when available;
+back dismisses to gameplay. The old removed gear badge had hidden results.
+Added bounded offline retries and preserved the user's auto-check preference.
+Streaming transport reports actual bytes to UI on all four platforms. Dynamic
+Installed/Available/Download labels are translated; full embedded PT regenerated.
+
+Tests cover mocked startup/retry/dismiss, actual localhost streaming with redirect
+and intermediate progress, and portable NRO staging/backup/rollback without
+copy_file. All test state is disposable. User must manually replace old Switch
+NRO once to receive the installer fix; future updates can use the corrected path.
+Version 1.1.4 / Android code 6. Hardware OTA remains a user validation step.
+
+## 1.1.5 continuation — updater validation release
+
+User explicitly requested a new version/release to exercise the recently fixed
+updater. Version-only release: preserve 1.1.4 runtime/updater behavior, signing,
+asset names and save paths. Metadata is 1.1.5 / Android versionCode 7. README and
+release notes describe upgrading from 1.1.4 to test startup notice, byte progress,
+installation and relaunch. Versions with the old Switch installer still require
+one manual NRO replacement; already-installed 1.1.4 can use its corrected updater.
+
+
+## 1.1.6 — Switch performance investigation, 2026-10-21
+
+User confirmed successful OTA but reported general Switch slowness (movement,
+attacks and 4–5-second menu opening). They entered hbmenu via R and then added a
+HOME shortcut; the forwarder's effective launch mode has not been independently
+verified. Do not dismiss the gameplay report as a menu-only issue.
+
+Profiled with existing AOT enabled (`HL5_PROF_REMAINING`). Added seven measured,
+opcode-guarded AOT regions using the unchanged decoder generator: 0x153690,
+0x159218, 0x1576ec, 0x1554d0, 0x15a044, 0x1a7c6c, 0x1b09a0. Cpu::run's entry map
+must match the generator. There are now 14 regions and 28 required differential
+checks. Never independently rewrite the generated ARM semantics.
+
+`src/core/menu_blur.cpp` accelerates the RGB565 backdrop at 0x151a68, only at
+column zero with the known diameter=2 and bounded packed buffers. It computes
+all but the final pixel of each row in original order, then lets the original
+instructions calculate the last pixel. This restores registers, flags and stack
+scratch at 0x151bb8; instruction count excludes skipped work (unlike AOT's exact
+icount). A full-function opcode guard and shape/range checks fall back to the
+original. Regenerate/check its constants with tools/generate_menu_blur_guard.py.
+
+`HL5_NO_MENU_BLUR` disables this hook; `HL5_VERIFY_MENU_BLUR` compares top,
+interior and bottom rows with the original interpreter, all 128 MiB, registers
+and flags (excluding icount). PC diagnostics only: two snapshots use 256 MiB.
+Run `python tools/verify_menu_blur.py --exe build/hl5.exe` (Linux build/hl5).
+Both CI host builds run it. Tests cover both languages and Native/Wide/Auto;
+the script may encounter more than one blur per run, so require at least three
+row checks. Other kernels/formats retain the original path.
+
+Routine translated-string, resource-load and frame logs are now opt-in with
+HL5_TRACE_TRANSLATIONS, HL5_TRACE_IO and HL5_BENCH respectively. Errors/startup
+logs remain. Switch keeps its diagnostic boot log and records aggregate timing
+every ten seconds: input_ms (event/input work), guest_ms (game execution),
+present_wait_ms (presentation plus pacing), fps (application loop, not simulation
+ticks), and guest canvas size. Do not infer GPU cost solely from present_wait_ms.
+Switch uses O3, as desktop/Android already do. No clock/overclock changes.
+
+PC paired scene benchmark, three repetitions after frame 950, fixed 16-ms clock,
+1,600 frames, scripted directions/actions, PT-BR, no window/audio/profiler:
+Wide median mean time 2.346 -> 2.049 ms (~13% reduction), p95 6.704 -> 5.445 ms.
+Native had no consistent gain (median mean 1.535 -> 1.605 ms, variable host load).
+Final menu-specific measurements, three runs per variant without the verifier,
+were median 128.9 -> 14.5 ms Native and 374.2 -> 45.6 ms Wide (about 8–9x).
+The disable toggle is cached so the reference has no environment lookup per
+pixel. Do not extrapolate device FPS from these measurements.
+Before/after scene captures were identical. Reports and baseline exe are ignored
+under build/gameplay-performance, build/menu-performance and build/hl5-before-sprites.exe.
+
+Full local checks: CTest, runtime, aspect, services, localization, UI and menu-blur
+scripts. Preserve the distinction between PC verification, cross-compilation and
+real hardware. Switch speed still needs the user's device test; remaining general
+slowness may require further measured native acceleration. Metadata 1.1.6 / code 8.

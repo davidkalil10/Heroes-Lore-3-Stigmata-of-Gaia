@@ -1,0 +1,1132 @@
+{
+  "project": "Heroes Lore 3: Stigmata of Gaia",
+  "title_frames": 30,
+  "menu_frames": 15,
+  "phases": {
+    "boot": {
+      "total_instructions": 9903,
+      "unique_basic_blocks": 804,
+      "total_block_executions": 3022,
+      "top_hot_blocks": [
+        {
+          "address": "0x7f100000",
+          "executions": 743,
+          "pct_of_phase": 24.59,
+          "label": "RET_STUB (bx lr)"
+        },
+        {
+          "address": "0x000bdd4c",
+          "executions": 732,
+          "pct_of_phase": 24.22,
+          "disasm_arm": [
+            "rsbvc r6, sp, r3, ror #30",
+            "cmnvc r3, #0x1c800000",
+            "stmdavs r3, {r0, r2, r5, r6, sl, sp, lr} ^"
+          ],
+          "disasm_thumb": [
+            "ldr r3, [r4, #0x74]",
+            "strb r5, [r5, #1]",
+            "str r2, [r6, #0x54]"
+          ],
+          "opcodes_hex": "636f6d7072657373"
+        },
+        {
+          "address": "0x7f0000c0",
+          "executions": 732,
+          "pct_of_phase": 24.22
+        },
+        {
+          "address": "0x000bdd88",
+          "executions": 4,
+          "pct_of_phase": 0.13,
+          "disasm_arm": [],
+          "disasm_thumb": [
+            "strb r7, [r3, #1]",
+            "str r6, [r5, #0x74]",
+            "movs r0, r0"
+          ],
+          "opcodes_hex": "5f706e6700000000"
+        },
+        {
+          "address": "0x7f0000e8",
+          "executions": 4,
+          "pct_of_phase": 0.13
+        },
+        {
+          "address": "0x000bdd28",
+          "executions": 3,
+          "pct_of_phase": 0.1,
+          "disasm_arm": [
+            "svchs #0x637273",
+            "stclvs p4, c7, [sb], #-0x154"
+          ],
+          "disasm_thumb": [
+            "strb r3, [r6, #9]",
+            "cmp r7, #0x63",
+            "strb r5, [r2, #0x11]"
+          ],
+          "opcodes_hex": "7372632f5574696c"
+        },
+        {
+          "address": "0x7f0000a8",
+          "executions": 3,
+          "pct_of_phase": 0.1
+        },
+        {
+          "address": "0x000bdd40",
+          "executions": 3,
+          "pct_of_phase": 0.1,
+          "disasm_arm": [
+            "eorvc r6, pc, sb, ror #24",
+            "stmdavs lr!, {r1, r2, r3, r5, r6, r8, sb, sl, sp, lr}",
+            "andeq r0, r0, r0"
+          ],
+          "disasm_thumb": [
+            "ldr r1, [r5, #0x44]",
+            "strb r7, [r5]",
+            "str r6, [r5, #0x74]"
+          ],
+          "opcodes_hex": "696c2f706e672e68"
+        },
+        {
+          "address": "0x7f0000b8",
+          "executions": 3,
+          "pct_of_phase": 0.1
+        },
+        {
+          "address": "0x00002b60",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "mov r2, #0x8a",
+            "str r2, [sp, #0x10]",
+            "add r0, r3, #0x1a4"
+          ],
+          "disasm_thumb": [
+            "movs r0, #0x8a",
+            "b #0x32a6",
+            "movs r0, #0x10"
+          ],
+          "opcodes_hex": "8a20a0e310208de5"
+        },
+        {
+          "address": "0x00005380",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "mov r3, #0x8b",
+            "str r3, [sp, #0x20]",
+            "ldr r3, [pc, #0x24]"
+          ],
+          "disasm_thumb": [
+            "adds r0, #0x8b",
+            "b #0x5ac6",
+            "adds r0, #0x20"
+          ],
+          "opcodes_hex": "8b30a0e320308de5"
+        },
+        {
+          "address": "0x00002b64",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "str r2, [sp, #0x10]",
+            "add r0, r3, #0x1a4",
+            "ldr r1, [pc, #0x1bc]"
+          ],
+          "disasm_thumb": [
+            "movs r0, #0x10",
+            "b #0x2684",
+            "lsrs r1, r5, #0x1d"
+          ],
+          "opcodes_hex": "10208de5690f83e2"
+        },
+        {
+          "address": "0x00002bac",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq lr, fp, ip, lsr #31",
+            "andeq lr, fp, r0, asr #31",
+            "ldrdeq lr, pc, [fp], -r4"
+          ],
+          "disasm_thumb": [
+            "vaddl.s32 q0, d12, d11",
+            "vaddl.s8 q8, d0, d11",
+            "vaddl.s16 q8, d4, d11"
+          ],
+          "opcodes_hex": "acef0b00c0ef0b00"
+        },
+        {
+          "address": "0x00002bb8",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq lr, fp, r8, ror #31",
+            "strdeq lr, pc, [fp], -ip",
+            "andeq pc, fp, r0, lsl r0"
+          ],
+          "disasm_thumb": [
+            "vaddl.s32 q8, d8, d11",
+            "vext.32 d16, d12, d11, #0",
+            "ands r0, r0, #0xb"
+          ],
+          "opcodes_hex": "e8ef0b00fcef0b00"
+        },
+        {
+          "address": "0x00002bc8",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq pc, fp, r8, lsr r0",
+            "andeq pc, fp, ip, asr #32",
+            "andeq pc, fp, r0, rrx"
+          ],
+          "disasm_thumb": [
+            "bics r0, r8, #0xb",
+            "orr r0, ip, #0xb",
+            "orn r0, r0, #0xb"
+          ],
+          "opcodes_hex": "38f00b004cf00b00"
+        },
+        {
+          "address": "0x00002bec",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq pc, fp, ip, ror #1",
+            "andeq pc, fp, r0, lsl #2",
+            "andeq pc, fp, r4, lsl r1"
+          ],
+          "disasm_thumb": [],
+          "opcodes_hex": "ecf00b0000f10b00"
+        },
+        {
+          "address": "0x00002c00",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq pc, fp, r0, asr r1",
+            "andeq pc, fp, r4, ror #2",
+            "andeq pc, fp, r8, ror r1"
+          ],
+          "disasm_thumb": [
+            "adcs r0, r0, #0xb",
+            "sbc r0, r4, #0xb",
+            "sbcs r0, r8, #0xb"
+          ],
+          "opcodes_hex": "50f10b0064f10b00"
+        },
+        {
+          "address": "0x00002c14",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "strheq pc, [fp], -r4",
+            "andeq pc, fp, r0, asr #3",
+            "andeq pc, fp, ip, asr #3"
+          ],
+          "disasm_thumb": [
+            "subs.w r0, r4, #0xb",
+            "rsb.w r0, r0, #0xb",
+            "rsb.w r0, ip, #0xb"
+          ],
+          "opcodes_hex": "b4f10b00c0f10b00"
+        },
+        {
+          "address": "0x00002c3c",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq pc, fp, ip, asr r2",
+            "andeq pc, fp, r0, ror r2",
+            "andeq pc, fp, r4, lsl #5"
+          ],
+          "disasm_thumb": [],
+          "opcodes_hex": "5cf20b0070f20b00"
+        },
+        {
+          "address": "0x00002c60",
+          "executions": 1,
+          "pct_of_phase": 0.03,
+          "disasm_arm": [
+            "andeq pc, fp, r0, lsl r3",
+            "andeq pc, fp, r4, lsr #6",
+            "andeq pc, fp, r8, lsr r3"
+          ],
+          "disasm_thumb": [],
+          "opcodes_hex": "10f30b0024f30b00"
+        }
+      ]
+    },
+    "launch": {
+      "total_instructions": 50105,
+      "unique_basic_blocks": 1503,
+      "total_block_executions": 14040,
+      "top_hot_blocks": [
+        {
+          "address": "0x00012dd8",
+          "executions": 1170,
+          "pct_of_phase": 8.33,
+          "disasm_arm": [
+            "add lr, ip, r1",
+            "ldr r1, [sp, #8]",
+            "add r0, r1, r0"
+          ],
+          "disasm_thumb": [
+            "b #0x12dde",
+            "b #0x12ef6",
+            "asrs r0, r1, #0x20"
+          ],
+          "opcodes_hex": "01e08ce008109de5"
+        },
+        {
+          "address": "0x00012de4",
+          "executions": 1170,
+          "pct_of_phase": 8.33,
+          "disasm_arm": [
+            "ldr r1, [sp, #0xc]",
+            "add r0, r0, r1",
+            "ldr r1, [sp, #0x10]"
+          ],
+          "disasm_thumb": [
+            "asrs r4, r1, #0x20",
+            "b #0x12924",
+            "movs r1, r0"
+          ],
+          "opcodes_hex": "0c109de5010080e0"
+        },
+        {
+          "address": "0x00012e08",
+          "executions": 1170,
+          "pct_of_phase": 8.33,
+          "disasm_arm": [
+            "add r0, r0, r1",
+            "ldr r1, [sp, #0x20]",
+            "add r0, r0, r1"
+          ],
+          "disasm_thumb": [
+            "movs r1, r0",
+            "b #0x12f0e",
+            "asrs r0, r4, #0x20"
+          ],
+          "opcodes_hex": "010080e020109de5"
+        },
+        {
+          "address": "0x7f100000",
+          "executions": 1124,
+          "pct_of_phase": 8.01,
+          "label": "RET_STUB (bx lr)"
+        },
+        {
+          "address": "0x000be874",
+          "executions": 903,
+          "pct_of_phase": 6.43,
+          "disasm_arm": [
+            "strbmi r4, [r4, #-0xb52]",
+            "ldrbpl r4, [r2], #-0x553",
+            "subeq r3, r3, pc, asr r3"
+          ],
+          "disasm_thumb": [
+            "ldr r3, [pc, #0x148]",
+            "cmp r4, r8",
+            "cmp r3, sl"
+          ],
+          "opcodes_hex": "524b444553455254"
+        },
+        {
+          "address": "0x7f000850",
+          "executions": 903,
+          "pct_of_phase": 6.43
+        },
+        {
+          "address": "0x0008cdc4",
+          "executions": 585,
+          "pct_of_phase": 4.17,
+          "disasm_arm": [
+            "add r7, sp, #0",
+            "mov r0, r1",
+            "mov r1, r2"
+          ],
+          "disasm_thumb": [
+            "strb r0, [r0]",
+            "b #0x8d2e4",
+            "movs r1, r0"
+          ],
+          "opcodes_hex": "00708de20100a0e1"
+        },
+        {
+          "address": "0x0008cdd4",
+          "executions": 585,
+          "pct_of_phase": 4.17,
+          "disasm_arm": [
+            "bl #0xbd3a0",
+            "pop {r7, pc}",
+            "push {r7, lr}"
+          ],
+          "disasm_thumb": [
+            "stm r1!, {r0, r4, r5, r6}",
+            "add.w r0, r0, r0, lsl #2",
+            "pop.w {r7, lr}"
+          ],
+          "opcodes_hex": "71c100eb8080bde8"
+        },
+        {
+          "address": "0x0008cde0",
+          "executions": 585,
+          "pct_of_phase": 4.17,
+          "disasm_arm": [
+            "add r7, sp, #0",
+            "mov r0, r1",
+            "bl #0xbd214"
+          ],
+          "disasm_thumb": [
+            "strb r0, [r0]",
+            "b #0x8d300",
+            "movs r1, r0"
+          ],
+          "opcodes_hex": "00708de20100a0e1"
+        },
+        {
+          "address": "0x0008ce1c",
+          "executions": 580,
+          "pct_of_phase": 4.13,
+          "disasm_arm": [
+            "str r0, [sp, #0xc]",
+            "mov r0, r1",
+            "mov r1, r2"
+          ],
+          "disasm_thumb": [
+            "movs r4, r1",
+            "b #0x8c93c",
+            "movs r1, r0"
+          ],
+          "opcodes_hex": "0c008de50100a0e1"
+        },
+        {
+          "address": "0x0008ce24",
+          "executions": 580,
+          "pct_of_phase": 4.13,
+          "disasm_arm": [
+            "mov r1, r2",
+            "mov r2, r3",
+            "ldr r3, [sp, #0x18]"
+          ],
+          "disasm_thumb": [
+            "asrs r2, r0, #0x20",
+            "b #0x8d16a",
+            "movs r0, #3"
+          ],
+          "opcodes_hex": "0210a0e10320a0e1"
+        },
+        {
+          "address": "0x00012d94",
+          "executions": 216,
+          "pct_of_phase": 1.54,
+          "disasm_arm": [
+            "ldrb r1, [r3, #-9]",
+            "add fp, r4, r1",
+            "ldrb r1, [r3, #-8]"
+          ],
+          "disasm_thumb": [
+            "asrs r1, r1, #0x20",
+            "b #0x12840",
+            "add sp, #4"
+          ],
+          "opcodes_hex": "091053e501b084e0"
+        },
+        {
+          "address": "0x00012da0",
+          "executions": 216,
+          "pct_of_phase": 1.54,
+          "disasm_arm": [
+            "add sl, fp, r1",
+            "ldrb r1, [r3, #-7]",
+            "add r8, sl, r1"
+          ],
+          "disasm_thumb": [
+            "adr r0, #4",
+            "b #0x12ebc",
+            "asrs r7, r0, #0x20"
+          ],
+          "opcodes_hex": "01a08be0071053e5"
+        },
+        {
+          "address": "0x00012dc4",
+          "executions": 216,
+          "pct_of_phase": 1.54,
+          "disasm_arm": [
+            "ldrb r1, [r3, #-3]",
+            "add r2, r4, r1",
+            "ldrb r1, [r3, #-2]"
+          ],
+          "disasm_thumb": [
+            "asrs r3, r0, #0x20",
+            "b #0x12870",
+            "movs r0, #1"
+          ],
+          "opcodes_hex": "031053e5012084e0"
+        },
+        {
+          "address": "0x0008cda0",
+          "executions": 199,
+          "pct_of_phase": 1.42,
+          "disasm_arm": [
+            "bl #0xbd3a0",
+            "pop {r7, pc}",
+            "push {r7, lr}"
+          ],
+          "disasm_thumb": [
+            "stm r1!, {r1, r2, r3, r4, r5, r6}",
+            "add.w r0, r0, r0, lsl #2",
+            "pop.w {r7, lr}"
+          ],
+          "opcodes_hex": "7ec100eb8080bde8"
+        },
+        {
+          "address": "0x0008cda8",
+          "executions": 199,
+          "pct_of_phase": 1.42,
+          "disasm_arm": [
+            "push {r7, lr}",
+            "add r7, sp, #0",
+            "mov r0, r1"
+          ],
+          "disasm_thumb": [
+            "lsls r0, r0"
+          ],
+          "opcodes_hex": "80402de900708de2"
+        },
+        {
+          "address": "0x000be820",
+          "executions": 43,
+          "pct_of_phase": 0.31,
+          "disasm_arm": [
+            "cmpmi sl, r5, asr #28",
+            "strbmi r4, [r4, #-0xb52]",
+            "ldrbpl r4, [r2], #-0x553"
+          ],
+          "disasm_thumb": [
+            "ldr r6, [pc, #0x114]",
+            "adcs r2, r3",
+            "ldr r3, [pc, #0x148]"
+          ],
+          "opcodes_hex": "454e5a41524b4445"
+        },
+        {
+          "address": "0x7f000818",
+          "executions": 43,
+          "pct_of_phase": 0.31
+        },
+        {
+          "address": "0x000bdec0",
+          "executions": 41,
+          "pct_of_phase": 0.29,
+          "disasm_arm": [
+            "strbtvc r6, [r1], #-0x42f",
+            "svcvs #0x72642f",
+            "ldrbvs r6, [pc], #-0x870"
+          ],
+          "disasm_thumb": [
+            "str r7, [r5, #0x40]",
+            "strb r1, [r4, #0x11]",
+            "str r7, [r5, #0x40]"
+          ],
+          "opcodes_hex": "2f6461742f64726f"
+        },
+        {
+          "address": "0x7f0001d0",
+          "executions": 41,
+          "pct_of_phase": 0.29
+        }
+      ]
+    },
+    "title": {
+      "total_instructions": 19276515,
+      "unique_basic_blocks": 3016,
+      "total_block_executions": 3055297,
+      "top_hot_blocks": [
+        {
+          "address": "0x0000f6a0",
+          "executions": 170335,
+          "pct_of_phase": 5.58,
+          "disasm_arm": [
+            "ldrb r3, [r3, #3]",
+            "str r3, [sp, #0x1c]",
+            "bl #0xf02c"
+          ],
+          "disasm_thumb": [
+            "adds r0, #3",
+            "b #0xf24c",
+            "adds r0, #0x1c"
+          ],
+          "opcodes_hex": "0330d3e51c308de5"
+        },
+        {
+          "address": "0x0000f708",
+          "executions": 170335,
+          "pct_of_phase": 5.58,
+          "disasm_arm": [
+            "rsbne r2, r1, #0",
+            "bne #0xf730",
+            "tst r6, #0x20"
+          ],
+          "disasm_thumb": [
+            "movs r0, #0",
+            "asrs r1, r4, #9",
+            "movs r7, r0"
+          ],
+          "opcodes_hex": "002061120700001a"
+        },
+        {
+          "address": "0x0000f6c8",
+          "executions": 170177,
+          "pct_of_phase": 5.57,
+          "disasm_arm": [
+            "beq #0xf6e0",
+            "ldr r0, [sp, #0x18]",
+            "mov r1, fp"
+          ],
+          "disasm_thumb": [
+            "movs r4, r0",
+            "lsrs r0, r0, #8",
+            "movs r0, r3"
+          ],
+          "opcodes_hex": "0400000a18009de5"
+        },
+        {
+          "address": "0x0000f6e4",
+          "executions": 143180,
+          "pct_of_phase": 4.69,
+          "disasm_arm": [
+            "beq #0xf700",
+            "ldr r0, [sp, #0x18]",
+            "mov r1, fp"
+          ],
+          "disasm_thumb": [
+            "movs r5, r0",
+            "lsrs r0, r0, #8",
+            "movs r0, r3"
+          ],
+          "opcodes_hex": "0500000a18009de5"
+        },
+        {
+          "address": "0x0000f6ec",
+          "executions": 80779,
+          "pct_of_phase": 2.64,
+          "disasm_arm": [
+            "mov r1, fp",
+            "mov r2, r8",
+            "bl #0xf0b4"
+          ],
+          "disasm_thumb": [
+            "asrs r3, r1, #0x20",
+            "b #0xfa32",
+            "movs r0, #8"
+          ],
+          "opcodes_hex": "0b10a0e10820a0e1"
+        },
+        {
+          "address": "0x0000f6f8",
+          "executions": 80779,
+          "pct_of_phase": 2.64,
+          "disasm_arm": [
+            "asr r0, r0, #1",
+            "rsb r0, r0, #0",
+            "tst r6, #0x40"
+          ],
+          "disasm_thumb": [
+            "lsls r0, r0, #3",
+            "b #0xfa3e",
+            "movs r0, r0"
+          ],
+          "opcodes_hex": "c000a0e1000060e2"
+        },
+        {
+          "address": "0x7f100000",
+          "executions": 72481,
+          "pct_of_phase": 2.37,
+          "label": "RET_STUB (bx lr)"
+        },
+        {
+          "address": "0x0000f6fc",
+          "executions": 62401,
+          "pct_of_phase": 2.04,
+          "disasm_arm": [
+            "rsb r0, r0, #0",
+            "tst r6, #0x40",
+            "ldrne r1, [sp, #0x1c]"
+          ],
+          "disasm_thumb": [
+            "movs r0, r0",
+            "b #0xfbc2",
+            "lsls r0, r0, #1"
+          ],
+          "opcodes_hex": "000060e2400016e3"
+        },
+        {
+          "address": "0x0008c140",
+          "executions": 56247,
+          "pct_of_phase": 1.84,
+          "disasm_arm": [
+            "push {r7, lr}",
+            "add r7, sp, #0",
+            "mov r0, r1"
+          ],
+          "disasm_thumb": [
+            "lsls r0, r0"
+          ],
+          "opcodes_hex": "80402de900708de2"
+        },
+        {
+          "address": "0x0008c208",
+          "executions": 56247,
+          "pct_of_phase": 1.84,
+          "disasm_arm": [
+            "bl #0xbd3a0",
+            "pop {r7, pc}",
+            "push {r7, lr}"
+          ],
+          "disasm_thumb": [
+            "stm r4!, {r2, r5, r6}",
+            "add.w r0, r0, r0, lsl #2",
+            "pop.w {r7, lr}"
+          ],
+          "opcodes_hex": "64c400eb8080bde8"
+        },
+        {
+          "address": "0x0008bfe0",
+          "executions": 56247,
+          "pct_of_phase": 1.84,
+          "disasm_arm": [
+            "bx lr",
+            "mov r0, #0",
+            "bx lr"
+          ],
+          "disasm_thumb": [
+            "vrhadd.u16 d14, d14, d31",
+            "movs r0, r0",
+            "b #0x8c72a"
+          ],
+          "opcodes_hex": "1eff2fe10000a0e3"
+        },
+        {
+          "address": "0x0008c000",
+          "executions": 56247,
+          "pct_of_phase": 1.84,
+          "disasm_arm": [
+            "mov r0, #0",
+            "bx lr",
+            "mov r0, #0"
+          ],
+          "disasm_thumb": [
+            "movs r0, r0",
+            "b #0x8c746",
+            "vrhadd.u16 d14, d14, d31"
+          ],
+          "opcodes_hex": "0000a0e31eff2fe1"
+        },
+        {
+          "address": "0x0008cd0c",
+          "executions": 55167,
+          "pct_of_phase": 1.81,
+          "disasm_arm": [
+            "mov r0, r1",
+            "bl #0xbd2b0",
+            "bl #0xbd3a0"
+          ],
+          "disasm_thumb": [
+            "movs r1, r0",
+            "b #0x8d052",
+            "stm r1!, {r1, r2, r5, r6}"
+          ],
+          "opcodes_hex": "0100a0e166c100eb"
+        },
+        {
+          "address": "0x0008c31c",
+          "executions": 55161,
+          "pct_of_phase": 1.81,
+          "disasm_arm": [
+            "mov r0, r1",
+            "bl #0xbd52c",
+            "bl #0xbd3a0"
+          ],
+          "disasm_thumb": [
+            "movs r1, r0",
+            "b #0x8c662",
+            "stm r4!, {r0, r7}"
+          ],
+          "opcodes_hex": "0100a0e181c400eb"
+        },
+        {
+          "address": "0x0008c33c",
+          "executions": 55161,
+          "pct_of_phase": 1.81,
+          "disasm_arm": [
+            "bl #0xbd3a0",
+            "pop {r7, pc}",
+            "push {r7, lr}"
+          ],
+          "disasm_thumb": [
+            "stm r4!, {r0, r1, r2, r4}",
+            "add.w r0, r0, r0, lsl #2",
+            "pop.w {r7, lr}"
+          ],
+          "opcodes_hex": "17c400eb8080bde8"
+        },
+        {
+          "address": "0x0008c0ac",
+          "executions": 55143,
+          "pct_of_phase": 1.8,
+          "disasm_arm": [
+            "bx lr",
+            "push {r7, lr}",
+            "add r7, sp, #0"
+          ],
+          "disasm_thumb": [
+            "vrhadd.u16 d14, d14, d31",
+            "lsls r0, r0"
+          ],
+          "opcodes_hex": "1eff2fe180402de9"
+        },
+        {
+          "address": "0x0008c0b4",
+          "executions": 55143,
+          "pct_of_phase": 1.8,
+          "disasm_arm": [
+            "add r7, sp, #0",
+            "mov r0, r1",
+            "mov r1, r2"
+          ],
+          "disasm_thumb": [
+            "strb r0, [r0]",
+            "b #0x8c5d4",
+            "movs r1, r0"
+          ],
+          "opcodes_hex": "00708de20100a0e1"
+        },
+        {
+          "address": "0x0008c11c",
+          "executions": 55143,
+          "pct_of_phase": 1.8,
+          "disasm_arm": [
+            "pop {r7, pc}",
+            "push {r7, lr}",
+            "add r7, sp, #0"
+          ],
+          "disasm_thumb": [
+            "strh r0, [r0, #4]",
+            "pop.w {r7, lr}"
+          ],
+          "opcodes_hex": "8080bde880402de9"
+        },
+        {
+          "address": "0x00012dd8",
+          "executions": 39728,
+          "pct_of_phase": 1.3,
+          "disasm_arm": [
+            "add lr, ip, r1",
+            "ldr r1, [sp, #8]",
+            "add r0, r1, r0"
+          ],
+          "disasm_thumb": [
+            "b #0x12dde",
+            "b #0x12ef6",
+            "asrs r0, r1, #0x20"
+          ],
+          "opcodes_hex": "01e08ce008109de5"
+        },
+        {
+          "address": "0x00012de4",
+          "executions": 39728,
+          "pct_of_phase": 1.3,
+          "disasm_arm": [
+            "ldr r1, [sp, #0xc]",
+            "add r0, r0, r1",
+            "ldr r1, [sp, #0x10]"
+          ],
+          "disasm_thumb": [
+            "asrs r4, r1, #0x20",
+            "b #0x12924",
+            "movs r1, r0"
+          ],
+          "opcodes_hex": "0c109de5010080e0"
+        }
+      ]
+    },
+    "menu": {
+      "total_instructions": 3281466,
+      "unique_basic_blocks": 880,
+      "total_block_executions": 481115,
+      "top_hot_blocks": [
+        {
+          "address": "0x0000d944",
+          "executions": 32310,
+          "pct_of_phase": 6.72,
+          "disasm_arm": [
+            "ldr r0, [r4]",
+            "ldr r3, [r0]",
+            "ldr r2, [r0, #4]"
+          ],
+          "disasm_thumb": [
+            "movs r0, r0",
+            "b #0xd472",
+            "adds r0, #0"
+          ],
+          "opcodes_hex": "000094e5003090e5"
+        },
+        {
+          "address": "0x7f100000",
+          "executions": 21026,
+          "pct_of_phase": 4.37,
+          "label": "RET_STUB (bx lr)"
+        },
+        {
+          "address": "0x0008e9ac",
+          "executions": 10095,
+          "pct_of_phase": 2.1,
+          "disasm_arm": [
+            "bl #0xbcd28",
+            "ldr r0, [pc, #0x540]",
+            "ldr r0, [r0]"
+          ],
+          "disasm_thumb": [],
+          "opcodes_hex": "ddb800eb40059fe5"
+        },
+        {
+          "address": "0x0000f6a0",
+          "executions": 8880,
+          "pct_of_phase": 1.85,
+          "disasm_arm": [
+            "ldrb r3, [r3, #3]",
+            "str r3, [sp, #0x1c]",
+            "bl #0xf02c"
+          ],
+          "disasm_thumb": [
+            "adds r0, #3",
+            "b #0xf24c",
+            "adds r0, #0x1c"
+          ],
+          "opcodes_hex": "0330d3e51c308de5"
+        },
+        {
+          "address": "0x0000f6c8",
+          "executions": 8880,
+          "pct_of_phase": 1.85,
+          "disasm_arm": [
+            "beq #0xf6e0",
+            "ldr r0, [sp, #0x18]",
+            "mov r1, fp"
+          ],
+          "disasm_thumb": [
+            "movs r4, r0",
+            "lsrs r0, r0, #8",
+            "movs r0, r3"
+          ],
+          "opcodes_hex": "0400000a18009de5"
+        },
+        {
+          "address": "0x0000f708",
+          "executions": 8880,
+          "pct_of_phase": 1.85,
+          "disasm_arm": [
+            "rsbne r2, r1, #0",
+            "bne #0xf730",
+            "tst r6, #0x20"
+          ],
+          "disasm_thumb": [
+            "movs r0, #0",
+            "asrs r1, r4, #9",
+            "movs r7, r0"
+          ],
+          "opcodes_hex": "002061120700001a"
+        },
+        {
+          "address": "0x0000f6e4",
+          "executions": 7530,
+          "pct_of_phase": 1.57,
+          "disasm_arm": [
+            "beq #0xf700",
+            "ldr r0, [sp, #0x18]",
+            "mov r1, fp"
+          ],
+          "disasm_thumb": [
+            "movs r5, r0",
+            "lsrs r0, r0, #8",
+            "movs r0, r3"
+          ],
+          "opcodes_hex": "0500000a18009de5"
+        },
+        {
+          "address": "0x000bdd28",
+          "executions": 5445,
+          "pct_of_phase": 1.13,
+          "disasm_arm": [
+            "svchs #0x637273",
+            "stclvs p4, c7, [sb], #-0x154"
+          ],
+          "disasm_thumb": [
+            "strb r3, [r6, #9]",
+            "cmp r7, #0x63",
+            "strb r5, [r2, #0x11]"
+          ],
+          "opcodes_hex": "7372632f5574696c"
+        },
+        {
+          "address": "0x7f0000a8",
+          "executions": 5445,
+          "pct_of_phase": 1.13
+        },
+        {
+          "address": "0x000bdd40",
+          "executions": 5445,
+          "pct_of_phase": 1.13,
+          "disasm_arm": [
+            "eorvc r6, pc, sb, ror #24",
+            "stmdavs lr!, {r1, r2, r3, r5, r6, r8, sb, sl, sp, lr}",
+            "andeq r0, r0, r0"
+          ],
+          "disasm_thumb": [
+            "ldr r1, [r5, #0x44]",
+            "strb r7, [r5]",
+            "str r6, [r5, #0x74]"
+          ],
+          "opcodes_hex": "696c2f706e672e68"
+        },
+        {
+          "address": "0x7f0000b8",
+          "executions": 5445,
+          "pct_of_phase": 1.13
+        },
+        {
+          "address": "0x00075934",
+          "executions": 5398,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "pop {r4, r5, r7, lr}",
+            "b #0x755b8",
+            "bl #0x742c4"
+          ],
+          "disasm_thumb": [
+            "lsls r0, r6",
+            "pop.w {r1, r2, r3, r4, r8, sb, sl, fp, ip, sp, lr, pc}"
+          ],
+          "opcodes_hex": "b040bde81effffea"
+        },
+        {
+          "address": "0x000bdec0",
+          "executions": 5398,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "strbtvc r6, [r1], #-0x42f",
+            "svcvs #0x72642f",
+            "ldrbvs r6, [pc], #-0x870"
+          ],
+          "disasm_thumb": [
+            "str r7, [r5, #0x40]",
+            "strb r1, [r4, #0x11]",
+            "str r7, [r5, #0x40]"
+          ],
+          "opcodes_hex": "2f6461742f64726f"
+        },
+        {
+          "address": "0x7f0001d0",
+          "executions": 5398,
+          "pct_of_phase": 1.12
+        },
+        {
+          "address": "0x00075948",
+          "executions": 5398,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "mov r1, #0x31",
+            "ldr r3, [r3, #8]",
+            "blx r3"
+          ],
+          "disasm_thumb": [
+            "asrs r1, r6, #0x20",
+            "b #0x7608e",
+            "adds r0, #8"
+          ],
+          "opcodes_hex": "3110a0e3083093e5"
+        },
+        {
+          "address": "0x0008e438",
+          "executions": 5385,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "ldr r3, [r0]",
+            "ldr r3, [r3]",
+            "blx r3"
+          ],
+          "disasm_thumb": [
+            "adds r0, #0",
+            "b #0x8df5e",
+            "adds r0, #0"
+          ],
+          "opcodes_hex": "003090e5003093e5"
+        },
+        {
+          "address": "0x0008e478",
+          "executions": 5385,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "blx ip",
+            "ldr r0, [r6, #0x10]",
+            "mov r1, #1"
+          ],
+          "disasm_thumb": [],
+          "opcodes_hex": "3cff2fe1100096e5"
+        },
+        {
+          "address": "0x0008e4d8",
+          "executions": 5385,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "ldr r3, [r0]",
+            "ldr ip, [r3, #0x220]",
+            "ldr r3, [pc, #0x98]"
+          ],
+          "disasm_thumb": [
+            "adds r0, #0",
+            "b #0x8dffe",
+            "stm r2!, {r5}"
+          ],
+          "opcodes_hex": "003090e520c293e5"
+        },
+        {
+          "address": "0x0008e4ec",
+          "executions": 5385,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "ldr r0, [r6, #0x10]",
+            "ldrh r3, [r2]",
+            "ldr r1, [r0]"
+          ],
+          "disasm_thumb": [
+            "movs r0, r2",
+            "b #0x8e01e",
+            "adds r0, #0xb0"
+          ],
+          "opcodes_hex": "100096e5b030d2e1"
+        },
+        {
+          "address": "0x0008e3f0",
+          "executions": 5385,
+          "pct_of_phase": 1.12,
+          "disasm_arm": [
+            "b #0x8e434",
+            "ldr r4, [pc, #0x160]",
+            "ldr fp, [pc, #0x154]"
+          ],
+          "disasm_thumb": [
+            "movs r7, r1",
+            "and.w r1, r0, r0, asr #17",
+            "b #0x8df38"
+          ],
+          "opcodes_hex": "0f0000ea60419fe5"
+        }
+      ]
+    }
+  }
+}

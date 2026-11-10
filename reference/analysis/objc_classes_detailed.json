@@ -1,0 +1,6710 @@
+{
+  "class_count": 22,
+  "protocols": [
+    "UIApplicationDelegate",
+    "UITextFieldDelegate",
+    "NSObject",
+    "GKSessionDelegate",
+    "EAMTX_MessageDelegate",
+    "NSCoding",
+    "UIWebViewDelegate",
+    "UIAlertViewDelegate",
+    "SBJsonWriter",
+    "SBJsonParser"
+  ],
+  "total_method_count": 405,
+  "selector_ref_count": 493,
+  "class_ref_count": 75,
+  "classes": [
+    {
+      "class_addr": "0x000d3f18",
+      "metaclass_addr": "0x000d3f04",
+      "name": "AppDelegate",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 28,
+      "instance_start": 4,
+      "protocols": [
+        "UIApplicationDelegate",
+        "UITextFieldDelegate"
+      ],
+      "ivars": [
+        {
+          "name": "window",
+          "type": "@\"UIWindow\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "contentView",
+          "type": "@\"GLView\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "timer",
+          "type": "@\"NSTimer\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "game_instance",
+          "type": "^{Game=^^?**}",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "game_config_instance",
+          "type": "^{GameConfig=^^?}",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "myTextField",
+          "type": "@\"UITextField\"",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setWindow:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a8f4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04a0"
+        },
+        {
+          "selector": "window",
+          "types": "@8@0:4",
+          "imp": "0x0000a5f4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04ac"
+        },
+        {
+          "selector": "setContentView:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a928",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04b8"
+        },
+        {
+          "selector": "contentView",
+          "types": "@8@0:4",
+          "imp": "0x0000a5e0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04c4"
+        },
+        {
+          "selector": "textField:shouldChangeCharactersInRange:replacementString:",
+          "types": "c24@0:4@8{_NSRange=II}12@20",
+          "imp": "0x0000a608",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04d0"
+        },
+        {
+          "selector": "textFieldDidChange:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a7f0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04dc"
+        },
+        {
+          "selector": "textFieldShouldClear:",
+          "types": "c12@0:4@8",
+          "imp": "0x0000a7dc",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04e8"
+        },
+        {
+          "selector": "textFieldShouldReturn:",
+          "types": "c12@0:4@8",
+          "imp": "0x0000aa40",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d04f4"
+        },
+        {
+          "selector": "onTimer:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a5c4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0500"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x0000a714",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d050c"
+        },
+        {
+          "selector": "application:didFailToRegisterForRemoteNotificationsWithError:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000a5a0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0518"
+        },
+        {
+          "selector": "application:didRegisterForRemoteNotificationsWithDeviceToken:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000a57c",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0524"
+        },
+        {
+          "selector": "application:didReceiveRemoteNotification:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000a558",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0530"
+        },
+        {
+          "selector": "applicationWillEnterForeground:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a53c",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d053c"
+        },
+        {
+          "selector": "applicationDidEnterBackground:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a520",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0548"
+        },
+        {
+          "selector": "applicationDidBecomeActive:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a504",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0554"
+        },
+        {
+          "selector": "applicationWillResignActive:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a4e8",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0560"
+        },
+        {
+          "selector": "applicationDidReceiveMemoryWarning:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a4e4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d056c"
+        },
+        {
+          "selector": "applicationWillTerminate:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a668",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0578"
+        },
+        {
+          "selector": "startAppWithOptions:application:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000aba0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0584"
+        },
+        {
+          "selector": "application:didFinishLaunchingWithOptions:",
+          "types": "c16@0:4@8@12",
+          "imp": "0x0000a6c4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0590"
+        },
+        {
+          "selector": "applicationDidFinishLaunching:",
+          "types": "v12@0:4@8",
+          "imp": "0x0000a6f0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d059c"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d3f40",
+      "metaclass_addr": "0x000d3f2c",
+      "name": "GLView",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_UIView",
+      "superclass_in_image": null,
+      "instance_size": 72,
+      "instance_start": 44,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "_api",
+          "type": "I",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "backWidth",
+          "type": "i",
+          "offset": 48,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "backHeight",
+          "type": "i",
+          "offset": 52,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "context",
+          "type": "@\"EAGLContext\"",
+          "offset": 56,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "viewRenderBuffer",
+          "type": "I",
+          "offset": 60,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "viewFrameBuffer",
+          "type": "I",
+          "offset": 64,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "depthRenderBuffer",
+          "type": "I",
+          "offset": 68,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "destroyFramebuffer",
+          "types": "v8@0:4",
+          "imp": "0x0000b8ac",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d092c"
+        },
+        {
+          "selector": "createFramebuffer",
+          "types": "c8@0:4",
+          "imp": "0x0000b6d0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0938"
+        },
+        {
+          "selector": "layoutSubviews",
+          "types": "v8@0:4",
+          "imp": "0x0000b620",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0944"
+        },
+        {
+          "selector": "initWithFrame:",
+          "types": "@24@0:4{CGRect={CGPoint=ff}{CGSize=ff}}8",
+          "imp": "0x0000b3a0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0950"
+        }
+      ],
+      "class_methods": [
+        {
+          "selector": "layerClass",
+          "types": "#8@0:4",
+          "imp": "0x0000b5a4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0918"
+        }
+      ],
+      "metaclass_isa_import": null,
+      "superclass": "UIView"
+    },
+    {
+      "class_addr": "0x000d3f68",
+      "metaclass_addr": "0x000d3f54",
+      "name": "TouchResponder",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_UIView",
+      "superclass_in_image": null,
+      "instance_size": 48,
+      "instance_start": 44,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "eventID",
+          "type": "i",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "touchesMoved:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000bc1c",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d09ec"
+        },
+        {
+          "selector": "touchesEnded:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000be5c",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d09f8"
+        },
+        {
+          "selector": "touchesBegan:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x0000c0a4",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0a04"
+        },
+        {
+          "selector": "init",
+          "types": "v8@0:4",
+          "imp": "0x0000bbfc",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0a10"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "UIView"
+    },
+    {
+      "class_addr": "0x000d3f90",
+      "metaclass_addr": "0x000d3f7c",
+      "name": "SocketBtDelegate",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 8,
+      "instance_start": 4,
+      "protocols": [
+        "GKSessionDelegate"
+      ],
+      "ivars": [
+        {
+          "name": "_socket",
+          "type": "^{SocketBt_iphone=^^?ii^v^v^v^{CircularBuffer}^v}",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "receiveData:fromPeer:inSession:context:",
+          "types": "v24@0:4@8@12@16^v20",
+          "imp": "0x00053c80",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0a94"
+        },
+        {
+          "selector": "session:peer:didChangeState:",
+          "types": "v20@0:4@8@12i16",
+          "imp": "0x00053b90",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0aa0"
+        },
+        {
+          "selector": "peerPickerController:sessionForConnectionType:",
+          "types": "@16@0:4@8I12",
+          "imp": "0x00053b78",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0aac"
+        },
+        {
+          "selector": "peerPickerController:didConnectPeer:toSession:",
+          "types": "v20@0:4@8@12@16",
+          "imp": "0x00053bc0",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0ab8"
+        },
+        {
+          "selector": "peerPickerControllerDidCancel:",
+          "types": "v12@0:4@8",
+          "imp": "0x00053c28",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0ac4"
+        },
+        {
+          "selector": "initDelegate:",
+          "types": "v12@0:4^{SocketBt_iphone=^^?ii^v^v^v^{CircularBuffer}^v}8",
+          "imp": "0x00053b64",
+          "imp_isa": "arm",
+          "entry_addr": "0x000d0ad0"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d3fb8",
+      "metaclass_addr": "0x000d3fa4",
+      "name": "EAMTX_Network",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 48,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "startingByteIdx",
+          "type": "i",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "endingByteIdx",
+          "type": "i",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "resumingDownload",
+          "type": "B",
+          "offset": 12,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "noofAttempts",
+          "type": "i",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "networkState",
+          "type": "i",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "requestId",
+          "type": "i",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "itemSellId",
+          "type": "i",
+          "offset": 28,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "goReceivedData",
+          "type": "@\"NSMutableData\"",
+          "offset": 32,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_ReturnContentType",
+          "type": "@\"NSString\"",
+          "offset": 36,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "theConnection",
+          "type": "@\"NSURLConnection\"",
+          "offset": 40,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_LastRequestURL",
+          "type": "@\"NSString\"",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setStartingByteIdx:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b0f4c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0c64"
+        },
+        {
+          "selector": "startingByteIdx",
+          "types": "i8@0:4",
+          "imp": "0x000b0f3c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0c70"
+        },
+        {
+          "selector": "setEndingByteIdx:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b0f2c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0c7c"
+        },
+        {
+          "selector": "endingByteIdx",
+          "types": "i8@0:4",
+          "imp": "0x000b0f1c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0c88"
+        },
+        {
+          "selector": "setResumingDownload:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b0f0c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0c94"
+        },
+        {
+          "selector": "resumingDownload",
+          "types": "B8@0:4",
+          "imp": "0x000b0efc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0ca0"
+        },
+        {
+          "selector": "setNoofAttempts:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b0eec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0cac"
+        },
+        {
+          "selector": "noofAttempts",
+          "types": "i8@0:4",
+          "imp": "0x000b0edc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0cb8"
+        },
+        {
+          "selector": "setNetworkState:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b0ecc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0cc4"
+        },
+        {
+          "selector": "networkState",
+          "types": "i8@0:4",
+          "imp": "0x000b0ebc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0cd0"
+        },
+        {
+          "selector": "setRequestId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b0eac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0cdc"
+        },
+        {
+          "selector": "requestId",
+          "types": "i8@0:4",
+          "imp": "0x000b0e9c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0ce8"
+        },
+        {
+          "selector": "setItemSellId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b0e8c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0cf4"
+        },
+        {
+          "selector": "itemSellId",
+          "types": "i8@0:4",
+          "imp": "0x000b0e7c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d00"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b1bdc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d0c"
+        },
+        {
+          "selector": "connection:didFailWithError:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b19ec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d18"
+        },
+        {
+          "selector": "connectionDidFinishLoading:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b0f5c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d24"
+        },
+        {
+          "selector": "connection:didReceiveResponse:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b1264",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d30"
+        },
+        {
+          "selector": "connection:didReceiveData:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b11a0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d3c"
+        },
+        {
+          "selector": "CancelRequest",
+          "types": "v8@0:4",
+          "imp": "0x000b11c4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d48"
+        },
+        {
+          "selector": "NetworkingURLPostRequest:::",
+          "types": "B20@0:4@8@12@16",
+          "imp": "0x000b132c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d54"
+        },
+        {
+          "selector": "NetworkingURLRequest::",
+          "types": "B16@0:4@8@12",
+          "imp": "0x000b1648",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0d60"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d3fe0",
+      "metaclass_addr": "0x000d3fcc",
+      "name": "EAMTX_Controller",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 70,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "iCurrState",
+          "type": "i",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "iReturnState",
+          "type": "i",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "bRequestInPending",
+          "type": "B",
+          "offset": 12,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "bResponseInPending",
+          "type": "B",
+          "offset": 13,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "dTimeIntervalForEventsSending",
+          "type": "d",
+          "offset": 16,
+          "size": 8,
+          "alignment_log2": 2
+        },
+        {
+          "name": "dMaxEventsCache",
+          "type": "d",
+          "offset": 24,
+          "size": 8,
+          "alignment_log2": 2
+        },
+        {
+          "name": "dEventsSendStartTime",
+          "type": "d",
+          "offset": 32,
+          "size": 8,
+          "alignment_log2": 2
+        },
+        {
+          "name": "iTotalRestoredItems",
+          "type": "i",
+          "offset": 40,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "requestsQ",
+          "type": "@\"NSMutableArray\"",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "responseQ",
+          "type": "@\"NSMutableArray\"",
+          "offset": 48,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "networkRequests",
+          "type": "@\"NSMutableDictionary\"",
+          "offset": 52,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "networkObjsDict",
+          "type": "@\"NSMutableDictionary\"",
+          "offset": 56,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "bForcePostEventsData",
+          "type": "B",
+          "offset": 60,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "requestStartTime",
+          "type": "@\"NSDate\"",
+          "offset": 64,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "bReceivedResponse",
+          "type": "B",
+          "offset": 68,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "bProcessStarted",
+          "type": "B",
+          "offset": 69,
+          "size": 1,
+          "alignment_log2": 0
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setICurrState:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b1e28",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0f8c"
+        },
+        {
+          "selector": "iCurrState",
+          "types": "i8@0:4",
+          "imp": "0x000b1e18",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0f98"
+        },
+        {
+          "selector": "setIReturnState:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b1e08",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fa4"
+        },
+        {
+          "selector": "iReturnState",
+          "types": "i8@0:4",
+          "imp": "0x000b1df8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fb0"
+        },
+        {
+          "selector": "setRequestsQ:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b3714",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fbc"
+        },
+        {
+          "selector": "requestsQ",
+          "types": "@8@0:4",
+          "imp": "0x000b1de8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fc8"
+        },
+        {
+          "selector": "setResponseQ:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b3734",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fd4"
+        },
+        {
+          "selector": "responseQ",
+          "types": "@8@0:4",
+          "imp": "0x000b1dd8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fe0"
+        },
+        {
+          "selector": "setBRequestInPending:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b1dc8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0fec"
+        },
+        {
+          "selector": "bRequestInPending",
+          "types": "B8@0:4",
+          "imp": "0x000b1db8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d0ff8"
+        },
+        {
+          "selector": "setBResponseInPending:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b1da8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1004"
+        },
+        {
+          "selector": "bResponseInPending",
+          "types": "B8@0:4",
+          "imp": "0x000b1d98",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1010"
+        },
+        {
+          "selector": "setITotalRestoredItems:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b1d88",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d101c"
+        },
+        {
+          "selector": "iTotalRestoredItems",
+          "types": "i8@0:4",
+          "imp": "0x000b1d78",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1028"
+        },
+        {
+          "selector": "setDMaxEventsCache:",
+          "types": "v16@0:4d8",
+          "imp": "0x000b1d64",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1034"
+        },
+        {
+          "selector": "dMaxEventsCache",
+          "types": "d8@0:4",
+          "imp": "0x000b1d50",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1040"
+        },
+        {
+          "selector": "setDEventsSendStartTime:",
+          "types": "v16@0:4d8",
+          "imp": "0x000b1d3c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d104c"
+        },
+        {
+          "selector": "dEventsSendStartTime",
+          "types": "d8@0:4",
+          "imp": "0x000b1d28",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1058"
+        },
+        {
+          "selector": "setDTimeIntervalForEventsSending:",
+          "types": "v16@0:4d8",
+          "imp": "0x000b1d14",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1064"
+        },
+        {
+          "selector": "dTimeIntervalForEventsSending",
+          "types": "d8@0:4",
+          "imp": "0x000b1d00",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1070"
+        },
+        {
+          "selector": "setBForcePostEventsData:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b1cf0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d107c"
+        },
+        {
+          "selector": "bForcePostEventsData",
+          "types": "B8@0:4",
+          "imp": "0x000b1ce0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1088"
+        },
+        {
+          "selector": "setRequestStartTime:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b3754",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1094"
+        },
+        {
+          "selector": "requestStartTime",
+          "types": "@8@0:4",
+          "imp": "0x000b1cd0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10a0"
+        },
+        {
+          "selector": "setBReceivedResponse:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b1cc0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10ac"
+        },
+        {
+          "selector": "bReceivedResponse",
+          "types": "B8@0:4",
+          "imp": "0x000b1cb0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10b8"
+        },
+        {
+          "selector": "setBProcessStarted:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b1ca0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10c4"
+        },
+        {
+          "selector": "bProcessStarted",
+          "types": "B8@0:4",
+          "imp": "0x000b1c90",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10d0"
+        },
+        {
+          "selector": "setNetworkRequests:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b3774",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10dc"
+        },
+        {
+          "selector": "networkRequests",
+          "types": "@8@0:4",
+          "imp": "0x000b1c80",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10e8"
+        },
+        {
+          "selector": "setNetworkObjsDict:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b3794",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d10f4"
+        },
+        {
+          "selector": "networkObjsDict",
+          "types": "@8@0:4",
+          "imp": "0x000b1c70",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1100"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b3674",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d110c"
+        },
+        {
+          "selector": "stringURLDecode:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b3ba0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1118"
+        },
+        {
+          "selector": "stringURLEncode:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b37b4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1124"
+        },
+        {
+          "selector": "base64DataFromString:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b22f8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1130"
+        },
+        {
+          "selector": "RemoveDisabledEvents",
+          "types": "v8@0:4",
+          "imp": "0x000b3400",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d113c"
+        },
+        {
+          "selector": "DeleteEvents:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b32ec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1148"
+        },
+        {
+          "selector": "SelectEvents:",
+          "types": "@12@0:4i8",
+          "imp": "0x000b2fe4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1154"
+        },
+        {
+          "selector": "GetCount",
+          "types": "i8@0:4",
+          "imp": "0x000b2f20",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1160"
+        },
+        {
+          "selector": "InsertEvents:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b2be0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d116c"
+        },
+        {
+          "selector": "CreateDB",
+          "types": "v8@0:4",
+          "imp": "0x000b294c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1178"
+        },
+        {
+          "selector": "getNextRequestId",
+          "types": "i8@0:4",
+          "imp": "0x000b1e38",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1184"
+        },
+        {
+          "selector": "removeHWIDReqInQ",
+          "types": "v8@0:4",
+          "imp": "0x000b1ef8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1190"
+        },
+        {
+          "selector": "isHWIDReqInQ",
+          "types": "B8@0:4",
+          "imp": "0x000b1fc4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d119c"
+        },
+        {
+          "selector": "isUIDReqInQ",
+          "types": "B8@0:4",
+          "imp": "0x000b2078",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d11a8"
+        },
+        {
+          "selector": "addState::",
+          "types": "v16@0:4i8i12",
+          "imp": "0x000b28ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d11b4"
+        },
+        {
+          "selector": "Run:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b24b4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d11c0"
+        },
+        {
+          "selector": "StartTimer",
+          "types": "v8@0:4",
+          "imp": "0x000b212c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d11cc"
+        },
+        {
+          "selector": "Start",
+          "types": "v8@0:4",
+          "imp": "0x000b2174",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d11d8"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4008",
+      "metaclass_addr": "0x000d3ff4",
+      "name": "EAMTX_UserInfo",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 100,
+      "instance_start": 4,
+      "protocols": [
+        "NSCoding",
+        "EAMTX_MessageDelegate"
+      ],
+      "ivars": [
+        {
+          "name": "m_iEAUID",
+          "type": "i",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_iHWID",
+          "type": "i",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_iAppProdId",
+          "type": "i",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_iAppSellId",
+          "type": "i",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_iHardwareId",
+          "type": "i",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_iDMGId",
+          "type": "i",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_bMarketOpt",
+          "type": "B",
+          "offset": 28,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "m_bUserRegistered",
+          "type": "B",
+          "offset": 29,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "m_BundleId",
+          "type": "@\"NSString\"",
+          "offset": 32,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Email",
+          "type": "@\"NSString\"",
+          "offset": 36,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Password",
+          "type": "@\"NSString\"",
+          "offset": 40,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_DOB",
+          "type": "@\"NSString\"",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_LangCode",
+          "type": "@\"NSString\"",
+          "offset": 48,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_AppVersion",
+          "type": "@\"NSString\"",
+          "offset": 52,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_DeviceToken",
+          "type": "@\"NSString\"",
+          "offset": 56,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_ItemsLastUpdatedTime",
+          "type": "@\"NSDate\"",
+          "offset": 60,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_ListLastUpdatedTime",
+          "type": "@\"NSDate\"",
+          "offset": 64,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_UserName",
+          "type": "@\"NSString\"",
+          "offset": 68,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Country",
+          "type": "@\"NSString\"",
+          "offset": 72,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_TrackingData",
+          "type": "@\"NSMutableDictionary\"",
+          "offset": 76,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_EventsCounter",
+          "type": "@\"NSMutableDictionary\"",
+          "offset": 80,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_bAppLoggingDisabled",
+          "type": "B",
+          "offset": 84,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "m_bUserLoggingDisabled",
+          "type": "B",
+          "offset": 85,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "m_DisabledEvents",
+          "type": "@\"NSMutableArray\"",
+          "offset": 88,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Messages",
+          "type": "@\"NSMutableArray\"",
+          "offset": 92,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_ExcludedMessageIds",
+          "type": "@\"NSMutableArray\"",
+          "offset": 96,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setM_iEAUID:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b41bc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1540"
+        },
+        {
+          "selector": "m_iEAUID",
+          "types": "i8@0:4",
+          "imp": "0x000b41ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d154c"
+        },
+        {
+          "selector": "setM_iHWID:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b419c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1558"
+        },
+        {
+          "selector": "m_iHWID",
+          "types": "i8@0:4",
+          "imp": "0x000b418c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1564"
+        },
+        {
+          "selector": "setM_iAppProdId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b417c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1570"
+        },
+        {
+          "selector": "m_iAppProdId",
+          "types": "i8@0:4",
+          "imp": "0x000b416c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d157c"
+        },
+        {
+          "selector": "setM_iAppSellId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b415c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1588"
+        },
+        {
+          "selector": "m_iAppSellId",
+          "types": "i8@0:4",
+          "imp": "0x000b414c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1594"
+        },
+        {
+          "selector": "setM_iHardwareId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b413c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15a0"
+        },
+        {
+          "selector": "m_iHardwareId",
+          "types": "i8@0:4",
+          "imp": "0x000b412c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15ac"
+        },
+        {
+          "selector": "setM_BundleId:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4de0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15b8"
+        },
+        {
+          "selector": "m_BundleId",
+          "types": "@8@0:4",
+          "imp": "0x000b411c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15c4"
+        },
+        {
+          "selector": "setM_iDMGId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b410c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15d0"
+        },
+        {
+          "selector": "m_iDMGId",
+          "types": "i8@0:4",
+          "imp": "0x000b40fc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15dc"
+        },
+        {
+          "selector": "setM_Email:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4e00",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15e8"
+        },
+        {
+          "selector": "m_Email",
+          "types": "@8@0:4",
+          "imp": "0x000b40ec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d15f4"
+        },
+        {
+          "selector": "setM_Password:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4e20",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1600"
+        },
+        {
+          "selector": "m_Password",
+          "types": "@8@0:4",
+          "imp": "0x000b40dc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d160c"
+        },
+        {
+          "selector": "setM_DOB:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4e40",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1618"
+        },
+        {
+          "selector": "m_DOB",
+          "types": "@8@0:4",
+          "imp": "0x000b40cc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1624"
+        },
+        {
+          "selector": "setM_LangCode:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4e60",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1630"
+        },
+        {
+          "selector": "m_LangCode",
+          "types": "@8@0:4",
+          "imp": "0x000b40bc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d163c"
+        },
+        {
+          "selector": "setM_AppVersion:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4e80",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1648"
+        },
+        {
+          "selector": "m_AppVersion",
+          "types": "@8@0:4",
+          "imp": "0x000b40ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1654"
+        },
+        {
+          "selector": "setM_DeviceToken:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4ea0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1660"
+        },
+        {
+          "selector": "m_DeviceToken",
+          "types": "@8@0:4",
+          "imp": "0x000b409c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d166c"
+        },
+        {
+          "selector": "setM_bMarketOpt:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b408c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1678"
+        },
+        {
+          "selector": "m_bMarketOpt",
+          "types": "B8@0:4",
+          "imp": "0x000b407c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1684"
+        },
+        {
+          "selector": "setM_ListLastUpdatedTime:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4ec0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1690"
+        },
+        {
+          "selector": "m_ListLastUpdatedTime",
+          "types": "@8@0:4",
+          "imp": "0x000b406c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d169c"
+        },
+        {
+          "selector": "setM_ItemsLastUpdatedTime:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4ee0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16a8"
+        },
+        {
+          "selector": "m_ItemsLastUpdatedTime",
+          "types": "@8@0:4",
+          "imp": "0x000b405c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16b4"
+        },
+        {
+          "selector": "setM_TrackingData:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4f00",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16c0"
+        },
+        {
+          "selector": "m_TrackingData",
+          "types": "@8@0:4",
+          "imp": "0x000b404c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16cc"
+        },
+        {
+          "selector": "setM_bUserRegistered:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b403c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16d8"
+        },
+        {
+          "selector": "m_bUserRegistered",
+          "types": "B8@0:4",
+          "imp": "0x000b402c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16e4"
+        },
+        {
+          "selector": "setM_UserName:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4f20",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16f0"
+        },
+        {
+          "selector": "m_UserName",
+          "types": "@8@0:4",
+          "imp": "0x000b401c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d16fc"
+        },
+        {
+          "selector": "setM_Country:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4f40",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1708"
+        },
+        {
+          "selector": "m_Country",
+          "types": "@8@0:4",
+          "imp": "0x000b400c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1714"
+        },
+        {
+          "selector": "setM_EventsCounter:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4f60",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1720"
+        },
+        {
+          "selector": "m_EventsCounter",
+          "types": "@8@0:4",
+          "imp": "0x000b3ffc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d172c"
+        },
+        {
+          "selector": "setM_bUserLoggingDisabled:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b3fec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1738"
+        },
+        {
+          "selector": "m_bUserLoggingDisabled",
+          "types": "B8@0:4",
+          "imp": "0x000b3fdc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1744"
+        },
+        {
+          "selector": "setM_bAppLoggingDisabled:",
+          "types": "v12@0:4B8",
+          "imp": "0x000b3fcc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1750"
+        },
+        {
+          "selector": "m_bAppLoggingDisabled",
+          "types": "B8@0:4",
+          "imp": "0x000b3fbc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d175c"
+        },
+        {
+          "selector": "setM_DisabledEvents:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4f80",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1768"
+        },
+        {
+          "selector": "m_DisabledEvents",
+          "types": "@8@0:4",
+          "imp": "0x000b3fac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1774"
+        },
+        {
+          "selector": "setM_Messages:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4fa0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1780"
+        },
+        {
+          "selector": "m_Messages",
+          "types": "@8@0:4",
+          "imp": "0x000b3f9c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d178c"
+        },
+        {
+          "selector": "setM_ExcludedMessageIds:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4fc0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1798"
+        },
+        {
+          "selector": "m_ExcludedMessageIds",
+          "types": "@8@0:4",
+          "imp": "0x000b3f8c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17a4"
+        },
+        {
+          "selector": "messageFinished:keep:",
+          "types": "v16@0:4@8c12",
+          "imp": "0x000b41cc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17b0"
+        },
+        {
+          "selector": "showMessages",
+          "types": "v8@0:4",
+          "imp": "0x000b4248",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17bc"
+        },
+        {
+          "selector": "addMessage:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b4ccc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17c8"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b42a4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17d4"
+        },
+        {
+          "selector": "encodeWithCoder:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b43d4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17e0"
+        },
+        {
+          "selector": "initWithCoder:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b4804",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17ec"
+        },
+        {
+          "selector": "init",
+          "types": "@8@0:4",
+          "imp": "0x000b4c1c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d17f8"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4030",
+      "metaclass_addr": "0x000d401c",
+      "name": "EAMTX_Banner",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 24,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "m_iBannerId",
+          "type": "i",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Title",
+          "type": "@\"NSString\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_URL",
+          "type": "@\"NSString\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_ImgData",
+          "type": "@\"NSData\"",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Type",
+          "type": "@\"NSString\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setM_iBannerId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b5030",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a20"
+        },
+        {
+          "selector": "m_iBannerId",
+          "types": "i8@0:4",
+          "imp": "0x000b5020",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a2c"
+        },
+        {
+          "selector": "setM_Title:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b52ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a38"
+        },
+        {
+          "selector": "m_Title",
+          "types": "@8@0:4",
+          "imp": "0x000b5010",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a44"
+        },
+        {
+          "selector": "setM_URL:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b52cc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a50"
+        },
+        {
+          "selector": "m_URL",
+          "types": "@8@0:4",
+          "imp": "0x000b5000",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a5c"
+        },
+        {
+          "selector": "setM_ImgData:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b52ec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a68"
+        },
+        {
+          "selector": "m_ImgData",
+          "types": "@8@0:4",
+          "imp": "0x000b4ff0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a74"
+        },
+        {
+          "selector": "setM_Type:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b530c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a80"
+        },
+        {
+          "selector": "m_Type",
+          "types": "@8@0:4",
+          "imp": "0x000b4fe0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a8c"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b5040",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1a98"
+        },
+        {
+          "selector": "encodeWithCoder:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b50bc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1aa4"
+        },
+        {
+          "selector": "initWithCoder:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b51b8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1ab0"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4058",
+      "metaclass_addr": "0x000d4044",
+      "name": "EAMTX_Ticker",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 24,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "m_iTickerId",
+          "type": "i",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Title",
+          "type": "@\"NSString\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_URL",
+          "type": "@\"NSString\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Message",
+          "type": "@\"NSString\"",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Type",
+          "type": "@\"NSString\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setM_iTickerId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b537c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1bc4"
+        },
+        {
+          "selector": "m_iTickerId",
+          "types": "i8@0:4",
+          "imp": "0x000b536c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1bd0"
+        },
+        {
+          "selector": "setM_Title:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b5604",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1bdc"
+        },
+        {
+          "selector": "m_Title",
+          "types": "@8@0:4",
+          "imp": "0x000b535c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1be8"
+        },
+        {
+          "selector": "setM_URL:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b5624",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1bf4"
+        },
+        {
+          "selector": "m_URL",
+          "types": "@8@0:4",
+          "imp": "0x000b534c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c00"
+        },
+        {
+          "selector": "setM_Message:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b5644",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c0c"
+        },
+        {
+          "selector": "m_Message",
+          "types": "@8@0:4",
+          "imp": "0x000b533c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c18"
+        },
+        {
+          "selector": "setM_Type:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b5664",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c24"
+        },
+        {
+          "selector": "m_Type",
+          "types": "@8@0:4",
+          "imp": "0x000b532c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c30"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b538c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c3c"
+        },
+        {
+          "selector": "encodeWithCoder:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b5408",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c48"
+        },
+        {
+          "selector": "initWithCoder:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b5510",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1c54"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4080",
+      "metaclass_addr": "0x000d406c",
+      "name": "DMGCatBar",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_UIView",
+      "superclass_in_image": null,
+      "instance_size": 76,
+      "instance_start": 44,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "buttonNew",
+          "type": "@\"DMGCatButton\"",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "buttonHot",
+          "type": "@\"DMGCatButton\"",
+          "offset": 48,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "buttonYou",
+          "type": "@\"DMGCatButton\"",
+          "offset": 52,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "buttonAll",
+          "type": "@\"DMGCatButton\"",
+          "offset": 56,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "buttonSoon",
+          "type": "@\"DMGCatButton\"",
+          "offset": 60,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "background",
+          "type": "@\"UIImageView\"",
+          "offset": 64,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_CurrCat",
+          "type": "@\"NSString\"",
+          "offset": 68,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "parentController",
+          "type": "@\"DMGController\"",
+          "offset": 72,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setM_CurrCat:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b5db8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1d98"
+        },
+        {
+          "selector": "m_CurrCat",
+          "types": "@8@0:4",
+          "imp": "0x000b5688",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1da4"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b5698",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1db0"
+        },
+        {
+          "selector": "touchesMoved:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b5686",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1dbc"
+        },
+        {
+          "selector": "touchesEnded:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b5d64",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1dc8"
+        },
+        {
+          "selector": "touchesBegan:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b5684",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1dd4"
+        },
+        {
+          "selector": "renderAtPoint:",
+          "types": "v16@0:4{CGPoint=ff}8",
+          "imp": "0x000b5ef8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1de0"
+        },
+        {
+          "selector": "setCategory:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b574c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1dec"
+        },
+        {
+          "selector": "receiveTouchPoint:",
+          "types": "v16@0:4{CGPoint=ff}8",
+          "imp": "0x000b5dd8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1df8"
+        },
+        {
+          "selector": "removeAllViews",
+          "types": "v8@0:4",
+          "imp": "0x000b5cb0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1e04"
+        },
+        {
+          "selector": "unselectAll",
+          "types": "v8@0:4",
+          "imp": "0x000b5820",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1e10"
+        },
+        {
+          "selector": "initCatBar::",
+          "types": "@28@0:4{CGRect={CGPoint=ff}{CGSize=ff}}8@24",
+          "imp": "0x000b5898",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1e1c"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "UIView"
+    },
+    {
+      "class_addr": "0x000d40a8",
+      "metaclass_addr": "0x000d4094",
+      "name": "DMGCatButton",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 32,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "m_RegImg",
+          "type": "@\"UIImage\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_SelImg",
+          "type": "@\"UIImage\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_Title",
+          "type": "@\"NSString\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_bButPressed",
+          "type": "c",
+          "offset": 16,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "myImgView",
+          "type": "@\"UIImageView\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "myTitleLabel",
+          "type": "@\"UILabel\"",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "m_iBadges",
+          "type": "i",
+          "offset": 28,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setM_bButPressed:",
+          "types": "v12@0:4c8",
+          "imp": "0x000b6104",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f40"
+        },
+        {
+          "selector": "m_bButPressed",
+          "types": "c8@0:4",
+          "imp": "0x000b60f4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f4c"
+        },
+        {
+          "selector": "setM_RegImg:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b61a4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f58"
+        },
+        {
+          "selector": "m_RegImg",
+          "types": "@8@0:4",
+          "imp": "0x000b60e4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f64"
+        },
+        {
+          "selector": "setM_SelImg:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b61c4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f70"
+        },
+        {
+          "selector": "m_SelImg",
+          "types": "@8@0:4",
+          "imp": "0x000b60d4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f7c"
+        },
+        {
+          "selector": "setM_Title:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b61e4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f88"
+        },
+        {
+          "selector": "m_Title",
+          "types": "@8@0:4",
+          "imp": "0x000b60c4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1f94"
+        },
+        {
+          "selector": "setMyImgView:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b6204",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fa0"
+        },
+        {
+          "selector": "myImgView",
+          "types": "@8@0:4",
+          "imp": "0x000b60b4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fac"
+        },
+        {
+          "selector": "setM_iBadges:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b60a4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fb8"
+        },
+        {
+          "selector": "m_iBadges",
+          "types": "i8@0:4",
+          "imp": "0x000b6094",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fc4"
+        },
+        {
+          "selector": "setMyTitleLabel:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b6224",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fd0"
+        },
+        {
+          "selector": "myTitleLabel",
+          "types": "@8@0:4",
+          "imp": "0x000b6084",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fdc"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b6114",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1fe8"
+        },
+        {
+          "selector": "setButtonPressed:",
+          "types": "v12@0:4c8",
+          "imp": "0x000b6074",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d1ff4"
+        },
+        {
+          "selector": "renderAtPoint:parent:",
+          "types": "v20@0:4{CGPoint=ff}8@16",
+          "imp": "0x000b6418",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2000"
+        },
+        {
+          "selector": "initWithTitle:displayStr:depressed:",
+          "types": "@20@0:4@8@12c16",
+          "imp": "0x000b6244",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d200c"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d40d0",
+      "metaclass_addr": "0x000d40bc",
+      "name": "DMGController",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 57,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "window",
+          "type": "@\"UIWindow\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "dmgView",
+          "type": "@\"DMGViewController\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "strings",
+          "type": "@\"NSDictionary\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mHardwareID",
+          "type": "i",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mProductID",
+          "type": "i",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mApplicationSellID",
+          "type": "i",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mLangCode",
+          "type": "@\"NSString\"",
+          "offset": 28,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mApplicationVersion",
+          "type": "@\"NSString\"",
+          "offset": 32,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mContext",
+          "type": "@\"NSString\"",
+          "offset": 36,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mTargetURL",
+          "type": "@\"NSURL\"",
+          "offset": 40,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "exitedDMG",
+          "type": "c",
+          "offset": 44,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "mClientType",
+          "type": "i",
+          "offset": 48,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mGameId",
+          "type": "i",
+          "offset": 52,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "openingBrowser",
+          "type": "c",
+          "offset": 56,
+          "size": 1,
+          "alignment_log2": 0
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setWindow:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b7194",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2218"
+        },
+        {
+          "selector": "window",
+          "types": "@8@0:4",
+          "imp": "0x000b67f0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2224"
+        },
+        {
+          "selector": "setDmgView:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b71b4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2230"
+        },
+        {
+          "selector": "dmgView",
+          "types": "@8@0:4",
+          "imp": "0x000b67e0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d223c"
+        },
+        {
+          "selector": "setMHardwareID:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b67d0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2248"
+        },
+        {
+          "selector": "mHardwareID",
+          "types": "i8@0:4",
+          "imp": "0x000b67c0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2254"
+        },
+        {
+          "selector": "setMProductID:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b67b0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2260"
+        },
+        {
+          "selector": "mProductID",
+          "types": "i8@0:4",
+          "imp": "0x000b67a0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d226c"
+        },
+        {
+          "selector": "setMApplicationSellID:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b6790",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2278"
+        },
+        {
+          "selector": "mApplicationSellID",
+          "types": "i8@0:4",
+          "imp": "0x000b6780",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2284"
+        },
+        {
+          "selector": "setMLangCode:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b71d4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2290"
+        },
+        {
+          "selector": "mLangCode",
+          "types": "@8@0:4",
+          "imp": "0x000b6770",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d229c"
+        },
+        {
+          "selector": "setMApplicationVersion:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b71f4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22a8"
+        },
+        {
+          "selector": "mApplicationVersion",
+          "types": "@8@0:4",
+          "imp": "0x000b6760",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22b4"
+        },
+        {
+          "selector": "setMContext:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b7214",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22c0"
+        },
+        {
+          "selector": "mContext",
+          "types": "@8@0:4",
+          "imp": "0x000b6750",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22cc"
+        },
+        {
+          "selector": "setMTargetURL:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b7234",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22d8"
+        },
+        {
+          "selector": "mTargetURL",
+          "types": "@8@0:4",
+          "imp": "0x000b6740",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22e4"
+        },
+        {
+          "selector": "setExitedDMG:",
+          "types": "v12@0:4c8",
+          "imp": "0x000b6730",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22f0"
+        },
+        {
+          "selector": "exitedDMG",
+          "types": "c8@0:4",
+          "imp": "0x000b6720",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d22fc"
+        },
+        {
+          "selector": "setMClientType:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b6710",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2308"
+        },
+        {
+          "selector": "mClientType",
+          "types": "i8@0:4",
+          "imp": "0x000b6700",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2314"
+        },
+        {
+          "selector": "setMGameId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b66f0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2320"
+        },
+        {
+          "selector": "mGameId",
+          "types": "i8@0:4",
+          "imp": "0x000b66e0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d232c"
+        },
+        {
+          "selector": "setOpeningBrowser:",
+          "types": "v12@0:4c8",
+          "imp": "0x000b66d0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2338"
+        },
+        {
+          "selector": "openingBrowser",
+          "types": "c8@0:4",
+          "imp": "0x000b66c2",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2344"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b6800",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2350"
+        },
+        {
+          "selector": "logServer:::::",
+          "types": "v28@0:4i8i12@16i20@24",
+          "imp": "0x000b715c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d235c"
+        },
+        {
+          "selector": "getNetworkConnectionType",
+          "types": "@8@0:4",
+          "imp": "0x000b70dc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2368"
+        },
+        {
+          "selector": "onPostEventsDone",
+          "types": "v8@0:4",
+          "imp": "0x000b68bc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2374"
+        },
+        {
+          "selector": "getString:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b68dc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2380"
+        },
+        {
+          "selector": "getFileContents:keyName:",
+          "types": "@16@0:4@8@12",
+          "imp": "0x000b6900",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d238c"
+        },
+        {
+          "selector": "showDictItems:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b66c0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2398"
+        },
+        {
+          "selector": "loadJSONFiles",
+          "types": "v8@0:4",
+          "imp": "0x000b6f7c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d23a4"
+        },
+        {
+          "selector": "loadWeb:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b6de4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d23b0"
+        },
+        {
+          "selector": "exitDMG",
+          "types": "v8@0:4",
+          "imp": "0x000b6a98",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d23bc"
+        },
+        {
+          "selector": "refreshView",
+          "types": "v8@0:4",
+          "imp": "0x000b6b30",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d23c8"
+        },
+        {
+          "selector": "enterDMG",
+          "types": "v8@0:4",
+          "imp": "0x000b6bf0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d23d4"
+        },
+        {
+          "selector": "init",
+          "types": "@8@0:4",
+          "imp": "0x000b6c64",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d23e0"
+        }
+      ],
+      "class_methods": [
+        {
+          "selector": "serverAddress",
+          "types": "@8@0:4",
+          "imp": "0x000b6a48",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2204"
+        }
+      ],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d40f8",
+      "metaclass_addr": "0x000d40e4",
+      "name": "DMGNavBar",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_UIView",
+      "superclass_in_image": null,
+      "instance_size": 48,
+      "instance_start": 44,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "parentController",
+          "type": "@\"DMGController\"",
+          "offset": 44,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b725a",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d24f0"
+        },
+        {
+          "selector": "touchesMoved:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b7258",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d24fc"
+        },
+        {
+          "selector": "touchesEnded:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b7256",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2508"
+        },
+        {
+          "selector": "touchesBegan:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b7254",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2514"
+        },
+        {
+          "selector": "backAction:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b7284",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2520"
+        },
+        {
+          "selector": "initNavBar:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b728e",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d252c"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "UIView"
+    },
+    {
+      "class_addr": "0x000d4120",
+      "metaclass_addr": "0x000d410c",
+      "name": "DMGLogin",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 8,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "receivedData",
+          "type": "@\"NSMutableData\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "macAddress",
+          "types": "@8@0:4",
+          "imp": "0x000b85a0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25b0"
+        },
+        {
+          "selector": "loadLoginFlag",
+          "types": "B8@0:4",
+          "imp": "0x000b8430",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25bc"
+        },
+        {
+          "selector": "saveLoginFlag",
+          "types": "v8@0:4",
+          "imp": "0x000b84c4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25c8"
+        },
+        {
+          "selector": "connection:didFailWithError:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b80d0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25d4"
+        },
+        {
+          "selector": "connectionDidFinishLoading:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b811c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25e0"
+        },
+        {
+          "selector": "connection:didReceiveResponse:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b81b4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25ec"
+        },
+        {
+          "selector": "connection:didReceiveData:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b80ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d25f8"
+        },
+        {
+          "selector": "sendLoginRequest:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b8248",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2604"
+        },
+        {
+          "selector": "init",
+          "types": "@8@0:4",
+          "imp": "0x000b8084",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2610"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4148",
+      "metaclass_addr": "0x000d4134",
+      "name": "DMGViewController",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_UIViewController",
+      "superclass_in_image": null,
+      "instance_size": 156,
+      "instance_start": 124,
+      "protocols": [
+        "UIWebViewDelegate"
+      ],
+      "ivars": [
+        {
+          "name": "mWebView",
+          "type": "@\"UIWebView\"",
+          "offset": 124,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "dmgController",
+          "type": "@\"DMGController\"",
+          "offset": 128,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "connectionType",
+          "type": "@\"NSString\"",
+          "offset": 132,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "showingError",
+          "type": "c",
+          "offset": 136,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "showingLocalData",
+          "type": "c",
+          "offset": 137,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "webLoadingStarted",
+          "type": "c",
+          "offset": 138,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "landscapeMode",
+          "type": "c",
+          "offset": 139,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "catBar",
+          "type": "@\"DMGCatBar\"",
+          "offset": 140,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "navBar",
+          "type": "@\"DMGNavBar\"",
+          "offset": 144,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "backBt",
+          "type": "@\"UIButton\"",
+          "offset": 148,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "indicator",
+          "type": "@\"UIActivityIndicatorView\"",
+          "offset": 152,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000b9878",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d275c"
+        },
+        {
+          "selector": "SaveImage::",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b8ec0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2768"
+        },
+        {
+          "selector": "md5:",
+          "types": "@12@0:4@8",
+          "imp": "0x000b998c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2774"
+        },
+        {
+          "selector": "touchesMoved:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b8674",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2780"
+        },
+        {
+          "selector": "touchesEnded:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b8672",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d278c"
+        },
+        {
+          "selector": "touchesBegan:withEvent:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b8670",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2798"
+        },
+        {
+          "selector": "viewDidUnload",
+          "types": "v8@0:4",
+          "imp": "0x000b866e",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27a4"
+        },
+        {
+          "selector": "didReceiveMemoryWarning",
+          "types": "v8@0:4",
+          "imp": "0x000b9964",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27b0"
+        },
+        {
+          "selector": "showAlert::",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b8676",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27bc"
+        },
+        {
+          "selector": "openTargetURL",
+          "types": "v8@0:4",
+          "imp": "0x000b8758",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27c8"
+        },
+        {
+          "selector": "webView:shouldStartLoadWithRequest:navigationType:",
+          "types": "c20@0:4@8@12I16",
+          "imp": "0x000b92ec",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27d4"
+        },
+        {
+          "selector": "displayWebView:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b9e00",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27e0"
+        },
+        {
+          "selector": "displayWebViewFromData::",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000ba128",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27ec"
+        },
+        {
+          "selector": "webViewDidFinishLoad:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b8ce0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d27f8"
+        },
+        {
+          "selector": "webViewDidStartLoad:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b8db0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2804"
+        },
+        {
+          "selector": "webView:didFailLoadWithError:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000b8e14",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2810"
+        },
+        {
+          "selector": "downloadPage",
+          "types": "v8@0:4",
+          "imp": "0x000b8904",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d281c"
+        },
+        {
+          "selector": "backAction:",
+          "types": "v12@0:4@8",
+          "imp": "0x000b91b4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2828"
+        },
+        {
+          "selector": "showBackButton",
+          "types": "v8@0:4",
+          "imp": "0x000ba2a4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2834"
+        },
+        {
+          "selector": "initDMGView:",
+          "types": "v12@0:4@8",
+          "imp": "0x000ba444",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2840"
+        },
+        {
+          "selector": "loadLocalPage",
+          "types": "v8@0:4",
+          "imp": "0x000b9018",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d284c"
+        },
+        {
+          "selector": "didRotateFromInterfaceOrientation:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b866c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2858"
+        },
+        {
+          "selector": "willRotateToInterfaceOrientation:duration:",
+          "types": "v20@0:4i8d12",
+          "imp": "0x000b8840",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2864"
+        },
+        {
+          "selector": "shouldAutorotateToInterfaceOrientation:",
+          "types": "c12@0:4i8",
+          "imp": "0x000b88d0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2870"
+        },
+        {
+          "selector": "calcViewFrames:",
+          "types": "v12@0:4i8",
+          "imp": "0x000b9a18",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d287c"
+        },
+        {
+          "selector": "loadView",
+          "types": "v8@0:4",
+          "imp": "0x000b8c1c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2888"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "UIViewController"
+    },
+    {
+      "class_addr": "0x000d4170",
+      "metaclass_addr": "0x000d415c",
+      "name": "EAMTX_Message",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 36,
+      "instance_start": 4,
+      "protocols": [
+        "UIAlertViewDelegate"
+      ],
+      "ivars": [
+        {
+          "name": "mDelegate",
+          "type": "@\"<EAMTX_MessageDelegate>\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mID",
+          "type": "@\"NSNumber\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mTitle",
+          "type": "@\"NSString\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mMessage",
+          "type": "@\"NSString\"",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mURL",
+          "type": "@\"NSString\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mBut1Title",
+          "type": "@\"NSString\"",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mBut2Title",
+          "type": "@\"NSString\"",
+          "offset": 28,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "mBut3Title",
+          "type": "@\"NSString\"",
+          "offset": 32,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setDelegate:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb030",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a28"
+        },
+        {
+          "selector": "delegate",
+          "types": "@8@0:4",
+          "imp": "0x000ba8ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a34"
+        },
+        {
+          "selector": "setMessageId:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb050",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a40"
+        },
+        {
+          "selector": "messageId",
+          "types": "@8@0:4",
+          "imp": "0x000ba89c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a4c"
+        },
+        {
+          "selector": "setTitle:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb070",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a58"
+        },
+        {
+          "selector": "title",
+          "types": "@8@0:4",
+          "imp": "0x000ba88c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a64"
+        },
+        {
+          "selector": "setMessage:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb090",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a70"
+        },
+        {
+          "selector": "message",
+          "types": "@8@0:4",
+          "imp": "0x000ba87c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a7c"
+        },
+        {
+          "selector": "setUrl:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb0b0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a88"
+        },
+        {
+          "selector": "url",
+          "types": "@8@0:4",
+          "imp": "0x000ba86c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2a94"
+        },
+        {
+          "selector": "setBut1:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb0d0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2aa0"
+        },
+        {
+          "selector": "but1",
+          "types": "@8@0:4",
+          "imp": "0x000ba85c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2aac"
+        },
+        {
+          "selector": "setBut2:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb0f0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ab8"
+        },
+        {
+          "selector": "but2",
+          "types": "@8@0:4",
+          "imp": "0x000ba84c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ac4"
+        },
+        {
+          "selector": "setBut3:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb110",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ad0"
+        },
+        {
+          "selector": "but3",
+          "types": "@8@0:4",
+          "imp": "0x000ba83e",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2adc"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000ba8bc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ae8"
+        },
+        {
+          "selector": "alertViewCancel:",
+          "types": "v12@0:4@8",
+          "imp": "0x000ba83c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2af4"
+        },
+        {
+          "selector": "alertView:didDismissWithButtonIndex:",
+          "types": "v16@0:4@8i12",
+          "imp": "0x000bab9c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2b00"
+        },
+        {
+          "selector": "show",
+          "types": "v8@0:4",
+          "imp": "0x000bae8c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2b0c"
+        },
+        {
+          "selector": "encodeWithCoder:",
+          "types": "v12@0:4@8",
+          "imp": "0x000ba974",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2b18"
+        },
+        {
+          "selector": "initWithCoder:",
+          "types": "@12@0:4@8",
+          "imp": "0x000baa74",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2b24"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4198",
+      "metaclass_addr": "0x000d4184",
+      "name": "DMGImageLoader",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 37,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "cachedImagesList",
+          "type": "@\"NSMutableDictionary\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "cacheTimer",
+          "type": "@\"NSTimer\"",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "fileName",
+          "type": "@\"NSString\"",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "prevFileName",
+          "type": "@\"NSString\"",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "imgURL",
+          "type": "@\"NSString\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "exitLoader",
+          "type": "c",
+          "offset": 24,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "requestStarted",
+          "type": "c",
+          "offset": 25,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "loadedData",
+          "type": "@\"NSMutableData\"",
+          "offset": 28,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "noOfAttempts",
+          "type": "i",
+          "offset": 32,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "imgLoadingFinished",
+          "type": "c",
+          "offset": 36,
+          "size": 1,
+          "alignment_log2": 0
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setImgLoadingFinished:",
+          "types": "v12@0:4c8",
+          "imp": "0x000bb140",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d00"
+        },
+        {
+          "selector": "imgLoadingFinished",
+          "types": "c8@0:4",
+          "imp": "0x000bb130",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d0c"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000bb6c8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d18"
+        },
+        {
+          "selector": "connection:didFailWithError:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000bb150",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d24"
+        },
+        {
+          "selector": "connectionDidFinishLoading:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb554",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d30"
+        },
+        {
+          "selector": "connection:didReceiveResponse:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000bb21c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d3c"
+        },
+        {
+          "selector": "connection:didReceiveData:",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000bb240",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d48"
+        },
+        {
+          "selector": "downloadImage",
+          "types": "B8@0:4",
+          "imp": "0x000bb264",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d54"
+        },
+        {
+          "selector": "Run:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bb348",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d60"
+        },
+        {
+          "selector": "addImage::",
+          "types": "v16@0:4@8@12",
+          "imp": "0x000bb470",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2d6c"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d41c0",
+      "metaclass_addr": "0x000d41ac",
+      "name": "SBJSON",
+      "superclass_addr": "0x000d41e8",
+      "superclass_import": null,
+      "superclass_in_image": "SBJsonBase",
+      "instance_size": 24,
+      "instance_start": 16,
+      "protocols": [
+        "SBJsonParser",
+        "SBJsonWriter"
+      ],
+      "ivars": [
+        {
+          "name": "jsonParser",
+          "type": "@\"SBJsonParser\"",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "jsonWriter",
+          "type": "@\"SBJsonWriter\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setSortKeys:",
+          "types": "v12@0:4c8",
+          "imp": "0x000bb71c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e38"
+        },
+        {
+          "selector": "sortKeys",
+          "types": "c8@0:4",
+          "imp": "0x000bb740",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e44"
+        },
+        {
+          "selector": "setHumanReadable:",
+          "types": "v12@0:4c8",
+          "imp": "0x000bb764",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e50"
+        },
+        {
+          "selector": "humanReadable",
+          "types": "c8@0:4",
+          "imp": "0x000bb788",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e5c"
+        },
+        {
+          "selector": "setMaxDepth:",
+          "types": "v12@0:4I8",
+          "imp": "0x000bb7ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e68"
+        },
+        {
+          "selector": "maxDepth",
+          "types": "I8@0:4",
+          "imp": "0x000bb7e8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e74"
+        },
+        {
+          "selector": "objectWithString:error:",
+          "types": "@16@0:4@8^@12",
+          "imp": "0x000bb808",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e80"
+        },
+        {
+          "selector": "fragmentWithString:error:",
+          "types": "@16@0:4@8^@12",
+          "imp": "0x000bb824",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e8c"
+        },
+        {
+          "selector": "objectWithString:allowScalar:error:",
+          "types": "@20@0:4@8c12^@16",
+          "imp": "0x000bb840",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2e98"
+        },
+        {
+          "selector": "objectWithString:",
+          "types": "@12@0:4@8",
+          "imp": "0x000bb8f8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ea4"
+        },
+        {
+          "selector": "stringWithObject:error:",
+          "types": "@16@0:4@8^@12",
+          "imp": "0x000bb974",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2eb0"
+        },
+        {
+          "selector": "stringWithFragment:error:",
+          "types": "@16@0:4@8^@12",
+          "imp": "0x000bb990",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ebc"
+        },
+        {
+          "selector": "stringWithObject:allowScalar:error:",
+          "types": "@20@0:4@8c12^@16",
+          "imp": "0x000bb9ac",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ec8"
+        },
+        {
+          "selector": "stringWithObject:",
+          "types": "@12@0:4@8",
+          "imp": "0x000bba64",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ed4"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000bbae0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2ee0"
+        },
+        {
+          "selector": "init",
+          "types": "@8@0:4",
+          "imp": "0x000bbb38",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d2eec"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "SBJsonBase"
+    },
+    {
+      "class_addr": "0x000d41e8",
+      "metaclass_addr": "0x000d41d4",
+      "name": "SBJsonBase",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 16,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "errorTrace",
+          "type": "@\"NSMutableArray\"",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "depth",
+          "type": "I",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "maxDepth",
+          "type": "I",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "errorTrace",
+          "types": "@8@0:4",
+          "imp": "0x000bbdf4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3030"
+        },
+        {
+          "selector": "setMaxDepth:",
+          "types": "v12@0:4I8",
+          "imp": "0x000bbbd0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d303c"
+        },
+        {
+          "selector": "maxDepth",
+          "types": "I8@0:4",
+          "imp": "0x000bbbc0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3048"
+        },
+        {
+          "selector": "clearErrorTrace",
+          "types": "v8@0:4",
+          "imp": "0x000bbbe0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3054"
+        },
+        {
+          "selector": "addErrorWithCode:description:",
+          "types": "v16@0:4I8@12",
+          "imp": "0x000bbc34",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3060"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000bbd6c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d306c"
+        },
+        {
+          "selector": "init",
+          "types": "@8@0:4",
+          "imp": "0x000bbdb0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3078"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    },
+    {
+      "class_addr": "0x000d4210",
+      "metaclass_addr": "0x000d41fc",
+      "name": "SBJsonParser",
+      "superclass_addr": "0x000d41e8",
+      "superclass_import": null,
+      "superclass_in_image": "SBJsonBase",
+      "instance_size": 20,
+      "instance_start": 16,
+      "protocols": [
+        "SBJsonParser"
+      ],
+      "ivars": [
+        {
+          "name": "c",
+          "type": "*",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "scanIsAtEnd",
+          "types": "c8@0:4",
+          "imp": "0x000bc9d0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3130"
+        },
+        {
+          "selector": "scanNumber:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bc714",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d313c"
+        },
+        {
+          "selector": "scanHexQuad:",
+          "types": "c12@0:4^S8",
+          "imp": "0x000bbe44",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3148"
+        },
+        {
+          "selector": "scanUnicodeChar:",
+          "types": "c12@0:4^S8",
+          "imp": "0x000bbec8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3154"
+        },
+        {
+          "selector": "scanRestOfString:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bc480",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3160"
+        },
+        {
+          "selector": "scanRestOfDictionary:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bca20",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d316c"
+        },
+        {
+          "selector": "scanRestOfArray:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bccd8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3178"
+        },
+        {
+          "selector": "scanRestOfNull:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bc31c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3184"
+        },
+        {
+          "selector": "scanRestOfFalse:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bc390",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3190"
+        },
+        {
+          "selector": "scanRestOfTrue:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bc408",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d319c"
+        },
+        {
+          "selector": "scanValue:",
+          "types": "c12@0:4^@8",
+          "imp": "0x000bc1e0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d31a8"
+        },
+        {
+          "selector": "objectWithString:",
+          "types": "@12@0:4@8",
+          "imp": "0x000bbfe0",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d31b4"
+        },
+        {
+          "selector": "fragmentWithString:",
+          "types": "@12@0:4@8",
+          "imp": "0x000bc074",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d31c0"
+        }
+      ],
+      "class_methods": [
+        {
+          "selector": "initialize",
+          "types": "v8@0:4",
+          "imp": "0x000bbe0c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d311c"
+        }
+      ],
+      "metaclass_isa_import": null,
+      "superclass": "SBJsonBase"
+    },
+    {
+      "class_addr": "0x000d4238",
+      "metaclass_addr": "0x000d4224",
+      "name": "SBJsonWriter",
+      "superclass_addr": "0x000d41e8",
+      "superclass_import": null,
+      "superclass_in_image": "SBJsonBase",
+      "instance_size": 18,
+      "instance_start": 16,
+      "protocols": [
+        "SBJsonWriter"
+      ],
+      "ivars": [
+        {
+          "name": "sortKeys",
+          "type": "c",
+          "offset": 16,
+          "size": 1,
+          "alignment_log2": 0
+        },
+        {
+          "name": "humanReadable",
+          "type": "c",
+          "offset": 17,
+          "size": 1,
+          "alignment_log2": 0
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setSortKeys:",
+          "types": "v12@0:4c8",
+          "imp": "0x000bcf04",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3274"
+        },
+        {
+          "selector": "sortKeys",
+          "types": "c8@0:4",
+          "imp": "0x000bcef4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3280"
+        },
+        {
+          "selector": "setHumanReadable:",
+          "types": "v12@0:4c8",
+          "imp": "0x000bcee4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d328c"
+        },
+        {
+          "selector": "humanReadable",
+          "types": "c8@0:4",
+          "imp": "0x000bced4",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3298"
+        },
+        {
+          "selector": "appendString:into:",
+          "types": "c16@0:4@8@12",
+          "imp": "0x000bd7e8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32a4"
+        },
+        {
+          "selector": "appendDictionary:into:",
+          "types": "c16@0:4@8@12",
+          "imp": "0x000bd30c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32b0"
+        },
+        {
+          "selector": "appendArray:into:",
+          "types": "c16@0:4@8@12",
+          "imp": "0x000bd608",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32bc"
+        },
+        {
+          "selector": "appendValue:into:",
+          "types": "c16@0:4@8@12",
+          "imp": "0x000bcf14",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32c8"
+        },
+        {
+          "selector": "indent",
+          "types": "@8@0:4",
+          "imp": "0x000bd130",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32d4"
+        },
+        {
+          "selector": "stringWithObject:",
+          "types": "@12@0:4@8",
+          "imp": "0x000bd170",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32e0"
+        },
+        {
+          "selector": "stringWithFragment:",
+          "types": "@12@0:4@8",
+          "imp": "0x000bd25c",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d32ec"
+        }
+      ],
+      "class_methods": [
+        {
+          "selector": "initialize",
+          "types": "v8@0:4",
+          "imp": "0x000bd2bc",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3260"
+        }
+      ],
+      "metaclass_isa_import": null,
+      "superclass": "SBJsonBase"
+    },
+    {
+      "class_addr": "0x000d4260",
+      "metaclass_addr": "0x000d424c",
+      "name": "EAMTX_NewsFeed",
+      "superclass_addr": "0x00000000",
+      "superclass_import": "_OBJC_CLASS_$_NSObject",
+      "superclass_in_image": null,
+      "instance_size": 40,
+      "instance_start": 4,
+      "protocols": [],
+      "ivars": [
+        {
+          "name": "newsFeedId",
+          "type": "i",
+          "offset": 4,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "owner",
+          "type": "i",
+          "offset": 8,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "actor",
+          "type": "i",
+          "offset": 12,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "actionLink",
+          "type": "@\"NSString\"",
+          "offset": 16,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "categoryLabel",
+          "type": "@\"NSString\"",
+          "offset": 20,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "createdDate",
+          "type": "@\"NSDate\"",
+          "offset": 24,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "imageURL",
+          "type": "@\"NSString\"",
+          "offset": 28,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "message",
+          "type": "@\"NSString\"",
+          "offset": 32,
+          "size": 4,
+          "alignment_log2": 2
+        },
+        {
+          "name": "metadata",
+          "type": "@\"NSString\"",
+          "offset": 36,
+          "size": 4,
+          "alignment_log2": 2
+        }
+      ],
+      "instance_methods": [
+        {
+          "selector": "setNewsFeedId:",
+          "types": "v12@0:4i8",
+          "imp": "0x000bd9e8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3434"
+        },
+        {
+          "selector": "newsFeedId",
+          "types": "i8@0:4",
+          "imp": "0x000bd9d8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3440"
+        },
+        {
+          "selector": "setOwner:",
+          "types": "v12@0:4i8",
+          "imp": "0x000bd9c8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d344c"
+        },
+        {
+          "selector": "owner",
+          "types": "i8@0:4",
+          "imp": "0x000bd9b8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3458"
+        },
+        {
+          "selector": "setActor:",
+          "types": "v12@0:4i8",
+          "imp": "0x000bd9a8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3464"
+        },
+        {
+          "selector": "actor",
+          "types": "i8@0:4",
+          "imp": "0x000bd998",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3470"
+        },
+        {
+          "selector": "setActionLink:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bda98",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d347c"
+        },
+        {
+          "selector": "actionLink",
+          "types": "@8@0:4",
+          "imp": "0x000bd988",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3488"
+        },
+        {
+          "selector": "setCategoryLabel:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bdab8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3494"
+        },
+        {
+          "selector": "categoryLabel",
+          "types": "@8@0:4",
+          "imp": "0x000bd978",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34a0"
+        },
+        {
+          "selector": "setCreatedDate:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bdad8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34ac"
+        },
+        {
+          "selector": "createdDate",
+          "types": "@8@0:4",
+          "imp": "0x000bd968",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34b8"
+        },
+        {
+          "selector": "setImageURL:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bdaf8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34c4"
+        },
+        {
+          "selector": "imageURL",
+          "types": "@8@0:4",
+          "imp": "0x000bd958",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34d0"
+        },
+        {
+          "selector": "setMessage:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bdb18",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34dc"
+        },
+        {
+          "selector": "message",
+          "types": "@8@0:4",
+          "imp": "0x000bd948",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34e8"
+        },
+        {
+          "selector": "setMetadata:",
+          "types": "v12@0:4@8",
+          "imp": "0x000bdb38",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d34f4"
+        },
+        {
+          "selector": "metadata",
+          "types": "@8@0:4",
+          "imp": "0x000bd938",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d3500"
+        },
+        {
+          "selector": "dealloc",
+          "types": "v8@0:4",
+          "imp": "0x000bd9f8",
+          "imp_isa": "thumb",
+          "entry_addr": "0x000d350c"
+        }
+      ],
+      "class_methods": [],
+      "metaclass_isa_import": null,
+      "superclass": "NSObject"
+    }
+  ],
+  "selector_refs": [
+    {
+      "slot": "0x000d35dc",
+      "selector": "resignFirstResponder"
+    },
+    {
+      "slot": "0x000d35e0",
+      "selector": "UTF8String"
+    },
+    {
+      "slot": "0x000d35e4",
+      "selector": "uniqueIdentifier"
+    },
+    {
+      "slot": "0x000d35e8",
+      "selector": "currentDevice"
+    },
+    {
+      "slot": "0x000d35ec",
+      "selector": "becomeFirstResponder"
+    },
+    {
+      "slot": "0x000d35f0",
+      "selector": "text"
+    },
+    {
+      "slot": "0x000d35f4",
+      "selector": "cString"
+    },
+    {
+      "slot": "0x000d35f8",
+      "selector": "uppercaseString"
+    },
+    {
+      "slot": "0x000d35fc",
+      "selector": "canBeConvertedToEncoding:"
+    },
+    {
+      "slot": "0x000d3600",
+      "selector": "dealloc"
+    },
+    {
+      "slot": "0x000d3604",
+      "selector": "release"
+    },
+    {
+      "slot": "0x000d3608",
+      "selector": "setIdleTimerDisabled:"
+    },
+    {
+      "slot": "0x000d360c",
+      "selector": "statusBarOrientation"
+    },
+    {
+      "slot": "0x000d3610",
+      "selector": "addTarget:action:forControlEvents:"
+    },
+    {
+      "slot": "0x000d3614",
+      "selector": "textFieldDidChange:"
+    },
+    {
+      "slot": "0x000d3618",
+      "selector": "setHidden:"
+    },
+    {
+      "slot": "0x000d361c",
+      "selector": "setKeyboardType:"
+    },
+    {
+      "slot": "0x000d3620",
+      "selector": "setAutocorrectionType:"
+    },
+    {
+      "slot": "0x000d3624",
+      "selector": "setAutocapitalizationType:"
+    },
+    {
+      "slot": "0x000d3628",
+      "selector": "setReturnKeyType:"
+    },
+    {
+      "slot": "0x000d362c",
+      "selector": "setText:"
+    },
+    {
+      "slot": "0x000d3630",
+      "selector": "setDelegate:"
+    },
+    {
+      "slot": "0x000d3634",
+      "selector": "autorelease"
+    },
+    {
+      "slot": "0x000d3638",
+      "selector": "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:"
+    },
+    {
+      "slot": "0x000d363c",
+      "selector": "onTimer:"
+    },
+    {
+      "slot": "0x000d3640",
+      "selector": "makeKeyAndVisible"
+    },
+    {
+      "slot": "0x000d3644",
+      "selector": "addSubview:"
+    },
+    {
+      "slot": "0x000d3648",
+      "selector": "setTransform:"
+    },
+    {
+      "slot": "0x000d364c",
+      "selector": "setCenter:"
+    },
+    {
+      "slot": "0x000d3650",
+      "selector": "setWindow:"
+    },
+    {
+      "slot": "0x000d3654",
+      "selector": "initWithFrame:"
+    },
+    {
+      "slot": "0x000d3658",
+      "selector": "bounds"
+    },
+    {
+      "slot": "0x000d365c",
+      "selector": "mainScreen"
+    },
+    {
+      "slot": "0x000d3660",
+      "selector": "alloc"
+    },
+    {
+      "slot": "0x000d3664",
+      "selector": "startAppWithOptions:application:"
+    },
+    {
+      "slot": "0x000d3668",
+      "selector": "compare:"
+    },
+    {
+      "slot": "0x000d366c",
+      "selector": "isEqualToString:"
+    },
+    {
+      "slot": "0x000d3670",
+      "selector": "stringWithUTF8String:"
+    },
+    {
+      "slot": "0x000d3674",
+      "selector": "longLongValue"
+    },
+    {
+      "slot": "0x000d3678",
+      "selector": "attributesOfFileSystemForPath:error:"
+    },
+    {
+      "slot": "0x000d367c",
+      "selector": "defaultManager"
+    },
+    {
+      "slot": "0x000d3680",
+      "selector": "systemVersion"
+    },
+    {
+      "slot": "0x000d3684",
+      "selector": "objectAtIndex:"
+    },
+    {
+      "slot": "0x000d3688",
+      "selector": "preferredLanguages"
+    },
+    {
+      "slot": "0x000d368c",
+      "selector": "objectForKey:"
+    },
+    {
+      "slot": "0x000d3690",
+      "selector": "infoDictionary"
+    },
+    {
+      "slot": "0x000d3694",
+      "selector": "mainBundle"
+    },
+    {
+      "slot": "0x000d3698",
+      "selector": "sleepForTimeInterval:"
+    },
+    {
+      "slot": "0x000d369c",
+      "selector": "timeIntervalSinceReferenceDate"
+    },
+    {
+      "slot": "0x000d36a0",
+      "selector": "date"
+    },
+    {
+      "slot": "0x000d36a4",
+      "selector": "destroyFramebuffer"
+    },
+    {
+      "slot": "0x000d36a8",
+      "selector": "renderbufferStorage:fromDrawable:"
+    },
+    {
+      "slot": "0x000d36ac",
+      "selector": "createFramebuffer"
+    },
+    {
+      "slot": "0x000d36b0",
+      "selector": "initWithAPI:"
+    },
+    {
+      "slot": "0x000d36b4",
+      "selector": "setDrawableProperties:"
+    },
+    {
+      "slot": "0x000d36b8",
+      "selector": "dictionaryWithObjectsAndKeys:"
+    },
+    {
+      "slot": "0x000d36bc",
+      "selector": "numberWithBool:"
+    },
+    {
+      "slot": "0x000d36c0",
+      "selector": "setOpaque:"
+    },
+    {
+      "slot": "0x000d36c4",
+      "selector": "layer"
+    },
+    {
+      "slot": "0x000d36c8",
+      "selector": "class"
+    },
+    {
+      "slot": "0x000d36cc",
+      "selector": "presentRenderbuffer:"
+    },
+    {
+      "slot": "0x000d36d0",
+      "selector": "setCurrentContext:"
+    },
+    {
+      "slot": "0x000d36d4",
+      "selector": "window"
+    },
+    {
+      "slot": "0x000d36d8",
+      "selector": "setExclusiveTouch:"
+    },
+    {
+      "slot": "0x000d36dc",
+      "selector": "setMultipleTouchEnabled:"
+    },
+    {
+      "slot": "0x000d36e0",
+      "selector": "bringSubviewToFront:"
+    },
+    {
+      "slot": "0x000d36e4",
+      "selector": "delegate"
+    },
+    {
+      "slot": "0x000d36e8",
+      "selector": "sharedApplication"
+    },
+    {
+      "slot": "0x000d36ec",
+      "selector": "new"
+    },
+    {
+      "slot": "0x000d36f0",
+      "selector": "previousLocationInView:"
+    },
+    {
+      "slot": "0x000d36f4",
+      "selector": "timestamp"
+    },
+    {
+      "slot": "0x000d36f8",
+      "selector": "convertPoint:fromView:"
+    },
+    {
+      "slot": "0x000d36fc",
+      "selector": "locationInView:"
+    },
+    {
+      "slot": "0x000d3700",
+      "selector": "phase"
+    },
+    {
+      "slot": "0x000d3704",
+      "selector": "countByEnumeratingWithState:objects:count:"
+    },
+    {
+      "slot": "0x000d3708",
+      "selector": "allTouches"
+    },
+    {
+      "slot": "0x000d370c",
+      "selector": "bytes"
+    },
+    {
+      "slot": "0x000d3710",
+      "selector": "length"
+    },
+    {
+      "slot": "0x000d3714",
+      "selector": "dismiss"
+    },
+    {
+      "slot": "0x000d3718",
+      "selector": "show"
+    },
+    {
+      "slot": "0x000d371c",
+      "selector": "init"
+    },
+    {
+      "slot": "0x000d3720",
+      "selector": "appendFormat:"
+    },
+    {
+      "slot": "0x000d3724",
+      "selector": "stringWithCapacity:"
+    },
+    {
+      "slot": "0x000d3728",
+      "selector": "stringWithCString:"
+    },
+    {
+      "slot": "0x000d372c",
+      "selector": "openURL:"
+    },
+    {
+      "slot": "0x000d3730",
+      "selector": "URLWithString:"
+    },
+    {
+      "slot": "0x000d3734",
+      "selector": "m_iTickerId"
+    },
+    {
+      "slot": "0x000d3738",
+      "selector": "m_URL"
+    },
+    {
+      "slot": "0x000d373c",
+      "selector": "removeFromSuperview"
+    },
+    {
+      "slot": "0x000d3740",
+      "selector": "font"
+    },
+    {
+      "slot": "0x000d3744",
+      "selector": "sizeWithFont:constrainedToSize:lineBreakMode:"
+    },
+    {
+      "slot": "0x000d3748",
+      "selector": "setFrame:"
+    },
+    {
+      "slot": "0x000d374c",
+      "selector": "m_Message"
+    },
+    {
+      "slot": "0x000d3750",
+      "selector": "setShadowOffset:"
+    },
+    {
+      "slot": "0x000d3754",
+      "selector": "setShadowColor:"
+    },
+    {
+      "slot": "0x000d3758",
+      "selector": "blackColor"
+    },
+    {
+      "slot": "0x000d375c",
+      "selector": "setTextColor:"
+    },
+    {
+      "slot": "0x000d3760",
+      "selector": "colorWithRed:green:blue:alpha:"
+    },
+    {
+      "slot": "0x000d3764",
+      "selector": "setBackgroundColor:"
+    },
+    {
+      "slot": "0x000d3768",
+      "selector": "clearColor"
+    },
+    {
+      "slot": "0x000d376c",
+      "selector": "frame"
+    },
+    {
+      "slot": "0x000d3770",
+      "selector": "registerForRemoteNotificationTypes:"
+    },
+    {
+      "slot": "0x000d3774",
+      "selector": "absoluteString"
+    },
+    {
+      "slot": "0x000d3778",
+      "selector": "stringByAppendingFormat:"
+    },
+    {
+      "slot": "0x000d377c",
+      "selector": "valueForKey:"
+    },
+    {
+      "slot": "0x000d3780",
+      "selector": "count"
+    },
+    {
+      "slot": "0x000d3784",
+      "selector": "allKeys"
+    },
+    {
+      "slot": "0x000d3788",
+      "selector": "setStatusBarOrientation:"
+    },
+    {
+      "slot": "0x000d378c",
+      "selector": "initWithTitle:message:delegate:cancelButtonTitle:otherButtonTitles:"
+    },
+    {
+      "slot": "0x000d3790",
+      "selector": "substringToIndex:"
+    },
+    {
+      "slot": "0x000d3794",
+      "selector": "standardUserDefaults"
+    },
+    {
+      "slot": "0x000d3798",
+      "selector": "bundlePath"
+    },
+    {
+      "slot": "0x000d379c",
+      "selector": "isPlaying"
+    },
+    {
+      "slot": "0x000d37a0",
+      "selector": "play"
+    },
+    {
+      "slot": "0x000d37a4",
+      "selector": "setNumberOfLoops:"
+    },
+    {
+      "slot": "0x000d37a8",
+      "selector": "prepareToPlay"
+    },
+    {
+      "slot": "0x000d37ac",
+      "selector": "setVolume:"
+    },
+    {
+      "slot": "0x000d37b0",
+      "selector": "initWithContentsOfURL:error:"
+    },
+    {
+      "slot": "0x000d37b4",
+      "selector": "fileURLWithPath:"
+    },
+    {
+      "slot": "0x000d37b8",
+      "selector": "fileExistsAtPath:"
+    },
+    {
+      "slot": "0x000d37bc",
+      "selector": "stringByAppendingString:"
+    },
+    {
+      "slot": "0x000d37c0",
+      "selector": "stringWithCString:length:"
+    },
+    {
+      "slot": "0x000d37c4",
+      "selector": "stop"
+    },
+    {
+      "slot": "0x000d37c8",
+      "selector": "unarchiveObjectWithData:"
+    },
+    {
+      "slot": "0x000d37cc",
+      "selector": "createFileAtPath:contents:attributes:"
+    },
+    {
+      "slot": "0x000d37d0",
+      "selector": "contentsAtPath:"
+    },
+    {
+      "slot": "0x000d37d4",
+      "selector": "archivedDataWithRootObject:"
+    },
+    {
+      "slot": "0x000d37d8",
+      "selector": "setMetadata:"
+    },
+    {
+      "slot": "0x000d37dc",
+      "selector": "setImageURL:"
+    },
+    {
+      "slot": "0x000d37e0",
+      "selector": "setCreatedDate:"
+    },
+    {
+      "slot": "0x000d37e4",
+      "selector": "dateWithTimeIntervalSince1970:"
+    },
+    {
+      "slot": "0x000d37e8",
+      "selector": "longValue"
+    },
+    {
+      "slot": "0x000d37ec",
+      "selector": "setCategoryLabel:"
+    },
+    {
+      "slot": "0x000d37f0",
+      "selector": "setActionLink:"
+    },
+    {
+      "slot": "0x000d37f4",
+      "selector": "setActor:"
+    },
+    {
+      "slot": "0x000d37f8",
+      "selector": "setOwner:"
+    },
+    {
+      "slot": "0x000d37fc",
+      "selector": "setNewsFeedId:"
+    },
+    {
+      "slot": "0x000d3800",
+      "selector": "initWithFormat:"
+    },
+    {
+      "slot": "0x000d3804",
+      "selector": "stringByAppendingPathComponent:"
+    },
+    {
+      "slot": "0x000d3808",
+      "selector": "resourcePath"
+    },
+    {
+      "slot": "0x000d380c",
+      "selector": "fileModificationDate"
+    },
+    {
+      "slot": "0x000d3810",
+      "selector": "attributesOfItemAtPath:error:"
+    },
+    {
+      "slot": "0x000d3814",
+      "selector": "respondsToSelector:"
+    },
+    {
+      "slot": "0x000d3818",
+      "selector": "isMultitaskingSupported"
+    },
+    {
+      "slot": "0x000d381c",
+      "selector": "isVisible"
+    },
+    {
+      "slot": "0x000d3820",
+      "selector": "dismissWithClickedButtonIndex:animated:"
+    },
+    {
+      "slot": "0x000d3824",
+      "selector": "setM_Message:"
+    },
+    {
+      "slot": "0x000d3828",
+      "selector": "setM_iTickerId:"
+    },
+    {
+      "slot": "0x000d382c",
+      "selector": "setM_ImgData:"
+    },
+    {
+      "slot": "0x000d3830",
+      "selector": "base64DataFromString:"
+    },
+    {
+      "slot": "0x000d3834",
+      "selector": "setM_Type:"
+    },
+    {
+      "slot": "0x000d3838",
+      "selector": "setM_URL:"
+    },
+    {
+      "slot": "0x000d383c",
+      "selector": "setM_Title:"
+    },
+    {
+      "slot": "0x000d3840",
+      "selector": "setM_iBannerId:"
+    },
+    {
+      "slot": "0x000d3844",
+      "selector": "url"
+    },
+    {
+      "slot": "0x000d3848",
+      "selector": "m_BundleId"
+    },
+    {
+      "slot": "0x000d384c",
+      "selector": "m_iDMGId"
+    },
+    {
+      "slot": "0x000d3850",
+      "selector": "addMessage:"
+    },
+    {
+      "slot": "0x000d3854",
+      "selector": "setBut1:"
+    },
+    {
+      "slot": "0x000d3858",
+      "selector": "setBut2:"
+    },
+    {
+      "slot": "0x000d385c",
+      "selector": "setUrl:"
+    },
+    {
+      "slot": "0x000d3860",
+      "selector": "setMessage:"
+    },
+    {
+      "slot": "0x000d3864",
+      "selector": "setTitle:"
+    },
+    {
+      "slot": "0x000d3868",
+      "selector": "setMessageId:"
+    },
+    {
+      "slot": "0x000d386c",
+      "selector": "removeHWIDReqInQ"
+    },
+    {
+      "slot": "0x000d3870",
+      "selector": "setM_iAppProdId:"
+    },
+    {
+      "slot": "0x000d3874",
+      "selector": "setM_iAppSellId:"
+    },
+    {
+      "slot": "0x000d3878",
+      "selector": "setM_BundleId:"
+    },
+    {
+      "slot": "0x000d387c",
+      "selector": "setM_iDMGId:"
+    },
+    {
+      "slot": "0x000d3880",
+      "selector": "setM_iHWID:"
+    },
+    {
+      "slot": "0x000d3884",
+      "selector": "addObjectsFromArray:"
+    },
+    {
+      "slot": "0x000d3888",
+      "selector": "setM_bAppLoggingDisabled:"
+    },
+    {
+      "slot": "0x000d388c",
+      "selector": "DeleteEvents:"
+    },
+    {
+      "slot": "0x000d3890",
+      "selector": "doubleValue"
+    },
+    {
+      "slot": "0x000d3894",
+      "selector": "objectWithString:"
+    },
+    {
+      "slot": "0x000d3898",
+      "selector": "setBResponseInPending:"
+    },
+    {
+      "slot": "0x000d389c",
+      "selector": "NetworkingURLRequest::"
+    },
+    {
+      "slot": "0x000d38a0",
+      "selector": "NetworkingURLPostRequest:::"
+    },
+    {
+      "slot": "0x000d38a4",
+      "selector": "setRequestId:"
+    },
+    {
+      "slot": "0x000d38a8",
+      "selector": "setNetworkState:"
+    },
+    {
+      "slot": "0x000d38ac",
+      "selector": "setStartingByteIdx:"
+    },
+    {
+      "slot": "0x000d38b0",
+      "selector": "setResumingDownload:"
+    },
+    {
+      "slot": "0x000d38b4",
+      "selector": "setBRequestInPending:"
+    },
+    {
+      "slot": "0x000d38b8",
+      "selector": "setICurrState:"
+    },
+    {
+      "slot": "0x000d38bc",
+      "selector": "requestsQ"
+    },
+    {
+      "slot": "0x000d38c0",
+      "selector": "iReturnState"
+    },
+    {
+      "slot": "0x000d38c4",
+      "selector": "m_LangCode"
+    },
+    {
+      "slot": "0x000d38c8",
+      "selector": "m_iHardwareId"
+    },
+    {
+      "slot": "0x000d38cc",
+      "selector": "iCurrState"
+    },
+    {
+      "slot": "0x000d38d0",
+      "selector": "m_ExcludedMessageIds"
+    },
+    {
+      "slot": "0x000d38d4",
+      "selector": "dataUsingEncoding:"
+    },
+    {
+      "slot": "0x000d38d8",
+      "selector": "setM_AppVersion:"
+    },
+    {
+      "slot": "0x000d38dc",
+      "selector": "componentsJoinedByString:"
+    },
+    {
+      "slot": "0x000d38e0",
+      "selector": "stringFromDate:"
+    },
+    {
+      "slot": "0x000d38e4",
+      "selector": "setDateFormat:"
+    },
+    {
+      "slot": "0x000d38e8",
+      "selector": "addTimeInterval:"
+    },
+    {
+      "slot": "0x000d38ec",
+      "selector": "secondsFromGMT"
+    },
+    {
+      "slot": "0x000d38f0",
+      "selector": "timeZoneWithName:"
+    },
+    {
+      "slot": "0x000d38f4",
+      "selector": "m_AppVersion"
+    },
+    {
+      "slot": "0x000d38f8",
+      "selector": "SelectEvents:"
+    },
+    {
+      "slot": "0x000d38fc",
+      "selector": "abbreviation"
+    },
+    {
+      "slot": "0x000d3900",
+      "selector": "localTimeZone"
+    },
+    {
+      "slot": "0x000d3904",
+      "selector": "bProcessStarted"
+    },
+    {
+      "slot": "0x000d3908",
+      "selector": "StartTimer"
+    },
+    {
+      "slot": "0x000d390c",
+      "selector": "isHWIDReqInQ"
+    },
+    {
+      "slot": "0x000d3910",
+      "selector": "systemName"
+    },
+    {
+      "slot": "0x000d3914",
+      "selector": "name"
+    },
+    {
+      "slot": "0x000d3918",
+      "selector": "Start"
+    },
+    {
+      "slot": "0x000d391c",
+      "selector": "m_iAppSellId"
+    },
+    {
+      "slot": "0x000d3920",
+      "selector": "m_iAppProdId"
+    },
+    {
+      "slot": "0x000d3924",
+      "selector": "m_iHWID"
+    },
+    {
+      "slot": "0x000d3928",
+      "selector": "stringWithObject:"
+    },
+    {
+      "slot": "0x000d392c",
+      "selector": "setValue:forKey:"
+    },
+    {
+      "slot": "0x000d3930",
+      "selector": "rangeOfString:"
+    },
+    {
+      "slot": "0x000d3934",
+      "selector": "isEqual:"
+    },
+    {
+      "slot": "0x000d3938",
+      "selector": "componentsSeparatedByString:"
+    },
+    {
+      "slot": "0x000d393c",
+      "selector": "m_Messages"
+    },
+    {
+      "slot": "0x000d3940",
+      "selector": "showMessages"
+    },
+    {
+      "slot": "0x000d3944",
+      "selector": "timeIntervalSinceNow"
+    },
+    {
+      "slot": "0x000d3948",
+      "selector": "setM_DeviceToken:"
+    },
+    {
+      "slot": "0x000d394c",
+      "selector": "setM_LangCode:"
+    },
+    {
+      "slot": "0x000d3950",
+      "selector": "stringWithCString:encoding:"
+    },
+    {
+      "slot": "0x000d3954",
+      "selector": "removeObject:"
+    },
+    {
+      "slot": "0x000d3958",
+      "selector": "valueWithPointer:"
+    },
+    {
+      "slot": "0x000d395c",
+      "selector": "pointerValue"
+    },
+    {
+      "slot": "0x000d3960",
+      "selector": "indexOfObject:"
+    },
+    {
+      "slot": "0x000d3964",
+      "selector": "setM_EventsCounter:"
+    },
+    {
+      "slot": "0x000d3968",
+      "selector": "addObject:"
+    },
+    {
+      "slot": "0x000d396c",
+      "selector": "m_DisabledEvents"
+    },
+    {
+      "slot": "0x000d3970",
+      "selector": "m_bAppLoggingDisabled"
+    },
+    {
+      "slot": "0x000d3974",
+      "selector": "containsObject:"
+    },
+    {
+      "slot": "0x000d3978",
+      "selector": "numberWithInt:"
+    },
+    {
+      "slot": "0x000d397c",
+      "selector": "retain"
+    },
+    {
+      "slot": "0x000d3980",
+      "selector": "scanHexInt:"
+    },
+    {
+      "slot": "0x000d3984",
+      "selector": "scannerWithString:"
+    },
+    {
+      "slot": "0x000d3988",
+      "selector": "substringFromIndex:"
+    },
+    {
+      "slot": "0x000d398c",
+      "selector": "stringByReplacingOccurrencesOfString:withString:"
+    },
+    {
+      "slot": "0x000d3990",
+      "selector": "m_TrackingData"
+    },
+    {
+      "slot": "0x000d3994",
+      "selector": "dMaxEventsCache"
+    },
+    {
+      "slot": "0x000d3998",
+      "selector": "dTimeIntervalForEventsSending"
+    },
+    {
+      "slot": "0x000d399c",
+      "selector": "dEventsSendStartTime"
+    },
+    {
+      "slot": "0x000d39a0",
+      "selector": "m_EventsCounter"
+    },
+    {
+      "slot": "0x000d39a4",
+      "selector": "InsertEvents:"
+    },
+    {
+      "slot": "0x000d39a8",
+      "selector": "allValues"
+    },
+    {
+      "slot": "0x000d39ac",
+      "selector": "setObject:forKey:"
+    },
+    {
+      "slot": "0x000d39b0",
+      "selector": "setM_TrackingData:"
+    },
+    {
+      "slot": "0x000d39b4",
+      "selector": "isUIDReqInQ"
+    },
+    {
+      "slot": "0x000d39b8",
+      "selector": "requestId"
+    },
+    {
+      "slot": "0x000d39bc",
+      "selector": "networkState"
+    },
+    {
+      "slot": "0x000d39c0",
+      "selector": "networkObjsDict"
+    },
+    {
+      "slot": "0x000d39c4",
+      "selector": "removeObjectForKey:"
+    },
+    {
+      "slot": "0x000d39c8",
+      "selector": "CancelRequest"
+    },
+    {
+      "slot": "0x000d39cc",
+      "selector": "networkRequests"
+    },
+    {
+      "slot": "0x000d39d0",
+      "selector": "removeAllObjects"
+    },
+    {
+      "slot": "0x000d39d4",
+      "selector": "intValue"
+    },
+    {
+      "slot": "0x000d39d8",
+      "selector": "setM_iEAUID:"
+    },
+    {
+      "slot": "0x000d39dc",
+      "selector": "m_iEAUID"
+    },
+    {
+      "slot": "0x000d39e0",
+      "selector": "stringWithFormat:"
+    },
+    {
+      "slot": "0x000d39e4",
+      "selector": "addState::"
+    },
+    {
+      "slot": "0x000d39e8",
+      "selector": "setIReturnState:"
+    },
+    {
+      "slot": "0x000d39ec",
+      "selector": "getNextRequestId"
+    },
+    {
+      "slot": "0x000d39f0",
+      "selector": "setBForcePostEventsData:"
+    },
+    {
+      "slot": "0x000d39f4",
+      "selector": "m_bUserLoggingDisabled"
+    },
+    {
+      "slot": "0x000d39f8",
+      "selector": "setM_bUserLoggingDisabled:"
+    },
+    {
+      "slot": "0x000d39fc",
+      "selector": "setDMaxEventsCache:"
+    },
+    {
+      "slot": "0x000d3a00",
+      "selector": "setDTimeIntervalForEventsSending:"
+    },
+    {
+      "slot": "0x000d3a04",
+      "selector": "setDEventsSendStartTime:"
+    },
+    {
+      "slot": "0x000d3a08",
+      "selector": "boolValue"
+    },
+    {
+      "slot": "0x000d3a0c",
+      "selector": "responseQ"
+    },
+    {
+      "slot": "0x000d3a10",
+      "selector": "stringByTrimmingCharactersInSet:"
+    },
+    {
+      "slot": "0x000d3a14",
+      "selector": "whitespaceAndNewlineCharacterSet"
+    },
+    {
+      "slot": "0x000d3a18",
+      "selector": "setLength:"
+    },
+    {
+      "slot": "0x000d3a1c",
+      "selector": "MIMEType"
+    },
+    {
+      "slot": "0x000d3a20",
+      "selector": "appendData:"
+    },
+    {
+      "slot": "0x000d3a24",
+      "selector": "cancel"
+    },
+    {
+      "slot": "0x000d3a28",
+      "selector": "initWithData:encoding:"
+    },
+    {
+      "slot": "0x000d3a2c",
+      "selector": "setHTTPBody:"
+    },
+    {
+      "slot": "0x000d3a30",
+      "selector": "setHTTPMethod:"
+    },
+    {
+      "slot": "0x000d3a34",
+      "selector": "initWithRequest:delegate:startImmediately:"
+    },
+    {
+      "slot": "0x000d3a38",
+      "selector": "setBReceivedResponse:"
+    },
+    {
+      "slot": "0x000d3a3c",
+      "selector": "setRequestStartTime:"
+    },
+    {
+      "slot": "0x000d3a40",
+      "selector": "setValue:forHTTPHeaderField:"
+    },
+    {
+      "slot": "0x000d3a44",
+      "selector": "requestWithURL:cachePolicy:timeoutInterval:"
+    },
+    {
+      "slot": "0x000d3a48",
+      "selector": "retainCount"
+    },
+    {
+      "slot": "0x000d3a4c",
+      "selector": "stringByReplacingPercentEscapesUsingEncoding:"
+    },
+    {
+      "slot": "0x000d3a50",
+      "selector": "replaceOccurrencesOfString:withString:options:range:"
+    },
+    {
+      "slot": "0x000d3a54",
+      "selector": "stringWithString:"
+    },
+    {
+      "slot": "0x000d3a58",
+      "selector": "stringByAddingPercentEscapesUsingEncoding:"
+    },
+    {
+      "slot": "0x000d3a5c",
+      "selector": "appendBytes:length:"
+    },
+    {
+      "slot": "0x000d3a60",
+      "selector": "dataWithCapacity:"
+    },
+    {
+      "slot": "0x000d3a64",
+      "selector": "data"
+    },
+    {
+      "slot": "0x000d3a68",
+      "selector": "CreateDB"
+    },
+    {
+      "slot": "0x000d3a6c",
+      "selector": "copyItemAtPath:toPath:error:"
+    },
+    {
+      "slot": "0x000d3a70",
+      "selector": "removeItemAtPath:error:"
+    },
+    {
+      "slot": "0x000d3a74",
+      "selector": "invalidate"
+    },
+    {
+      "slot": "0x000d3a78",
+      "selector": "GetCount"
+    },
+    {
+      "slot": "0x000d3a7c",
+      "selector": "RemoveDisabledEvents"
+    },
+    {
+      "slot": "0x000d3a80",
+      "selector": "removeObjectAtIndex:"
+    },
+    {
+      "slot": "0x000d3a84",
+      "selector": "Run:"
+    },
+    {
+      "slot": "0x000d3a88",
+      "selector": "messageId"
+    },
+    {
+      "slot": "0x000d3a8c",
+      "selector": "m_bUserRegistered"
+    },
+    {
+      "slot": "0x000d3a90",
+      "selector": "m_bMarketOpt"
+    },
+    {
+      "slot": "0x000d3a94",
+      "selector": "m_Country"
+    },
+    {
+      "slot": "0x000d3a98",
+      "selector": "m_ItemsLastUpdatedTime"
+    },
+    {
+      "slot": "0x000d3a9c",
+      "selector": "m_ListLastUpdatedTime"
+    },
+    {
+      "slot": "0x000d3aa0",
+      "selector": "m_DeviceToken"
+    },
+    {
+      "slot": "0x000d3aa4",
+      "selector": "m_DOB"
+    },
+    {
+      "slot": "0x000d3aa8",
+      "selector": "m_Password"
+    },
+    {
+      "slot": "0x000d3aac",
+      "selector": "m_Email"
+    },
+    {
+      "slot": "0x000d3ab0",
+      "selector": "m_UserName"
+    },
+    {
+      "slot": "0x000d3ab4",
+      "selector": "encodeObject:forKey:"
+    },
+    {
+      "slot": "0x000d3ab8",
+      "selector": "setM_bUserRegistered:"
+    },
+    {
+      "slot": "0x000d3abc",
+      "selector": "setM_bMarketOpt:"
+    },
+    {
+      "slot": "0x000d3ac0",
+      "selector": "setM_iHardwareId:"
+    },
+    {
+      "slot": "0x000d3ac4",
+      "selector": "setM_Country:"
+    },
+    {
+      "slot": "0x000d3ac8",
+      "selector": "setM_ItemsLastUpdatedTime:"
+    },
+    {
+      "slot": "0x000d3acc",
+      "selector": "setM_ListLastUpdatedTime:"
+    },
+    {
+      "slot": "0x000d3ad0",
+      "selector": "setM_DOB:"
+    },
+    {
+      "slot": "0x000d3ad4",
+      "selector": "setM_Password:"
+    },
+    {
+      "slot": "0x000d3ad8",
+      "selector": "setM_Email:"
+    },
+    {
+      "slot": "0x000d3adc",
+      "selector": "setM_UserName:"
+    },
+    {
+      "slot": "0x000d3ae0",
+      "selector": "decodeObjectForKey:"
+    },
+    {
+      "slot": "0x000d3ae4",
+      "selector": "setM_ExcludedMessageIds:"
+    },
+    {
+      "slot": "0x000d3ae8",
+      "selector": "setM_Messages:"
+    },
+    {
+      "slot": "0x000d3aec",
+      "selector": "setM_DisabledEvents:"
+    },
+    {
+      "slot": "0x000d3af0",
+      "selector": "array"
+    },
+    {
+      "slot": "0x000d3af4",
+      "selector": "m_Type"
+    },
+    {
+      "slot": "0x000d3af8",
+      "selector": "m_ImgData"
+    },
+    {
+      "slot": "0x000d3afc",
+      "selector": "m_Title"
+    },
+    {
+      "slot": "0x000d3b00",
+      "selector": "m_iBannerId"
+    },
+    {
+      "slot": "0x000d3b04",
+      "selector": "receiveTouchPoint:"
+    },
+    {
+      "slot": "0x000d3b08",
+      "selector": "anyObject"
+    },
+    {
+      "slot": "0x000d3b0c",
+      "selector": "renderAtPoint:parent:"
+    },
+    {
+      "slot": "0x000d3b10",
+      "selector": "removeAllViews"
+    },
+    {
+      "slot": "0x000d3b14",
+      "selector": "mContext"
+    },
+    {
+      "slot": "0x000d3b18",
+      "selector": "setCategory:"
+    },
+    {
+      "slot": "0x000d3b1c",
+      "selector": "unselectAll"
+    },
+    {
+      "slot": "0x000d3b20",
+      "selector": "setButtonPressed:"
+    },
+    {
+      "slot": "0x000d3b24",
+      "selector": "setM_SelImg:"
+    },
+    {
+      "slot": "0x000d3b28",
+      "selector": "setM_RegImg:"
+    },
+    {
+      "slot": "0x000d3b2c",
+      "selector": "initWithTitle:displayStr:depressed:"
+    },
+    {
+      "slot": "0x000d3b30",
+      "selector": "image"
+    },
+    {
+      "slot": "0x000d3b34",
+      "selector": "m_bButPressed"
+    },
+    {
+      "slot": "0x000d3b38",
+      "selector": "setNumberOfLines:"
+    },
+    {
+      "slot": "0x000d3b3c",
+      "selector": "setLineBreakMode:"
+    },
+    {
+      "slot": "0x000d3b40",
+      "selector": "systemFontOfSize:"
+    },
+    {
+      "slot": "0x000d3b44",
+      "selector": "setM_bButPressed:"
+    },
+    {
+      "slot": "0x000d3b48",
+      "selector": "openTargetURL"
+    },
+    {
+      "slot": "0x000d3b4c",
+      "selector": "initWithContentsOfFile:encoding:error:"
+    },
+    {
+      "slot": "0x000d3b50",
+      "selector": "getFileContents:keyName:"
+    },
+    {
+      "slot": "0x000d3b54",
+      "selector": "initWithContentsOfFile:"
+    },
+    {
+      "slot": "0x000d3b58",
+      "selector": "displayWebView:"
+    },
+    {
+      "slot": "0x000d3b5c",
+      "selector": "currentLocale"
+    },
+    {
+      "slot": "0x000d3b60",
+      "selector": "isKeyWindow"
+    },
+    {
+      "slot": "0x000d3b64",
+      "selector": "view"
+    },
+    {
+      "slot": "0x000d3b68",
+      "selector": "makeKeyWindow"
+    },
+    {
+      "slot": "0x000d3b6c",
+      "selector": "logServer:::::"
+    },
+    {
+      "slot": "0x000d3b70",
+      "selector": "refreshView"
+    },
+    {
+      "slot": "0x000d3b74",
+      "selector": "initDMGView:"
+    },
+    {
+      "slot": "0x000d3b78",
+      "selector": "loadJSONFiles"
+    },
+    {
+      "slot": "0x000d3b7c",
+      "selector": "whiteColor"
+    },
+    {
+      "slot": "0x000d3b80",
+      "selector": "dmgView"
+    },
+    {
+      "slot": "0x000d3b84",
+      "selector": "mLangCode"
+    },
+    {
+      "slot": "0x000d3b88",
+      "selector": "setFont:"
+    },
+    {
+      "slot": "0x000d3b8c",
+      "selector": "setTextAlignment:"
+    },
+    {
+      "slot": "0x000d3b90",
+      "selector": "setImage:"
+    },
+    {
+      "slot": "0x000d3b94",
+      "selector": "boldSystemFontOfSize:"
+    },
+    {
+      "slot": "0x000d3b98",
+      "selector": "saveLoginFlag"
+    },
+    {
+      "slot": "0x000d3b9c",
+      "selector": "sendLoginRequest:"
+    },
+    {
+      "slot": "0x000d3ba0",
+      "selector": "imgLoadingFinished"
+    },
+    {
+      "slot": "0x000d3ba4",
+      "selector": "exitDMG"
+    },
+    {
+      "slot": "0x000d3ba8",
+      "selector": "enterDMG"
+    },
+    {
+      "slot": "0x000d3bac",
+      "selector": "setMContext:"
+    },
+    {
+      "slot": "0x000d3bb0",
+      "selector": "setMApplicationVersion:"
+    },
+    {
+      "slot": "0x000d3bb4",
+      "selector": "setMLangCode:"
+    },
+    {
+      "slot": "0x000d3bb8",
+      "selector": "setMApplicationSellID:"
+    },
+    {
+      "slot": "0x000d3bbc",
+      "selector": "setMGameId:"
+    },
+    {
+      "slot": "0x000d3bc0",
+      "selector": "setMProductID:"
+    },
+    {
+      "slot": "0x000d3bc4",
+      "selector": "setMHardwareID:"
+    },
+    {
+      "slot": "0x000d3bc8",
+      "selector": "onPostEventsDone"
+    },
+    {
+      "slot": "0x000d3bcc",
+      "selector": "statusCode"
+    },
+    {
+      "slot": "0x000d3bd0",
+      "selector": "macAddress"
+    },
+    {
+      "slot": "0x000d3bd4",
+      "selector": "serverAddress"
+    },
+    {
+      "slot": "0x000d3bd8",
+      "selector": "loadLoginFlag"
+    },
+    {
+      "slot": "0x000d3bdc",
+      "selector": "addImage::"
+    },
+    {
+      "slot": "0x000d3be0",
+      "selector": "didReceiveMemoryWarning"
+    },
+    {
+      "slot": "0x000d3be4",
+      "selector": "mTargetURL"
+    },
+    {
+      "slot": "0x000d3be8",
+      "selector": "absoluteURL"
+    },
+    {
+      "slot": "0x000d3bec",
+      "selector": "fragment"
+    },
+    {
+      "slot": "0x000d3bf0",
+      "selector": "setOpeningBrowser:"
+    },
+    {
+      "slot": "0x000d3bf4",
+      "selector": "query"
+    },
+    {
+      "slot": "0x000d3bf8",
+      "selector": "URL"
+    },
+    {
+      "slot": "0x000d3bfc",
+      "selector": "startAnimating"
+    },
+    {
+      "slot": "0x000d3c00",
+      "selector": "initWithActivityIndicatorStyle:"
+    },
+    {
+      "slot": "0x000d3c04",
+      "selector": "loadRequest:"
+    },
+    {
+      "slot": "0x000d3c08",
+      "selector": "initWithURL:"
+    },
+    {
+      "slot": "0x000d3c0c",
+      "selector": "loadHTMLString:baseURL:"
+    },
+    {
+      "slot": "0x000d3c10",
+      "selector": "exitedDMG"
+    },
+    {
+      "slot": "0x000d3c14",
+      "selector": "downloadPage"
+    },
+    {
+      "slot": "0x000d3c18",
+      "selector": "SaveImage::"
+    },
+    {
+      "slot": "0x000d3c1c",
+      "selector": "md5:"
+    },
+    {
+      "slot": "0x000d3c20",
+      "selector": "subviews"
+    },
+    {
+      "slot": "0x000d3c24",
+      "selector": "openingBrowser"
+    },
+    {
+      "slot": "0x000d3c28",
+      "selector": "stopLoading"
+    },
+    {
+      "slot": "0x000d3c2c",
+      "selector": "stopAnimating"
+    },
+    {
+      "slot": "0x000d3c30",
+      "selector": "backAction:"
+    },
+    {
+      "slot": "0x000d3c34",
+      "selector": "setBackgroundImage:forState:"
+    },
+    {
+      "slot": "0x000d3c38",
+      "selector": "size"
+    },
+    {
+      "slot": "0x000d3c3c",
+      "selector": "imageNamed:"
+    },
+    {
+      "slot": "0x000d3c40",
+      "selector": "m_CurrCat"
+    },
+    {
+      "slot": "0x000d3c44",
+      "selector": "setExitedDMG:"
+    },
+    {
+      "slot": "0x000d3c48",
+      "selector": "showBackButton"
+    },
+    {
+      "slot": "0x000d3c4c",
+      "selector": "loadWeb:"
+    },
+    {
+      "slot": "0x000d3c50",
+      "selector": "loadLocalPage"
+    },
+    {
+      "slot": "0x000d3c54",
+      "selector": "showAlert::"
+    },
+    {
+      "slot": "0x000d3c58",
+      "selector": "getNetworkConnectionType"
+    },
+    {
+      "slot": "0x000d3c5c",
+      "selector": "setMTargetURL:"
+    },
+    {
+      "slot": "0x000d3c60",
+      "selector": "orientation"
+    },
+    {
+      "slot": "0x000d3c64",
+      "selector": "displayWebViewFromData::"
+    },
+    {
+      "slot": "0x000d3c68",
+      "selector": "stringWithContentsOfFile:encoding:error:"
+    },
+    {
+      "slot": "0x000d3c6c",
+      "selector": "getString:"
+    },
+    {
+      "slot": "0x000d3c70",
+      "selector": "stringByEvaluatingJavaScriptFromString:"
+    },
+    {
+      "slot": "0x000d3c74",
+      "selector": "calcViewFrames:"
+    },
+    {
+      "slot": "0x000d3c78",
+      "selector": "mClientType"
+    },
+    {
+      "slot": "0x000d3c7c",
+      "selector": "renderAtPoint:"
+    },
+    {
+      "slot": "0x000d3c80",
+      "selector": "initCatBar::"
+    },
+    {
+      "slot": "0x000d3c84",
+      "selector": "initNavBar:"
+    },
+    {
+      "slot": "0x000d3c88",
+      "selector": "setAutoresizingMask:"
+    },
+    {
+      "slot": "0x000d3c8c",
+      "selector": "setView:"
+    },
+    {
+      "slot": "0x000d3c90",
+      "selector": "setUserInteractionEnabled:"
+    },
+    {
+      "slot": "0x000d3c94",
+      "selector": "messageFinished:keep:"
+    },
+    {
+      "slot": "0x000d3c98",
+      "selector": "buttonTitleAtIndex:"
+    },
+    {
+      "slot": "0x000d3c9c",
+      "selector": "but3"
+    },
+    {
+      "slot": "0x000d3ca0",
+      "selector": "but2"
+    },
+    {
+      "slot": "0x000d3ca4",
+      "selector": "but1"
+    },
+    {
+      "slot": "0x000d3ca8",
+      "selector": "message"
+    },
+    {
+      "slot": "0x000d3cac",
+      "selector": "title"
+    },
+    {
+      "slot": "0x000d3cb0",
+      "selector": "setBut3:"
+    },
+    {
+      "slot": "0x000d3cb4",
+      "selector": "createDirectoryAtPath:withIntermediateDirectories:attributes:error:"
+    },
+    {
+      "slot": "0x000d3cb8",
+      "selector": "downloadImage"
+    },
+    {
+      "slot": "0x000d3cbc",
+      "selector": "setSortKeys:"
+    },
+    {
+      "slot": "0x000d3cc0",
+      "selector": "sortKeys"
+    },
+    {
+      "slot": "0x000d3cc4",
+      "selector": "setHumanReadable:"
+    },
+    {
+      "slot": "0x000d3cc8",
+      "selector": "humanReadable"
+    },
+    {
+      "slot": "0x000d3ccc",
+      "selector": "maxDepth"
+    },
+    {
+      "slot": "0x000d3cd0",
+      "selector": "objectWithString:allowScalar:error:"
+    },
+    {
+      "slot": "0x000d3cd4",
+      "selector": "fragmentWithString:"
+    },
+    {
+      "slot": "0x000d3cd8",
+      "selector": "stringWithObject:allowScalar:error:"
+    },
+    {
+      "slot": "0x000d3cdc",
+      "selector": "lastObject"
+    },
+    {
+      "slot": "0x000d3ce0",
+      "selector": "stringWithFragment:"
+    },
+    {
+      "slot": "0x000d3ce4",
+      "selector": "mutableCopy"
+    },
+    {
+      "slot": "0x000d3ce8",
+      "selector": "errorTrace"
+    },
+    {
+      "slot": "0x000d3cec",
+      "selector": "setMaxDepth:"
+    },
+    {
+      "slot": "0x000d3cf0",
+      "selector": "didChangeValueForKey:"
+    },
+    {
+      "slot": "0x000d3cf4",
+      "selector": "willChangeValueForKey:"
+    },
+    {
+      "slot": "0x000d3cf8",
+      "selector": "errorWithDomain:code:userInfo:"
+    },
+    {
+      "slot": "0x000d3cfc",
+      "selector": "dictionaryWithObject:forKey:"
+    },
+    {
+      "slot": "0x000d3d00",
+      "selector": "decimalNumberWithString:"
+    },
+    {
+      "slot": "0x000d3d04",
+      "selector": "scanHexQuad:"
+    },
+    {
+      "slot": "0x000d3d08",
+      "selector": "scanUnicodeChar:"
+    },
+    {
+      "slot": "0x000d3d0c",
+      "selector": "initWithBytesNoCopy:length:encoding:freeWhenDone:"
+    },
+    {
+      "slot": "0x000d3d10",
+      "selector": "dictionaryWithCapacity:"
+    },
+    {
+      "slot": "0x000d3d14",
+      "selector": "arrayWithCapacity:"
+    },
+    {
+      "slot": "0x000d3d18",
+      "selector": "null"
+    },
+    {
+      "slot": "0x000d3d1c",
+      "selector": "scanNumber:"
+    },
+    {
+      "slot": "0x000d3d20",
+      "selector": "scanRestOfNull:"
+    },
+    {
+      "slot": "0x000d3d24",
+      "selector": "scanRestOfTrue:"
+    },
+    {
+      "slot": "0x000d3d28",
+      "selector": "scanRestOfFalse:"
+    },
+    {
+      "slot": "0x000d3d2c",
+      "selector": "scanRestOfString:"
+    },
+    {
+      "slot": "0x000d3d30",
+      "selector": "scanRestOfArray:"
+    },
+    {
+      "slot": "0x000d3d34",
+      "selector": "scanRestOfDictionary:"
+    },
+    {
+      "slot": "0x000d3d38",
+      "selector": "handleFailureInMethod:object:file:lineNumber:description:"
+    },
+    {
+      "slot": "0x000d3d3c",
+      "selector": "currentHandler"
+    },
+    {
+      "slot": "0x000d3d40",
+      "selector": "scanIsAtEnd"
+    },
+    {
+      "slot": "0x000d3d44",
+      "selector": "scanValue:"
+    },
+    {
+      "slot": "0x000d3d48",
+      "selector": "characterAtIndex:"
+    },
+    {
+      "slot": "0x000d3d4c",
+      "selector": "rangeOfCharacterFromSet:"
+    },
+    {
+      "slot": "0x000d3d50",
+      "selector": "sortedArrayUsingSelector:"
+    },
+    {
+      "slot": "0x000d3d54",
+      "selector": "indent"
+    },
+    {
+      "slot": "0x000d3d58",
+      "selector": "stringValue"
+    },
+    {
+      "slot": "0x000d3d5c",
+      "selector": "appendString:"
+    },
+    {
+      "slot": "0x000d3d60",
+      "selector": "objCType"
+    },
+    {
+      "slot": "0x000d3d64",
+      "selector": "appendString:into:"
+    },
+    {
+      "slot": "0x000d3d68",
+      "selector": "appendArray:into:"
+    },
+    {
+      "slot": "0x000d3d6c",
+      "selector": "appendDictionary:into:"
+    },
+    {
+      "slot": "0x000d3d70",
+      "selector": "stringByPaddingToLength:withString:startingAtIndex:"
+    },
+    {
+      "slot": "0x000d3d74",
+      "selector": "addErrorWithCode:description:"
+    },
+    {
+      "slot": "0x000d3d78",
+      "selector": "proxyForJson"
+    },
+    {
+      "slot": "0x000d3d7c",
+      "selector": "isKindOfClass:"
+    },
+    {
+      "slot": "0x000d3d80",
+      "selector": "appendValue:into:"
+    },
+    {
+      "slot": "0x000d3d84",
+      "selector": "clearErrorTrace"
+    },
+    {
+      "slot": "0x000d3d88",
+      "selector": "addCharactersInString:"
+    },
+    {
+      "slot": "0x000d3d8c",
+      "selector": "characterSetWithRange:"
+    }
+  ],
+  "class_refs": [
+    {
+      "slot": "0x000d3d90",
+      "import": "_OBJC_CLASS_$_NSString",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3d94",
+      "import": "_OBJC_CLASS_$_UIWindow",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3d98",
+      "import": "_OBJC_CLASS_$_UIScreen",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3d9c",
+      "import": null,
+      "in_image": "GLView"
+    },
+    {
+      "slot": "0x000d3da0",
+      "import": "_OBJC_CLASS_$_NSTimer",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3da4",
+      "import": "_OBJC_CLASS_$_UITextField",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3da8",
+      "import": "_OBJC_CLASS_$_UIDevice",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dac",
+      "import": "_OBJC_CLASS_$_NSDate",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3db0",
+      "import": "_OBJC_CLASS_$_NSThread",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3db4",
+      "import": "_OBJC_CLASS_$_NSBundle",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3db8",
+      "import": "_OBJC_CLASS_$_NSLocale",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dbc",
+      "import": "_OBJC_CLASS_$_NSFileManager",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dc0",
+      "import": "_OBJC_CLASS_$_EAGLContext",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dc4",
+      "import": "_OBJC_CLASS_$_CAEAGLLayer",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dc8",
+      "import": "_OBJC_CLASS_$_NSDictionary",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dcc",
+      "import": "_OBJC_CLASS_$_NSNumber",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dd0",
+      "import": "_OBJC_CLASS_$_UIApplication",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dd4",
+      "import": null,
+      "in_image": "TouchResponder"
+    },
+    {
+      "slot": "0x000d3dd8",
+      "import": "_OBJC_CLASS_$_NSAutoreleasePool",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3ddc",
+      "import": "_OBJC_CLASS_$_NSObject",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3de0",
+      "import": "_OBJC_CLASS_$_GKSession",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3de4",
+      "import": null,
+      "in_image": "SocketBtDelegate"
+    },
+    {
+      "slot": "0x000d3de8",
+      "import": "_OBJC_CLASS_$_GKPeerPickerController",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dec",
+      "import": "_OBJC_CLASS_$_NSData",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3df0",
+      "import": "_OBJC_CLASS_$_NSMutableString",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3df4",
+      "import": "_OBJC_CLASS_$_NSUserDefaults",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3df8",
+      "import": "_OBJC_CLASS_$_UIAlertView",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3dfc",
+      "import": "_OBJC_CLASS_$_UILabel",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e00",
+      "import": "_OBJC_CLASS_$_UIColor",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e04",
+      "import": "_OBJC_CLASS_$_NSURL",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e08",
+      "import": "_OBJC_CLASS_$_AVAudioPlayer",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e0c",
+      "import": "_OBJC_CLASS_$_NSMutableDictionary",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e10",
+      "import": "_OBJC_CLASS_$_NSScanner",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e14",
+      "import": "_OBJC_CLASS_$_NSMutableArray",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e18",
+      "import": "_OBJC_CLASS_$_NSValue",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e1c",
+      "import": null,
+      "in_image": "SBJSON"
+    },
+    {
+      "slot": "0x000d3e20",
+      "import": null,
+      "in_image": "EAMTX_Controller"
+    },
+    {
+      "slot": "0x000d3e24",
+      "import": null,
+      "in_image": "EAMTX_UserInfo"
+    },
+    {
+      "slot": "0x000d3e28",
+      "import": null,
+      "in_image": "EAMTX_Network"
+    },
+    {
+      "slot": "0x000d3e2c",
+      "import": "_OBJC_CLASS_$_NSTimeZone",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e30",
+      "import": "_OBJC_CLASS_$_NSDateFormatter",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e34",
+      "import": null,
+      "in_image": "EAMTX_Message"
+    },
+    {
+      "slot": "0x000d3e38",
+      "import": null,
+      "in_image": "EAMTX_Banner"
+    },
+    {
+      "slot": "0x000d3e3c",
+      "import": null,
+      "in_image": "EAMTX_Ticker"
+    },
+    {
+      "slot": "0x000d3e40",
+      "import": null,
+      "in_image": "EAMTX_NewsFeed"
+    },
+    {
+      "slot": "0x000d3e44",
+      "import": "_OBJC_CLASS_$_NSKeyedArchiver",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e48",
+      "import": "_OBJC_CLASS_$_NSKeyedUnarchiver",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e4c",
+      "import": "_OBJC_CLASS_$_NSMutableURLRequest",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e50",
+      "import": "_OBJC_CLASS_$_NSURLConnection",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e54",
+      "import": "_OBJC_CLASS_$_NSCharacterSet",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e58",
+      "import": "_OBJC_CLASS_$_NSMutableSet",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e5c",
+      "import": "_OBJC_CLASS_$_NSMutableData",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e60",
+      "import": null,
+      "in_image": "DMGCatButton"
+    },
+    {
+      "slot": "0x000d3e64",
+      "import": null,
+      "in_image": "DMGViewController"
+    },
+    {
+      "slot": "0x000d3e68",
+      "import": "_OBJC_CLASS_$_UIFont",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e6c",
+      "import": "_OBJC_CLASS_$_UIImageView",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e70",
+      "import": null,
+      "in_image": "DMGImageLoader"
+    },
+    {
+      "slot": "0x000d3e74",
+      "import": null,
+      "in_image": "DMGController"
+    },
+    {
+      "slot": "0x000d3e78",
+      "import": null,
+      "in_image": "DMGLogin"
+    },
+    {
+      "slot": "0x000d3e7c",
+      "import": "_OBJC_CLASS_$_UIView",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e80",
+      "import": null,
+      "in_image": "DMGNavBar"
+    },
+    {
+      "slot": "0x000d3e84",
+      "import": null,
+      "in_image": "DMGCatBar"
+    },
+    {
+      "slot": "0x000d3e88",
+      "import": "_OBJC_CLASS_$_UIImage",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e8c",
+      "import": "_OBJC_CLASS_$_UIButton",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e90",
+      "import": "_OBJC_CLASS_$_UIWebView",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e94",
+      "import": "_OBJC_CLASS_$_NSURLRequest",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e98",
+      "import": "_OBJC_CLASS_$_UIActivityIndicatorView",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3e9c",
+      "import": null,
+      "in_image": "SBJsonWriter"
+    },
+    {
+      "slot": "0x000d3ea0",
+      "import": null,
+      "in_image": "SBJsonParser"
+    },
+    {
+      "slot": "0x000d3ea4",
+      "import": "_OBJC_CLASS_$_NSError",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3ea8",
+      "import": "_OBJC_CLASS_$_NSAssertionHandler",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3eac",
+      "import": "_OBJC_CLASS_$_NSDecimalNumber",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3eb0",
+      "import": "_OBJC_CLASS_$_NSMutableCharacterSet",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3eb4",
+      "import": "_OBJC_CLASS_$_NSArray",
+      "in_image": null
+    },
+    {
+      "slot": "0x000d3eb8",
+      "import": "_OBJC_CLASS_$_NSNull",
+      "in_image": null
+    }
+  ]
+}

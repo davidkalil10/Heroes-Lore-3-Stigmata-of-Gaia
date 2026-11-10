@@ -1,0 +1,308 @@
+{
+  "apk_path": "Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk",
+  "bytes": 61755432,
+  "sha256": "2a96e02ab65e8c4180b91cfd7bb3c403f99bc239b8edd522af65278504458016",
+  "entry_count": 50,
+  "entries": [
+    {
+      "filename": "AndroidManifest.xml",
+      "file_size": 4900,
+      "compress_size": 1511,
+      "crc32": "0x154ec011"
+    },
+    {
+      "filename": "META-INF/CERT.RSA",
+      "file_size": 1714,
+      "compress_size": 1154,
+      "crc32": "0x93605f64"
+    },
+    {
+      "filename": "META-INF/CERT.SF",
+      "file_size": 4382,
+      "compress_size": 1683,
+      "crc32": "0xe318b57c"
+    },
+    {
+      "filename": "META-INF/MANIFEST.MF",
+      "file_size": 4334,
+      "compress_size": 1639,
+      "crc32": "0xfc8000d8"
+    },
+    {
+      "filename": "META-INF/com/android/build/gradle/app-metadata.properties",
+      "file_size": 57,
+      "compress_size": 52,
+      "crc32": "0x555cf04c"
+    },
+    {
+      "filename": "assets/game.ipa",
+      "file_size": 43686130,
+      "compress_size": 41674259,
+      "crc32": "0x6dc8c538"
+    },
+    {
+      "filename": "assets/touchHLE_default_options.txt",
+      "file_size": 111,
+      "compress_size": 101,
+      "crc32": "0x4001865b"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/COPYING.libgcc",
+      "file_size": 18002,
+      "compress_size": 6830,
+      "crc32": "0xee569a13"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/COPYING.libsqlite3",
+      "file_size": 3848,
+      "compress_size": 1510,
+      "crc32": "0xa3b6e617"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/COPYING.libstdcxx",
+      "file_size": 18002,
+      "compress_size": 6830,
+      "crc32": "0xee569a13"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/COPYING.libxml2",
+      "file_size": 3645,
+      "compress_size": 1244,
+      "crc32": "0xedd7d21c"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/COPYING.libz",
+      "file_size": 965,
+      "compress_size": 515,
+      "crc32": "0x623efacb"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/README.md",
+      "file_size": 17598,
+      "compress_size": 6259,
+      "crc32": "0x52b1700d"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/libgcc_s.1.dylib",
+      "file_size": 200448,
+      "compress_size": 81180,
+      "crc32": "0x624eff12"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/libsqlite3.dylib",
+      "file_size": 299552,
+      "compress_size": 191740,
+      "crc32": "0x1bcdfb8d"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/libstdc++.6.0.9.dylib",
+      "file_size": 1552832,
+      "compress_size": 487372,
+      "crc32": "0x2d5ef88d"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/libxml2.2.dylib",
+      "file_size": 843676,
+      "compress_size": 448533,
+      "crc32": "0xa867c0fb"
+    },
+    {
+      "filename": "assets/touchHLE_dylibs/libz.1.2.3.dylib",
+      "file_size": 53452,
+      "compress_size": 32795,
+      "crc32": "0x263ddeb9"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LICENSE.liberation",
+      "file_size": 4414,
+      "compress_size": 1978,
+      "crc32": "0x5926bf68"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LICENSE.noto",
+      "file_size": 4301,
+      "compress_size": 1896,
+      "crc32": "0x898314c0"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationMono-Bold.ttf",
+      "file_size": 307996,
+      "compress_size": 174604,
+      "crc32": "0xda53a43a"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationMono-BoldItalic.ttf",
+      "file_size": 284068,
+      "compress_size": 167085,
+      "crc32": "0xcabc0a5e"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationMono-Italic.ttf",
+      "file_size": 281536,
+      "compress_size": 164775,
+      "crc32": "0x490fc3f7"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationMono-Regular.ttf",
+      "file_size": 319508,
+      "compress_size": 179234,
+      "crc32": "0xa17a14e8"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSans-Bold.ttf",
+      "file_size": 414456,
+      "compress_size": 213098,
+      "crc32": "0x8e81c5b6"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSans-BoldItalic.ttf",
+      "file_size": 408996,
+      "compress_size": 214687,
+      "crc32": "0x4f03d237"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSans-Italic.ttf",
+      "file_size": 415816,
+      "compress_size": 218312,
+      "crc32": "0xd0ea9637"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSans-Regular.ttf",
+      "file_size": 410712,
+      "compress_size": 211815,
+      "crc32": "0x8d46e268"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSerif-Bold.ttf",
+      "file_size": 370096,
+      "compress_size": 202357,
+      "crc32": "0xa5d5ea71"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSerif-BoldItalic.ttf",
+      "file_size": 376772,
+      "compress_size": 211919,
+      "crc32": "0x0f23ec0d"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSerif-Italic.ttf",
+      "file_size": 375632,
+      "compress_size": 210778,
+      "crc32": "0xd2ca6cdf"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/LiberationSerif-Regular.ttf",
+      "file_size": 393576,
+      "compress_size": 212042,
+      "crc32": "0xa872fada"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/NotoSansJP-Bold.otf",
+      "file_size": 4656448,
+      "compress_size": 4009838,
+      "crc32": "0x5b21101e"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/NotoSansJP-Regular.otf",
+      "file_size": 4533028,
+      "compress_size": 3888300,
+      "crc32": "0xc2e8c4bd"
+    },
+    {
+      "filename": "assets/touchHLE_fonts/README.md",
+      "file_size": 472,
+      "compress_size": 250,
+      "crc32": "0xd4893592"
+    },
+    {
+      "filename": "classes.dex",
+      "file_size": 2343156,
+      "compress_size": 709106,
+      "crc32": "0x4f15ab8b"
+    },
+    {
+      "filename": "classes2.dex",
+      "file_size": 1400,
+      "compress_size": 719,
+      "crc32": "0x490d5460"
+    },
+    {
+      "filename": "classes3.dex",
+      "file_size": 105164,
+      "compress_size": 50243,
+      "crc32": "0x074dcaff"
+    },
+    {
+      "filename": "kotlin/annotation/annotation.kotlin_builtins",
+      "file_size": 928,
+      "compress_size": 561,
+      "crc32": "0x8e787046"
+    },
+    {
+      "filename": "kotlin/collections/collections.kotlin_builtins",
+      "file_size": 3685,
+      "compress_size": 1519,
+      "crc32": "0xf41c30cf"
+    },
+    {
+      "filename": "kotlin/coroutines/coroutines.kotlin_builtins",
+      "file_size": 200,
+      "compress_size": 157,
+      "crc32": "0xc69fe143"
+    },
+    {
+      "filename": "kotlin/internal/internal.kotlin_builtins",
+      "file_size": 646,
+      "compress_size": 394,
+      "crc32": "0xd8d2330d"
+    },
+    {
+      "filename": "kotlin/kotlin.kotlin_builtins",
+      "file_size": 18661,
+      "compress_size": 5203,
+      "crc32": "0xb623e8f5"
+    },
+    {
+      "filename": "kotlin/ranges/ranges.kotlin_builtins",
+      "file_size": 3399,
+      "compress_size": 1292,
+      "crc32": "0xcb3b8aed"
+    },
+    {
+      "filename": "kotlin/reflect/reflect.kotlin_builtins",
+      "file_size": 2426,
+      "compress_size": 1286,
+      "crc32": "0x7e3e3d18"
+    },
+    {
+      "filename": "lib/arm64-v8a/libSDL2.so",
+      "file_size": 2654768,
+      "compress_size": 821664,
+      "crc32": "0x89731b58"
+    },
+    {
+      "filename": "lib/arm64-v8a/libc++_shared.so",
+      "file_size": 6766464,
+      "compress_size": 1651041,
+      "crc32": "0xab93ba1f"
+    },
+    {
+      "filename": "lib/arm64-v8a/libtouchHLE.so",
+      "file_size": 18660952,
+      "compress_size": 5190968,
+      "crc32": "0xca108be5"
+    },
+    {
+      "filename": "res/drawable-nodpi/icon_unofficial.png",
+      "file_size": 78240,
+      "compress_size": 78240,
+      "crc32": "0xab9257dc"
+    },
+    {
+      "filename": "resources.arsc",
+      "file_size": 876,
+      "compress_size": 876,
+      "crc32": "0x7319a7b3"
+    }
+  ]
+}

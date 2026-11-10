@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "required_files_checked": 33,
+  "apk_sha256_verified": true,
+  "hl5_snapshot_files_verified": 86,
+  "hl4_snapshot_files_verified": 91,
+  "jar_ports_docs_verified": 26,
+  "project_status_check": "ok",
+  "static_apk_ipa_macho_check": "ok"
+}

@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "updated_on": "2026-10-22",
+  "current_step": "S05",
+  "steps": [
+    {
+      "id": "S00",
+      "title": "Preparação e continuidade",
+      "status": "done",
+      "summary": "Workspace preparado e verificado",
+      "evidence": [
+        "AGENTS.md",
+        "reference/HL5_SNAPSHOT.json"
+      ]
+    },
+    {
+      "id": "S01",
+      "title": "Inventário estático do APK",
+      "status": "done",
+      "summary": "Inventário estático e extração verificados",
+      "evidence": [
+        "reference/analysis/INITIAL_FINDINGS.md"
+      ]
+    },
+    {
+      "id": "S02",
+      "title": "Contrato WIPI/ARM",
+      "status": "done",
+      "summary": "Contrato mínimo loader/ABI/eventos/recursos comprovado no runtime integrado",
+      "evidence": [
+        "docs/RUNTIME_CONTRACT.md",
+        "docs/WINDOWS_RUNTIME.md"
+      ]
+    },
+    {
+      "id": "S03",
+      "title": "CPU e loader PC",
+      "status": "done",
+      "summary": "Loader ELF/REL/BSS e ARM/Thumb/ABI/contexto executados no PC",
+      "evidence": [
+        "reference/analysis/WINDOWS_RUNTIME_TESTS.json",
+        "src/main.cpp"
+      ]
+    },
+    {
+      "id": "S04",
+      "title": "Boot e primeiro quadro",
+      "status": "done",
+      "summary": "Boot original até título, novo jogo e cenário com loop responsivo",
+      "evidence": [
+        "reference/analysis/WINDOWS_RUNTIME_TESTS.json",
+        "docs/WINDOWS_RUNTIME.md"
+      ]
+    },
+    {
+      "id": "S05",
+      "title": "Entrada e gameplay",
+      "status": "in_progress",
+      "summary": "Usuario confirmou movimento/cliques e exploracao/combate; A/B,X/Y trocados no Switch aguardam reteste fisico; validacao formal segue parcial",
+      "evidence": [
+        "reference/analysis/POINTER_TESTS.json",
+        "docs/POINTER_INPUT.md",
+        "docs/tasks/S05_GAMEPLAY_VALIDATION.md"
+      ]
+    },
+    {
+      "id": "S06",
+      "title": "Áudio e persistência",
+      "status": "in_progress",
+      "summary": "Ogg real não nulo e arquivos temporários; save/load de partida e audição pendentes",
+      "evidence": [
+        "reference/analysis/WINDOWS_RUNTIME_TESTS.json"
+      ]
+    },
+    {
+      "id": "S07",
+      "title": "Desempenho",
+      "status": "in_progress",
+      "summary": "PC fluido confirmado; Android/Switch lentos em batalha. 10 regioes + watchdog persistente passaram combate57BMPs/55estados/20oracles no host; nova validacao fisica pendente",
+      "evidence": [
+        "docs/PERFORMANCE.md",
+        "reference/analysis/ARM_PROFILE.json",
+        "reference/analysis/ARM_FAST_TESTS.json",
+        "docs/tasks/S07_SWITCH_PERFORMANCE.md",
+        "reference/analysis/ARM_FULL_FUNCTION_TESTS.json",
+        "reference/analysis/ARM_REMAINING_PROFILE.json",
+        "reference/analysis/ICON_FULL_AOT_PACKAGES.json",
+        "reference/analysis/COMBAT_MOBILE_TESTS.json",
+        "reference/analysis/ARM_COMBAT_PROFILE.json"
+      ]
+    },
+    {
+      "id": "S08",
+      "title": "Viewport expandido",
+      "status": "in_progress",
+      "summary": "Auto na abertura usa superficie real e expande cenario; cinco proporcoes com estados/pixels/audio/toque verificados no host. Android imersivo; resize vivo e hardware pendentes",
+      "evidence": [
+        "docs/tasks/S08_VIEWPORT_EXPANSION.md",
+        "reference/analysis/ANDROID_LAYOUT_QUEST_TESTS.json",
+        "reference/analysis/VIEWPORT_EXPANSION_TESTS.json",
+        "docs/DISPLAY.md"
+      ]
+    },
+    {
+      "id": "S09",
+      "title": "Texto e extração",
+      "status": "in_progress",
+      "summary": "8232registros, incluindo1297nomes de itens/inimigos/NPCs com DES/container/CP949 roundtrip; glossario576nomes, restante da campanha ainda em revisao",
+      "evidence": [
+        "reference/analysis/TEXT_INVENTORY.json",
+        "docs/TEXT_LOCALIZATION.md",
+        "reference/analysis/DYNAMIC_TEXT_INVENTORY.json"
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "EN/PT-BR ao vivo",
+      "status": "in_progress",
+      "summary": "Ingles padrao com nomes e composicao de equipamentos/contadores/coleta; zero misses no combate reproduzido. Campanha/editorial e fonte PTBR ainda parciais",
+      "evidence": [
+        "docs/LOCALIZATION_RUNTIME.md",
+        "reference/analysis/LOCALIZATION_TESTS.json",
+        "reference/analysis/COMBAT_MOBILE_TESTS.json"
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "Opções do port",
+      "status": "pending",
+      "summary": "Ainda não iniciado",
+      "evidence": []
+    },
+    {
+      "id": "S12",
+      "title": "Builds multiplataforma",
+      "status": "in_progress",
+      "summary": "f4e3ee0 / CI39807955246 concluida success: quatro plataformas; APKs ARM64/global e NRO verificados nos caminhos fixos. Novo IDNACP/logFS; hardware e atalho aguardam reteste",
+      "evidence": [
+        "docs/WINDOWS_RUNTIME.md",
+        "reference/analysis/WINDOWS_RUNTIME_TESTS.json",
+        "reference/analysis/CI_BUILDS.json",
+        "reference/analysis/SWITCH_BOOT_WATCHDOG.json",
+        "reference/analysis/ANDROID_LAYOUT_PACKAGES.json",
+        "docs/BRANDING.md",
+        "reference/analysis/ICON_FULL_AOT_PACKAGES.json",
+        "docs/SWITCH_IDENTITY.md",
+        "reference/analysis/COMBAT_MOBILE_PACKAGES.json"
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "Atualizador e cloud save",
+      "status": "pending",
+      "summary": "Ainda não iniciado",
+      "evidence": []
+    },
+    {
+      "id": "S14",
+      "title": "Validação e release",
+      "status": "pending",
+      "summary": "Ainda não iniciado",
+      "evidence": []
+    }
+  ]
+}

@@ -1,0 +1,461 @@
+{
+  "source_note": "Snapshot congelado de arquivos de referencia do projeto heroes_lore_4_recomp para consulta local no workspace do Heroes Lore 3.",
+  "file_count": 91,
+  "files": [
+    {
+      "path": ".github/workflows/build.yml",
+      "bytes": 11787,
+      "sha256": "42fe75a69648274360cd4f7dd21675ad1996b1e909940e8933bea65affbd5da2"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 4269,
+      "sha256": "ba5106fe29c50c56e5fa0bc0b0e8bc5aa7db7463c65a983b39ce1399c87e714b"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "bytes": 2767,
+      "sha256": "dd1305eb865da18a6d18d75c01d878ad6cf9b346cafb3fdc8cc7ef64616bb71e"
+    },
+    {
+      "path": "PROMPT_NOVA_SESSAO.md",
+      "bytes": 2168,
+      "sha256": "6469813b3c0f55c046d789e468ce05101fea521a1f4149c86397e96006fee852"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4460,
+      "sha256": "883566e729cbbfb93035265bd0073f57c405c008b7200bed548d5e682d1b364b"
+    },
+    {
+      "path": "android/app/build.gradle",
+      "bytes": 1091,
+      "sha256": "7c3473d9a9f104e03a2cb02e43ef5f88c7615bd46bf9a34cf7945a074fe39cf0"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "bytes": 991,
+      "sha256": "64833854f92245642ab9dac76beba29de7b40e3eadd82999d4b94410e96a612b"
+    },
+    {
+      "path": "android/build.gradle",
+      "bytes": 73,
+      "sha256": "c3c0cf04da0fc239f391c774554d97d890018ab6e37e87cc62f6070d0c8c9909"
+    },
+    {
+      "path": "android/gradle.properties",
+      "bytes": 55,
+      "sha256": "789c6349ddb1ade96c27a31176993be26a119ab560c3a5f80d2ad43e8bd6a56f"
+    },
+    {
+      "path": "android/settings.gradle",
+      "bytes": 272,
+      "sha256": "88f2be25bc5e026de16642b05a6396cddee69699454da2dba104dc022cfae03f"
+    },
+    {
+      "path": "ci-inputs.json",
+      "bytes": 482,
+      "sha256": "4601bc763c31a0880a8cac54bc66cf0bc69a078233293f76c2faa78215a173e1"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "bytes": 2627,
+      "sha256": "763bde0c8e5df656d19b9e67771ce58f318fd827183a557f07f1552c68c54eab"
+    },
+    {
+      "path": "docs/BRANDING.md",
+      "bytes": 1431,
+      "sha256": "4070f7cbdb79b5efade986224f4e0f2655870e8164714587e33a840c99ca9b93"
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "bytes": 12390,
+      "sha256": "ae5fa73161eba0aa764e92cb4f0e92b494c6a99c0c77027bd354803980410c25"
+    },
+    {
+      "path": "docs/DISPLAY.md",
+      "bytes": 3878,
+      "sha256": "f3d82549b56af5827483d1cc4de0fbf55c119d8f05c6074701a471c540353059"
+    },
+    {
+      "path": "docs/FEATURE_PARITY.md",
+      "bytes": 1440,
+      "sha256": "c4ec5ccbe52db252be667ee6139e0b6c79d04d91d7c079aeeb259fcb5a22f1bc"
+    },
+    {
+      "path": "docs/HANDOFF.md",
+      "bytes": 19442,
+      "sha256": "fcc1623cd7e6e60afa58898b2c0a6cf3460f1c5fa9266f835b7cf1fe0c369e07"
+    },
+    {
+      "path": "docs/HL5_LESSONS.md",
+      "bytes": 4548,
+      "sha256": "d165f6685a04406be78feb88c0438c00b5bd605670a5e4a544e012fced414de3"
+    },
+    {
+      "path": "docs/LOCALIZATION_RUNTIME.md",
+      "bytes": 6597,
+      "sha256": "f7c4f19e1a59c90d6096e50c37622f61112d65c17caa60a45c28fb95193fb9a9"
+    },
+    {
+      "path": "docs/PERFORMANCE.md",
+      "bytes": 11462,
+      "sha256": "4cf4900c1232cd34cce69ff557bf2fe133421d84ecacc000a6f4f278d7a86540"
+    },
+    {
+      "path": "docs/POINTER_INPUT.md",
+      "bytes": 2994,
+      "sha256": "7cad1916f5a65a0d06f771a186845f612090728532d3f756ee5a25a721c89c48"
+    },
+    {
+      "path": "docs/PORTING_MAP.md",
+      "bytes": 2968,
+      "sha256": "c92f53c16eedde30068e6d6c196e94a8e7d6b91c19ec53a6e64f701590adda87"
+    },
+    {
+      "path": "docs/PREVIOUS_PORTS.md",
+      "bytes": 1440,
+      "sha256": "ab40f3719546c27aeb27ee791594edd0baec0ee898de4a903c66353af3039f9c"
+    },
+    {
+      "path": "docs/RESEARCH_LOG.md",
+      "bytes": 18689,
+      "sha256": "a1aef02bdb18a0ff9194a3cdd32a343662a975e756e6f1cb53ec0389499047ae"
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "bytes": 2726,
+      "sha256": "99c00e3a0c51c87d5c2a49ae4132f3a050e174d67af086db1c81be2bcec1adf9"
+    },
+    {
+      "path": "docs/RUNTIME_CONTRACT.md",
+      "bytes": 15134,
+      "sha256": "6a3b977038c6c07b6732ebef247c97734d58d8db18b543b8e7e2d00ac79a6a99"
+    },
+    {
+      "path": "docs/SESSION_PROTOCOL.md",
+      "bytes": 2239,
+      "sha256": "29f6b3e16183cca956606f8fc1612241fab5e2de7bc284e0d16f5321f2546fcf"
+    },
+    {
+      "path": "docs/STATUS.json",
+      "bytes": 5751,
+      "sha256": "967a59bfe84e1f1b9b2df36d7797246d0ae604fc83832a955616a605b6be5f0e"
+    },
+    {
+      "path": "docs/STATUS.md",
+      "bytes": 5205,
+      "sha256": "002ccf08ba62159ffbf25b1bcd9a40de30aeb8a0ec19dec421571a7e70ff4384"
+    },
+    {
+      "path": "docs/SWITCH_IDENTITY.md",
+      "bytes": 1042,
+      "sha256": "73e8005f46e9805932003e98faf917d4ae4606a825c1bcf78b7dfdd16a4ad3b6"
+    },
+    {
+      "path": "docs/TEXT_LOCALIZATION.md",
+      "bytes": 5183,
+      "sha256": "cbb564a631c14629303f620fb007dc8936bf967cc9c5cc7b78e81f5f5e3945d4"
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "bytes": 6043,
+      "sha256": "cacb25f3d0ab7bc1f35a49b4fd678b02057f8305b6295d858c81235cb0404e73"
+    },
+    {
+      "path": "docs/WINDOWS_README.txt",
+      "bytes": 3138,
+      "sha256": "59a6d7f3446d25fcdacfc96916f2420835e3ef0861e2db235538acc10be9749d"
+    },
+    {
+      "path": "docs/WINDOWS_RUNTIME.md",
+      "bytes": 8832,
+      "sha256": "6e7328bc241025a5755068f4d7c2b81dec504d1bb1a98f01586974b82b6c7f98"
+    },
+    {
+      "path": "docs/tasks/S02_RUNTIME_CONTRACT.md",
+      "bytes": 3353,
+      "sha256": "a2e483f1454fe751a10e5687c9088bacb963c1eebbe306780c4077c3e392501c"
+    },
+    {
+      "path": "docs/tasks/S05_GAMEPLAY_VALIDATION.md",
+      "bytes": 2047,
+      "sha256": "e3af4ec0ba2bac047e3ff3099f7f7465ba0b30a8ae4bafd7d01bacc296bd2535"
+    },
+    {
+      "path": "docs/tasks/S07_SWITCH_PERFORMANCE.md",
+      "bytes": 1295,
+      "sha256": "1c89080fcf01e2f68d6671592d51e6f0a9e133456b79fc32bc6ffbee047d7a3c"
+    },
+    {
+      "path": "docs/tasks/S08_VIEWPORT_EXPANSION.md",
+      "bytes": 5545,
+      "sha256": "7b1ed2b81a44eef4c91a51405badbb57e93b9682dff2e286dfae35f49d35a21f"
+    },
+    {
+      "path": "docs/tasks/S09_TEXT_EXTRACTION.md",
+      "bytes": 1804,
+      "sha256": "95708e694f4b11c1917526534d6dab7c2636c8fb95d890efb1ced953cd2a3840"
+    },
+    {
+      "path": "docs/tasks/S12_MULTIPLATFORM_CI.md",
+      "bytes": 3078,
+      "sha256": "b800f565dfc0ceb2eb35039fa2fb1e9f146994570c8c27c241e989cb3fec9747"
+    },
+    {
+      "path": "platforms/switch/README.md",
+      "bytes": 1925,
+      "sha256": "cb67cce688d373f688ea80c79b875a7bdd13bf2f269f1182c76f142e002af3c8"
+    },
+    {
+      "path": "platforms/switch/compat/sys/mman.h",
+      "bytes": 418,
+      "sha256": "969638c6abb3d11f59c08a6f97d8a7f7aa9d7d5760fd0f77142716a51bd5f63a"
+    },
+    {
+      "path": "platforms/switch/toolchain.cmake",
+      "bytes": 1058,
+      "sha256": "7baa6161161059159360167785921bc5d1af24d8db451317038c24c3faaaf2ce"
+    },
+    {
+      "path": "platforms/switch/unicorn_os.c",
+      "bytes": 1545,
+      "sha256": "b2db659abe7a88de999d4db055059be7cecd89d4676ecf7c034ec1f751ebbca5"
+    },
+    {
+      "path": "project.json",
+      "bytes": 996,
+      "sha256": "aa2072ce57e82fe3be79f7bc780da322927cc13a21103e805193308045bc826d"
+    },
+    {
+      "path": "src/arm_hot_bridge.inc",
+      "bytes": 4100,
+      "sha256": "3d2ff36fadb715e05f31bf826428cbb29c50c2dda08cf5616cef41dc518d707e"
+    },
+    {
+      "path": "src/arm_hot_decoder.inc",
+      "bytes": 16412,
+      "sha256": "5bdb4405acac58650b4ad3d55e35de654577faac37e87dccdf4de823d5615e76"
+    },
+    {
+      "path": "src/audio_cache.inc",
+      "bytes": 1057,
+      "sha256": "5a68ead3865f77a0655347566ffcfef05049184cf97632350eff16d899a7ebd8"
+    },
+    {
+      "path": "src/audio_runtime.inc",
+      "bytes": 1659,
+      "sha256": "79a041f89aba390dd1ee2babfc0e289392e8937ab9f9b3f00dca74e688a554c2"
+    },
+    {
+      "path": "src/emulation_watchdog.inc",
+      "bytes": 1909,
+      "sha256": "edb6b24696b1114db87847f45e2127414ed89f9c9206fcb786e1038bbdac5cd7"
+    },
+    {
+      "path": "src/localized_text.inc",
+      "bytes": 7446,
+      "sha256": "bf295cbfb29ba12882a4d571a1a471bb8c3322d95a78a49d6e4592d4d436fe66"
+    },
+    {
+      "path": "src/main.cpp",
+      "bytes": 55757,
+      "sha256": "796c9168f3d48dc86e032ad306c9637ad59c06157d7dde2a2c3cd1543699181e"
+    },
+    {
+      "path": "src/platform_paths.inc",
+      "bytes": 3223,
+      "sha256": "390b36d373e0fbf2ed0d9173b9e74c8ba717aa8cbd4517110ce9ad5c37314f65"
+    },
+    {
+      "path": "src/sha256.inc",
+      "bytes": 2092,
+      "sha256": "db253adc2e22571d28f763ee22cbdd4f912239bac961892e26762fbcbafe892a"
+    },
+    {
+      "path": "src/switch_perf.inc",
+      "bytes": 1060,
+      "sha256": "a9f1ea684536b13082c7de562ad4becdfb47ab27166192209ac7b7f17bbcdf7d"
+    },
+    {
+      "path": "tests/switch_memory_contract.c",
+      "bytes": 1446,
+      "sha256": "9cd7a6bfeae10333d451f2a6364a2f5f4635d2bd6bcb6ad40613491c639f05d1"
+    },
+    {
+      "path": "tools/arm_emit.py",
+      "bytes": 4256,
+      "sha256": "4cf00edc7f5e710a5fb5613f88f27cc4a9262c745447311d0c2bc50aa2e8cc85"
+    },
+    {
+      "path": "tools/benchmark_fast_revisions.py",
+      "bytes": 2504,
+      "sha256": "29212362cb3429932f1bb7ea5aa37bf2e22f127b69aa14ec86640e2db5dd7e69"
+    },
+    {
+      "path": "tools/ci_inputs.py",
+      "bytes": 2996,
+      "sha256": "89319f7c1bf1c3605c5ff1bc9300446098b31b5b5e7c3d94306adb73b6062514"
+    },
+    {
+      "path": "tools/compile_locale.py",
+      "bytes": 3009,
+      "sha256": "ab967d3fcae4e387611b03d8f33585e45cb0276eeb0cfe268b0274baa70b046f"
+    },
+    {
+      "path": "tools/extract_dynamic_text.py",
+      "bytes": 4249,
+      "sha256": "3ff94db92217fd1453554fb7380e26b9c8c5331e22430579c7d8283b2fae3434"
+    },
+    {
+      "path": "tools/fetch_build_deps.py",
+      "bytes": 1340,
+      "sha256": "6d75eac4b0e3f9733549d6ff2fbdd9cecdc82ea56a66999709c4a77a059cd697"
+    },
+    {
+      "path": "tools/generate_arm_hot.py",
+      "bytes": 6868,
+      "sha256": "6a164dc7a70da488ef0095ac73852238d7d7185c98dcf89f1d021f375c3e1589"
+    },
+    {
+      "path": "tools/github_ci.py",
+      "bytes": 2595,
+      "sha256": "3a31e46662d78aca42e07246cfa4c4fc2a7165fae006d9bc04548190185696a8"
+    },
+    {
+      "path": "tools/inspect_apk.py",
+      "bytes": 10867,
+      "sha256": "4c8ad18a0901a79e869012cca86a663b02fa139069310b139b29fe7e2c0d9b31"
+    },
+    {
+      "path": "tools/inspect_runtime.py",
+      "bytes": 14890,
+      "sha256": "ee7580526f7926e6a136bdf62fbd9deb66f9d8e8966075827ce61263491bef5e"
+    },
+    {
+      "path": "tools/inspect_text.py",
+      "bytes": 7622,
+      "sha256": "0e1a30e156e2202878bc7a18a7eff5ad25134dff096bc33ff0d792f402d1c1e4"
+    },
+    {
+      "path": "tools/pack_runtime.py",
+      "bytes": 1278,
+      "sha256": "8026706681d7cb009d86c33ea542adea2278bd17348a53b4c3b5e9343743f1fc"
+    },
+    {
+      "path": "tools/package_ci.py",
+      "bytes": 3255,
+      "sha256": "00246cb8bbf869872d9fbcf00a602167af6f906b10c397ac07a743fa3ec8a085"
+    },
+    {
+      "path": "tools/package_ci_sources.py",
+      "bytes": 1277,
+      "sha256": "7d421903eb8252af10f472192bfb9decc10595bccfd7c606ab10f3a738e35a3d"
+    },
+    {
+      "path": "tools/package_windows.py",
+      "bytes": 3036,
+      "sha256": "891cbe52e8e5dcd9dda15533be888baa61632828ce848c96adbcc61f0b1caedb"
+    },
+    {
+      "path": "tools/patch_unicorn_switch.py",
+      "bytes": 4264,
+      "sha256": "7b258b1be1509c99f4b2bed3c5fd06bd9328c75e132bfe3cc1e0700a9e19f21e"
+    },
+    {
+      "path": "tools/prepare_ci_runtime.py",
+      "bytes": 582,
+      "sha256": "498334232960a12633c828a753def22fef6bd26401dda5de794f64276ed4600f"
+    },
+    {
+      "path": "tools/prepare_icons.py",
+      "bytes": 3032,
+      "sha256": "68de6a41c214f1e0374f553d97a50a6ce6e0aa3a98edc81595226a96bb3edbad"
+    },
+    {
+      "path": "tools/probe_abi.py",
+      "bytes": 13708,
+      "sha256": "2597a27388cb89835c1c0f4d3f7d8d6f77d70cc8fabd64954c0286491eceaade"
+    },
+    {
+      "path": "tools/profile_arm_report.py",
+      "bytes": 1754,
+      "sha256": "7d561a35129f529985e7d2d03bba495b21317257b53884ac1f84bbe99e2719ed"
+    },
+    {
+      "path": "tools/project_status.py",
+      "bytes": 3406,
+      "sha256": "09e3873ebe2eed1a294c3877924b2bc537f1c5b17ca21f2c5e9f578ac413c6de"
+    },
+    {
+      "path": "tools/trace_boot.py",
+      "bytes": 14400,
+      "sha256": "e1144954da6b124b7672c733f64cb83f06aded5ea7b3b7d05a5fe69397a71822"
+    },
+    {
+      "path": "tools/translate_catalog.py",
+      "bytes": 5227,
+      "sha256": "7d3a6502db6373a4ee18a3271c246852d533053283124f953617515c76e02517"
+    },
+    {
+      "path": "tools/unicorn_importlib.py",
+      "bytes": 716,
+      "sha256": "d4d3c6981c7374205fb2e61745573bbd6f7ec3fb7daa22ac03310995e9dc3c6e"
+    },
+    {
+      "path": "tools/verify_android_package.py",
+      "bytes": 2815,
+      "sha256": "f579fdee2e48e51622f2554a39d0d1cf33a02a6e8797355de4102575d0e9b76a"
+    },
+    {
+      "path": "tools/verify_arm_emit.py",
+      "bytes": 4867,
+      "sha256": "3e1a6a661c27794e5955c78c1892d68307388ebdef0c1ec637b293fba63c8098"
+    },
+    {
+      "path": "tools/verify_aspect_captures.py",
+      "bytes": 5731,
+      "sha256": "132e9b8cab00a2bacce2b8d467fbb067c0d93ad1fa6aa83c008cb8b042522587"
+    },
+    {
+      "path": "tools/verify_bootstrap.py",
+      "bytes": 4484,
+      "sha256": "022598a5400a18ab629ebf64e7ba2f79d8bdba5479f5e4143eaf7a7aef7c6547"
+    },
+    {
+      "path": "tools/verify_ci_desktop.py",
+      "bytes": 897,
+      "sha256": "a6276cb197877168dae2f8f01b39daf3f968cf381e2e1a25e3f33241344cc7df"
+    },
+    {
+      "path": "tools/verify_combat_replay.py",
+      "bytes": 2930,
+      "sha256": "472627def605b4daeed073c89f41483309319f7b2f7bbc9ae97a8d6249f19c89"
+    },
+    {
+      "path": "tools/verify_fast_runtime.py",
+      "bytes": 3721,
+      "sha256": "e90be658c894e5af32e5330570900521a8f1162320532397c92bf8477ac40ad0"
+    },
+    {
+      "path": "tools/verify_pointer_runs.py",
+      "bytes": 2463,
+      "sha256": "1b0fc498aa0960242bb89d845fc7add57a2bbf7084ef54943a79b79b5c664622"
+    },
+    {
+      "path": "tools/verify_standalone.py",
+      "bytes": 3380,
+      "sha256": "27036527361f83318589f0a7ff03356d564f935b2613c9f9848a2005efdab9da"
+    },
+    {
+      "path": "tools/verify_switch_package.py",
+      "bytes": 1341,
+      "sha256": "219b62e0113c0ef29c5a0f50d63417ce10a02f54e8c6c556b1b2c11ff5d3f5c3"
+    },
+    {
+      "path": "tools/verify_workspace.py",
+      "bytes": 3115,
+      "sha256": "30bb3280b2f90b24b68cbfffaab4248c6714534eb9f5b7b5d1702d65633c372d"
+    }
+  ]
+}

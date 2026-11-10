@@ -1,0 +1,262 @@
+name: HL4 - Windows Linux Android Switch
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Target to rebuild
+        type: choice
+        default: all
+        options: [all, windows, linux, android, switch, tci]
+permissions:
+  contents: read
+concurrency:
+  group: hl4-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  windows:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'windows'
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Dependencies
+        run: |
+          python tools/fetch_build_deps.py
+          python -m pip install --target scratch/analysis_deps Pillow==11.3.0
+      - name: Private inputs and data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python tools/ci_inputs.py fetch
+          python tools/prepare_ci_runtime.py
+      - name: Compile
+        run: |
+          cmake -S . -B build/native -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/native --config Release --target heroes_lore_4 --parallel 4
+          cp -r build/runtime/* build/native/Release/
+      - name: Native core and gameplay smoke
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          python -m pip install --target scratch/analysis_deps capstone==5.0.9 pyelftools==0.33 unicorn==2.1.4
+          python -m unittest discover -s tests -v
+          build/native/Release/heroes_lore_4.exe --verify-core --save-dir build/test-saves
+          python tools/generate_arm_hot.py --check
+          python tools/verify_arm_emit.py
+          python tools/verify_fast_runtime.py build/native/Release/heroes_lore_4.exe build/smoke
+          python tools/verify_ci_desktop.py build/smoke --windows-exe build/native/Release/heroes_lore_4.exe
+      - name: Package standalone
+        run: python tools/package_ci.py windows --exe build/native/Release/heroes_lore_4.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_4_windows_x64
+          path: build/heroes_lore_4_windows_x64.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hl4-windows-diagnostics
+          path: build/smoke/
+  linux:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'linux'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential libasound2-dev libpulse-dev libudev-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev libwayland-dev libxkbcommon-dev libgl1-mesa-dev
+          python3 tools/fetch_build_deps.py
+      - name: Compile
+        run: |
+          cmake -S . -B build/native -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/native --target heroes_lore_4 --parallel 4
+      - name: Private inputs and data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/ci_inputs.py fetch
+          python3 -m pip install --target scratch/analysis_deps Pillow==11.3.0
+          python3 tools/prepare_ci_runtime.py
+          cp -r build/runtime/* build/native/
+      - name: Native core and gameplay smoke
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          python3 -m pip install --target scratch/analysis_deps capstone==5.0.9 pyelftools==0.33 unicorn==2.1.4
+          python3 -m unittest discover -s tests -v
+          build/native/heroes_lore_4 --verify-core --save-dir build/test-saves
+          python3 tools/generate_arm_hot.py --check
+          python3 tools/verify_arm_emit.py
+          python3 tools/verify_fast_runtime.py build/native/heroes_lore_4 build/smoke
+          python3 tools/verify_ci_desktop.py build/smoke
+      - name: Package portable Linux and AppImage
+        run: |
+          python3 tools/package_ci.py linux --exe build/native/heroes_lore_4
+          curl -fL https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -o build/appimagetool
+          chmod +x build/appimagetool
+          cd build
+          ./appimagetool --appimage-extract
+          cd ..
+          ARCH=x86_64 build/squashfs-root/AppRun AppDir build/heroes_lore_4_linux_x64.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_4_linux_x64
+          path: |
+            build/heroes_lore_4_linux_x64.tar.gz
+            build/heroes_lore_4_linux_x64.AppImage
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hl4-linux-diagnostics
+          path: build/smoke/
+  android:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'android'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Reuse the HL4-only CI test certificate
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: hl4-android-ci-debug-certificate-v1
+      - name: Dependencies
+        run: |
+          sdkmanager 'ndk;27.2.12479018' 'cmake;3.22.1' 'platforms;android-35' 'build-tools;35.0.0'
+          python3 tools/fetch_build_deps.py --android
+      - name: Private inputs and data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/ci_inputs.py fetch
+          python3 -m pip install --target scratch/analysis_deps Pillow==11.3.0
+          python3 tools/prepare_ci_runtime.py
+      - name: Compile test APK (HL4 certificate generated on CI)
+        run: |
+          gradle -p android assembleDebug --stacktrace --max-workers=2
+          python3 -m pip install --target scratch/analysis_deps pyelftools==0.33
+          cp android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk build/heroes_lore_4_android_arm64.apk
+          cp android/app/build/outputs/apk/debug/app-universal-debug.apk build/heroes_lore_4_android_global.apk
+          python3 tools/verify_android_package.py build/heroes_lore_4_android_arm64.apk --abis arm64-v8a
+          python3 tools/verify_android_package.py build/heroes_lore_4_android_global.apk --abis arm64-v8a armeabi-v7a x86_64
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/heroes_lore_4_android_arm64.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/heroes_lore_4_android_global.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_4_android_apks
+          path: |
+            build/heroes_lore_4_android_arm64.apk
+            build/heroes_lore_4_android_global.apk
+          if-no-files-found: error
+  tci-reference:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'tci'
+    name: Interpreter reference (Linux)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build interpreter reference
+        run: |
+          mkdir -p build
+          cc -std=c11 -Wall -Wextra -Werror -fno-builtin -Iplatforms/switch/compat tests/switch_memory_contract.c platforms/switch/unicorn_os.c -o build/switch-memory-contract
+          build/switch-memory-contract
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential
+          python3 tools/fetch_build_deps.py --tci
+          cmake -S . -B build/native -G Ninja -DHL4_TCI=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/native --target heroes_lore_4 --parallel 4
+      - name: Verify ARM Thumb and localization with interpreter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          python3 tools/ci_inputs.py fetch
+          python3 -m pip install --target scratch/analysis_deps Pillow==11.3.0
+          python3 tools/prepare_ci_runtime.py
+          cp -r build/runtime/* build/native/
+          build/native/heroes_lore_4 --verify-core --save-dir build/tci-test-saves
+          python3 tools/verify_fast_runtime.py build/native/heroes_lore_4 build/tci-smoke --benchmark
+          python3 tools/verify_ci_desktop.py build/tci-smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hl4-tci-diagnostics
+          path: build/tci-smoke/
+  switch:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'switch'
+    runs-on: ubuntu-22.04
+    container:
+      image: devkitpro/devkita64:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          apt-get update && apt-get install -y python3 python3-pil cmake ninja-build pkg-config
+          dkp-pacman -S --needed --noconfirm switch-sdl2 switch-mesa switch-libdrm_nouveau
+          python3 tools/fetch_build_deps.py --switch
+      - name: Compile ARM interpreter and libnx host
+        run: |
+          cmake -S . -B build/native -G Ninja -DCMAKE_TOOLCHAIN_FILE=platforms/switch/toolchain.cmake -DHL4_SWITCH=ON -DHL4_TCI=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/native --target heroes_lore_4 --parallel 4
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: hl4-switch-config-diagnostics
+          path: |
+            build/native/config.log
+            build/native/CMakeFiles/CMakeConfigureLog.yaml
+      - name: Private inputs and RomFS
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/ci_inputs.py fetch
+          python3 tools/prepare_ci_runtime.py
+          mkdir -p romfs
+          cp -r build/runtime/* romfs/
+      - name: NRO
+        run: |
+          /opt/devkitpro/tools/bin/nacptool --create 'Heroes Lore 4: Phantasmal Mask' 'HL4 native port' '0.1.0' build/heroes_lore_4.nacp --titleid=0100F4A400040000
+          /opt/devkitpro/tools/bin/elf2nro build/native/heroes_lore_4 build/heroes_lore_4.nro --icon=build/runtime/hl4-icon.jpg --nacp=build/heroes_lore_4.nacp --romfsdir=romfs
+          python3 tools/verify_switch_package.py build/heroes_lore_4.nro
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_4_switch
+          path: build/heroes_lore_4.nro
+          if-no-files-found: error
+  sources:
+    name: Corresponding source (separate)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect pinned corresponding sources
+        run: |
+          python3 tools/fetch_build_deps.py --android
+          python3 tools/fetch_build_deps.py --switch
+          python3 tools/package_ci_sources.py all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hl4-corresponding-source
+          path: build/hl4-all-corresponding-source.zip
+          if-no-files-found: error

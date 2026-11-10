@@ -1,0 +1,551 @@
+{
+  "sha256": "39c6ed1db25cbf6020c9edd2cfa145410ff391f3361a9150d9646b9a4fada849",
+  "bytes": 915824,
+  "header": {
+    "magic": "0xfeedface",
+    "cputype": 12,
+    "cpusubtype": 6,
+    "architecture": "ARMv6 32-bit",
+    "filetype": 2,
+    "ncmds": 31,
+    "sizeofcmds": 3768,
+    "flags": "0x00018085",
+    "uuid": "a3b6b11d4ef7030052ad81c95b16f8d7"
+  },
+  "entrypoint_unixthread": {
+    "flavor": 1,
+    "count": 17,
+    "r0_to_r12": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+    ],
+    "sp": "0x00000000",
+    "lr": "0x00000000",
+    "pc": "0x0000a438",
+    "cpsr": "0x00000000"
+  },
+  "mod_init_func_pointers": [
+    "0x00002b60",
+    "0x00005380",
+    "0x00007bd8",
+    "0x0000a404"
+  ],
+  "dylibs": [
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/Foundation.framework/Foundation",
+      "timestamp": 2,
+      "current_version": "0x02ef2500",
+      "compat_version": "0x012c0000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/UIKit.framework/UIKit",
+      "timestamp": 2,
+      "current_version": "0x05140000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/OpenGLES.framework/OpenGLES",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/QuartzCore.framework/QuartzCore",
+      "timestamp": 2,
+      "current_version": "0x00010700",
+      "compat_version": "0x00010200"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation",
+      "timestamp": 2,
+      "current_version": "0x02262601",
+      "compat_version": "0x00960000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+      "timestamp": 2,
+      "current_version": "0x02580000",
+      "compat_version": "0x00400000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/OpenAL.framework/OpenAL",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/GameKit.framework/GameKit",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/usr/lib/libsqlite3.dylib",
+      "timestamp": 2,
+      "current_version": "0x00090600",
+      "compat_version": "0x00090000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/StoreKit.framework/StoreKit",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration",
+      "timestamp": 2,
+      "current_version": "0x016c0100",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/CoreAudio.framework/CoreAudio",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox",
+      "timestamp": 2,
+      "current_version": "0x01280000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/MediaPlayer.framework/MediaPlayer",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/System/Library/Frameworks/AVFoundation.framework/AVFoundation",
+      "timestamp": 2,
+      "current_version": "0x00020000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/usr/lib/libz.1.dylib",
+      "timestamp": 2,
+      "current_version": "0x00010203",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/usr/lib/libstdc++.6.dylib",
+      "timestamp": 2,
+      "current_version": "0x00070900",
+      "compat_version": "0x00070000"
+    },
+    {
+      "cmd": 12,
+      "name": "/usr/lib/libgcc_s.1.dylib",
+      "timestamp": 2,
+      "current_version": "0x00010000",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/usr/lib/libSystem.B.dylib",
+      "timestamp": 2,
+      "current_version": "0x007d0400",
+      "compat_version": "0x00010000"
+    },
+    {
+      "cmd": 12,
+      "name": "/usr/lib/libobjc.A.dylib",
+      "timestamp": 2,
+      "current_version": "0x00e30000",
+      "compat_version": "0x00010000"
+    }
+  ],
+  "segments": [
+    {
+      "segname": "__PAGEZERO",
+      "vmaddr": "0x00000000",
+      "vmsize": 4096,
+      "fileoff": 0,
+      "filesize": 0,
+      "maxprot": 0,
+      "initprot": 0,
+      "flags": "0x00000000",
+      "sections": []
+    },
+    {
+      "segname": "__TEXT",
+      "vmaddr": "0x00001000",
+      "vmsize": 831488,
+      "fileoff": 0,
+      "filesize": 831488,
+      "maxprot": 5,
+      "initprot": 5,
+      "flags": "0x00000000",
+      "sections": [
+        {
+          "sectname": "__text",
+          "segname": "__TEXT",
+          "addr": "0x00002b60",
+          "size": 766156,
+          "offset": 7008,
+          "align": 2,
+          "flags": "0x80000400",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__symbol_stub4",
+          "segname": "__TEXT",
+          "addr": "0x000bdc2c",
+          "size": 3720,
+          "offset": 773164,
+          "align": 2,
+          "flags": "0x80000408",
+          "reserved1": 0,
+          "reserved2": 12
+        },
+        {
+          "sectname": "__cstring",
+          "segname": "__TEXT",
+          "addr": "0x000beab4",
+          "size": 32840,
+          "offset": 776884,
+          "align": 2,
+          "flags": "0x00000002",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_methname",
+          "segname": "__TEXT",
+          "addr": "0x000c6afc",
+          "size": 12039,
+          "offset": 809724,
+          "align": 0,
+          "flags": "0x00000002",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_methtype",
+          "segname": "__TEXT",
+          "addr": "0x000c9a03",
+          "size": 1352,
+          "offset": 821763,
+          "align": 0,
+          "flags": "0x00000002",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_classname",
+          "segname": "__TEXT",
+          "addr": "0x000c9f4b",
+          "size": 423,
+          "offset": 823115,
+          "align": 0,
+          "flags": "0x00000002",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__const",
+          "segname": "__TEXT",
+          "addr": "0x000ca0f4",
+          "size": 5212,
+          "offset": 823540,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__ustring",
+          "segname": "__TEXT",
+          "addr": "0x000cb550",
+          "size": 75,
+          "offset": 828752,
+          "align": 1,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__gcc_except_tab",
+          "segname": "__TEXT",
+          "addr": "0x000cb59b",
+          "size": 2659,
+          "offset": 828827,
+          "align": 0,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        }
+      ]
+    },
+    {
+      "segname": "__DATA",
+      "vmaddr": "0x000cc000",
+      "vmsize": 90112,
+      "fileoff": 831488,
+      "filesize": 53248,
+      "maxprot": 3,
+      "initprot": 3,
+      "flags": "0x00000000",
+      "sections": [
+        {
+          "sectname": "__dyld",
+          "segname": "__DATA",
+          "addr": "0x000cc000",
+          "size": 28,
+          "offset": 831488,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__mod_init_func",
+          "segname": "__DATA",
+          "addr": "0x000cc01c",
+          "size": 16,
+          "offset": 831516,
+          "align": 2,
+          "flags": "0x00000009",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__nl_symbol_ptr",
+          "segname": "__DATA",
+          "addr": "0x000cc02c",
+          "size": 532,
+          "offset": 831532,
+          "align": 2,
+          "flags": "0x00000006",
+          "reserved1": 310,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__la_symbol_ptr",
+          "segname": "__DATA",
+          "addr": "0x000cc240",
+          "size": 1240,
+          "offset": 832064,
+          "align": 2,
+          "flags": "0x00000007",
+          "reserved1": 443,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__const",
+          "segname": "__DATA",
+          "addr": "0x000cc718",
+          "size": 7600,
+          "offset": 833304,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__cfstring",
+          "segname": "__DATA",
+          "addr": "0x000ce4c8",
+          "size": 7872,
+          "offset": 840904,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_classlist",
+          "segname": "__DATA",
+          "addr": "0x000d0388",
+          "size": 88,
+          "offset": 848776,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_protolist",
+          "segname": "__DATA",
+          "addr": "0x000d03e0",
+          "size": 40,
+          "offset": 848864,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_imageinfo",
+          "segname": "__DATA",
+          "addr": "0x000d0408",
+          "size": 8,
+          "offset": 848904,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_const",
+          "segname": "__DATA",
+          "addr": "0x000d0410",
+          "size": 12748,
+          "offset": 848912,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_selrefs",
+          "segname": "__DATA",
+          "addr": "0x000d35dc",
+          "size": 1972,
+          "offset": 861660,
+          "align": 2,
+          "flags": "0x00000005",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_classrefs",
+          "segname": "__DATA",
+          "addr": "0x000d3d90",
+          "size": 300,
+          "offset": 863632,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_superrefs",
+          "segname": "__DATA",
+          "addr": "0x000d3ebc",
+          "size": 72,
+          "offset": 863932,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__objc_data",
+          "segname": "__DATA",
+          "addr": "0x000d3f04",
+          "size": 880,
+          "offset": 864004,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__data",
+          "segname": "__DATA",
+          "addr": "0x000d4274",
+          "size": 16296,
+          "offset": 864884,
+          "align": 2,
+          "flags": "0x00000000",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__common",
+          "segname": "__DATA",
+          "addr": "0x000d821c",
+          "size": 34933,
+          "offset": 0,
+          "align": 2,
+          "flags": "0x00000001",
+          "reserved1": 0,
+          "reserved2": 0
+        },
+        {
+          "sectname": "__bss",
+          "segname": "__DATA",
+          "addr": "0x000e0a94",
+          "size": 2984,
+          "offset": 0,
+          "align": 2,
+          "flags": "0x00000001",
+          "reserved1": 0,
+          "reserved2": 0
+        }
+      ]
+    },
+    {
+      "segname": "__LINKEDIT",
+      "vmaddr": "0x000e2000",
+      "vmsize": 32768,
+      "fileoff": 884736,
+      "filesize": 31088,
+      "maxprot": 1,
+      "initprot": 1,
+      "flags": "0x00000000",
+      "sections": []
+    }
+  ],
+  "symtab": {
+    "symoff": 884736,
+    "nsyms": 394,
+    "stroff": 898572,
+    "strsize": 6784
+  },
+  "dysymtab": {
+    "ilocalsym": 0,
+    "nlocalsym": 1,
+    "iextdefsym": 1,
+    "nextdefsym": 4,
+    "iundefsym": 5,
+    "nundefsym": 389,
+    "tocoff": 0,
+    "ntoc": 0,
+    "modtaboff": 0,
+    "nmodtab": 0,
+    "extrefsymoff": 0,
+    "nextrefsyms": 0,
+    "indirectsymoff": 895560,
+    "nindirectsyms": 753,
+    "extreloff": 889464,
+    "nextrel": 762,
+    "locreloff": 0,
+    "nlocrel": 0
+  },
+  "symbol_summary": {
+    "total": 394,
+    "defined": 5,
+    "undefined_imports": 389
+  }
+}

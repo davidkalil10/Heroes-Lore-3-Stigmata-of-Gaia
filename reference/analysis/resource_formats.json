@@ -1,0 +1,1057 @@
+{
+  "pvr_count": 16,
+  "pvr_pixel_formats": {
+    "OGL_AI_88": 8,
+    "OGL_RGBA_8888": 8
+  },
+  "pvr": {
+    "newres/fonts/font_hud.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 64,
+      "height": 64,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 16384,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 16436,
+      "size_consistent": true
+    },
+    "newres/fonts/font_mainmenu.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 512,
+      "height": 512,
+      "mipmap_count": 0,
+      "flags": "0x00008017",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 524288,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 524340,
+      "size_consistent": true
+    },
+    "newres/fonts/font_mainmenu_cn.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 256,
+      "height": 256,
+      "mipmap_count": 8,
+      "flags": "0x00008117",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 174762,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 174814,
+      "size_consistent": true
+    },
+    "newres/fonts/font_mainmenu_ko.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 256,
+      "height": 256,
+      "mipmap_count": 8,
+      "flags": "0x00008117",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 174762,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 174814,
+      "size_consistent": true
+    },
+    "newres/fonts/font_menu_medium.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 512,
+      "height": 512,
+      "mipmap_count": 0,
+      "flags": "0x00008017",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 524288,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 524340,
+      "size_consistent": true
+    },
+    "newres/fonts/font_menu_medium_cn.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 10,
+      "flags": "0x00008117",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 2796202,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 2796254,
+      "size_consistent": true
+    },
+    "newres/fonts/font_menu_medium_ko.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 10,
+      "flags": "0x00008117",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 2796202,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 2796254,
+      "size_consistent": true
+    },
+    "newres/fonts/font_menu_small.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 256,
+      "height": 256,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 262144,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 262196,
+      "size_consistent": true
+    },
+    "newres/fonts/font_menu_small_cn.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 10,
+      "flags": "0x00008117",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 2796202,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 2796254,
+      "size_consistent": true
+    },
+    "newres/fonts/font_menu_small_ko.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 10,
+      "flags": "0x00008117",
+      "pixel_type": "0x00000017",
+      "pixel_format": "OGL_AI_88",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 2796202,
+      "bits_per_pixel": 16,
+      "surface_count": 1,
+      "file_size": 2796254,
+      "size_consistent": true
+    },
+    "newres/sprites/end_screen_Kei.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 512,
+      "height": 512,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 1048576,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 1048628,
+      "size_consistent": true
+    },
+    "newres/sprites/end_screen_Rits.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 512,
+      "height": 512,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 1048576,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 1048628,
+      "size_consistent": true
+    },
+    "newres/sprites/hero.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 512,
+      "height": 256,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 524288,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 524340,
+      "size_consistent": true
+    },
+    "newres/sprites/hud.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 4194304,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 4194356,
+      "size_consistent": true
+    },
+    "newres/sprites/menu_bkg.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 10,
+      "flags": "0x00008112",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": true,
+      "alpha_in_header": true,
+      "data_size": 5592404,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 5592456,
+      "size_consistent": true
+    },
+    "newres/sprites/user_interface_with_alpha.pvr": {
+      "version": "PVR v2 (legacy 52-byte header)",
+      "header_size": 52,
+      "width": 1024,
+      "height": 1024,
+      "mipmap_count": 0,
+      "flags": "0x00008012",
+      "pixel_type": "0x00000012",
+      "pixel_format": "OGL_RGBA_8888",
+      "twiddled": false,
+      "has_mipmaps": false,
+      "alpha_in_header": true,
+      "data_size": 4194304,
+      "bits_per_pixel": 32,
+      "surface_count": 1,
+      "file_size": 4194356,
+      "size_consistent": true
+    }
+  },
+  "rff": {
+    "newres/fonts/font_hud.rff": {
+      "header_prefix_hex": "21 01 02 ff 0c 03 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 141,
+      "second_count_be16_at_10": 197,
+      "codepoints_be16_from_offset_12": {
+        "count": 141,
+        "first": [
+          32,
+          33,
+          34,
+          35
+        ],
+        "last": [
+          254,
+          338,
+          339
+        ],
+        "min": 32,
+        "max": 339,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 2140,
+      "bytes_per_glyph_after_table": 15.177,
+      "file_size": 2434
+    },
+    "newres/fonts/font_mainmenu.rff": {
+      "header_prefix_hex": "21 01 02 00 19 09 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 137,
+      "second_count_be16_at_10": 137,
+      "codepoints_be16_from_offset_12": {
+        "count": 137,
+        "first": [
+          10,
+          32,
+          33,
+          34
+        ],
+        "last": [
+          8220,
+          8221,
+          8230
+        ],
+        "min": 10,
+        "max": 8230,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 1644,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 1930
+    },
+    "newres/fonts/font_mainmenu_cn.rff": {
+      "header_prefix_hex": "21 01 02 00 1b 00 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 75,
+      "second_count_be16_at_10": 75,
+      "codepoints_be16_from_offset_12": {
+        "count": 75,
+        "first": [
+          32,
+          38,
+          48,
+          49
+        ],
+        "last": [
+          36947,
+          37324,
+          38463
+        ],
+        "min": 32,
+        "max": 38463,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 900,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 1062
+    },
+    "newres/fonts/font_mainmenu_ko.rff": {
+      "header_prefix_hex": "21 01 02 00 15 00 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 67,
+      "second_count_be16_at_10": 67,
+      "codepoints_be16_from_offset_12": {
+        "count": 67,
+        "first": [
+          32,
+          48,
+          49,
+          50
+        ],
+        "last": [
+          54616,
+          54840,
+          54872
+        ],
+        "min": 32,
+        "max": 54872,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 804,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 950
+    },
+    "newres/fonts/font_menu_medium.rff": {
+      "header_prefix_hex": "21 01 02 00 14 08 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 137,
+      "second_count_be16_at_10": 137,
+      "codepoints_be16_from_offset_12": {
+        "count": 137,
+        "first": [
+          10,
+          32,
+          33,
+          34
+        ],
+        "last": [
+          8220,
+          8221,
+          8230
+        ],
+        "min": 10,
+        "max": 8230,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 1644,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 1930
+    },
+    "newres/fonts/font_menu_medium_cn.rff": {
+      "header_prefix_hex": "21 01 02 00 14 08 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 2117,
+      "second_count_be16_at_10": 2117,
+      "codepoints_be16_from_offset_12": {
+        "count": 2117,
+        "first": [
+          32,
+          33,
+          34,
+          35
+        ],
+        "last": [
+          65292,
+          65306,
+          65311
+        ],
+        "min": 32,
+        "max": 65311,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 25404,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 29650
+    },
+    "newres/fonts/font_menu_medium_ko.rff": {
+      "header_prefix_hex": "21 01 02 00 14 08 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 1146,
+      "second_count_be16_at_10": 1146,
+      "codepoints_be16_from_offset_12": {
+        "count": 1146,
+        "first": [
+          32,
+          33,
+          34,
+          35
+        ],
+        "last": [
+          55180,
+          55184,
+          55192
+        ],
+        "min": 32,
+        "max": 55192,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 13752,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 16056
+    },
+    "newres/fonts/font_menu_small.rff": {
+      "header_prefix_hex": "21 01 02 00 0e 05 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 146,
+      "second_count_be16_at_10": 146,
+      "codepoints_be16_from_offset_12": {
+        "count": 146,
+        "first": [
+          10,
+          32,
+          33,
+          34
+        ],
+        "last": [
+          8220,
+          8221,
+          8230
+        ],
+        "min": 10,
+        "max": 8230,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 1752,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 2056
+    },
+    "newres/fonts/font_menu_small_cn.rff": {
+      "header_prefix_hex": "21 01 02 00 0e 05 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 2117,
+      "second_count_be16_at_10": 2117,
+      "codepoints_be16_from_offset_12": {
+        "count": 2117,
+        "first": [
+          32,
+          33,
+          34,
+          35
+        ],
+        "last": [
+          65292,
+          65306,
+          65311
+        ],
+        "min": 32,
+        "max": 65311,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 25404,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 29650
+    },
+    "newres/fonts/font_menu_small_ko.rff": {
+      "header_prefix_hex": "21 01 02 00 0f 04 00 00",
+      "magic_bytes": "21 01 02",
+      "glyph_count_be16_at_8": 1146,
+      "second_count_be16_at_10": 1146,
+      "codepoints_be16_from_offset_12": {
+        "count": 1146,
+        "first": [
+          32,
+          33,
+          34,
+          35
+        ],
+        "last": [
+          55180,
+          55184,
+          55192
+        ],
+        "min": 32,
+        "max": 55192,
+        "sorted_non_decreasing": true
+      },
+      "bytes_after_codepoint_table": 13752,
+      "bytes_per_glyph_after_table": 12.0,
+      "file_size": 16056
+    }
+  },
+  "sprites_spr": {
+    "newres/sprites/end_screen_Kei.spr": {
+      "size": 28,
+      "head_hex": "00 01 00 00 00 00 00 e0 01 40 01 01 00 01 01 00 00 00 00 00 00 00 00 00"
+    },
+    "newres/sprites/end_screen_Rits.spr": {
+      "size": 28,
+      "head_hex": "00 01 00 00 00 00 00 e0 01 40 01 01 00 01 01 00 00 00 00 00 00 00 00 00"
+    },
+    "newres/sprites/hero.spr": {
+      "size": 6330,
+      "head_hex": "00 1e 00 03 00 03 00 1e 00 2b 00 30 00 37 00 4e 00 65 00 50 00 0c 00 0e"
+    },
+    "newres/sprites/hud.spr": {
+      "size": 10620,
+      "head_hex": "00 e5 01 00 00 0a 00 0a 00 0a 00 42 00 3d 00 01 00 20 00 20 00 39 00 4d"
+    },
+    "newres/sprites/menu_bkg.spr": {
+      "size": 1387,
+      "head_hex": "00 0f 00 08 00 f8 00 02 02 f2 02 02 02 f2 02 08 00 f8 00 08 00 08 00 08"
+    },
+    "newres/sprites/user_interface_with_alpha.spr": {
+      "size": 30065,
+      "head_hex": "00 f1 00 00 00 58 01 07 00 30 00 3b 00 12 00 5f 01 51 00 91 00 25 00 2b"
+    }
+  },
+  "in_game_text": {
+    "layout": "u16le total_size; u16le string_count; u16le offsets[count] (absolute); NUL-terminated strings",
+    "declared_total_size": 3979,
+    "actual_size": 3979,
+    "string_count": 243,
+    "first_string_offset": 490,
+    "offset_table_end": 490,
+    "offsets_monotonic": true,
+    "first_strings": [
+      "MENU",
+      "STATUS",
+      "INVENTORY",
+      "EQUIPMENT",
+      "SKILL",
+      "QUEST"
+    ],
+    "sha256_of_strings": "ea4a99e37fd346141d9e811c5da1f0f28db79cfbdda8ff11ee3ae17cd9469afa"
+  },
+  "dat_families": {
+    "_2": {
+      "count": 1,
+      "total_bytes": 31,
+      "min_bytes": 31,
+      "max_bytes": 31,
+      "sample": {
+        "file": "InGame_txt_2",
+        "head_hex": "1f 00 02 00 08 00 1b 00 49 6e 76 65 6e 74 6f 72"
+      }
+    },
+    "_dat": {
+      "count": 35,
+      "total_bytes": 37352,
+      "min_bytes": 50,
+      "max_bytes": 4025,
+      "sample": {
+        "file": "char_dat",
+        "head_hex": "0d 00 41 12 4a 12 00 04 05 11 0c 00 06 00 00 0d"
+      }
+    },
+    "_hop": {
+      "count": 1,
+      "total_bytes": 9378,
+      "min_bytes": 9378,
+      "max_bytes": 9378,
+      "sample": {
+        "file": "chapter_hop",
+        "head_hex": "5e b4 00 00 00 30 00 00 00 00 01 00 01 00 01 00"
+      }
+    },
+    "_pa": {
+      "count": 230,
+      "total_bytes": 201612,
+      "min_bytes": 56,
+      "max_bytes": 9376,
+      "sample": {
+        "file": "pe000_pa",
+        "head_hex": "51 00 00 00 ff 00 ff ff 20 26 0e ff 56 57 4b ff"
+      }
+    },
+    "_txt": {
+      "count": 1,
+      "total_bytes": 3979,
+      "min_bytes": 3979,
+      "max_bytes": 3979,
+      "sample": {
+        "file": "InGame_txt",
+        "head_hex": "8b 0f f3 00 ea 01 ef 01 f6 01 00 02 0a 02 10 02"
+      }
+    }
+  },
+  "boss_families": {
+    "_bm": {
+      "count": 5,
+      "total_bytes": 283156,
+      "min_bytes": 47243,
+      "max_bytes": 74749,
+      "sample": {
+        "file": "boss9000_bm",
+        "head_hex": "17 00 99 06 00 00 0c 21 00 30 00 21 00 18 00 ff"
+      }
+    },
+    "_cif": {
+      "count": 5,
+      "total_bytes": 108874,
+      "min_bytes": 10310,
+      "max_bytes": 56862,
+      "sample": {
+        "file": "boss0_cif",
+        "head_hex": "01 00 08 01 09 10 20 05 c0 ff b1 ff 20 07 d5 ff"
+      }
+    },
+    "_dat": {
+      "count": 2,
+      "total_bytes": 870,
+      "min_bytes": 435,
+      "max_bytes": 435,
+      "sample": {
+        "file": "boss_dat",
+        "head_hex": "1b 00 41 12 0e 00 34 08 ac 00 d1 00 f6 00 37 00"
+      }
+    }
+  },
+  "comm_families": {
+    "_bm": {
+      "count": 6,
+      "total_bytes": 95968,
+      "min_bytes": 1629,
+      "max_bytes": 31197,
+      "sample": {
+        "file": "attmsg_bm",
+        "head_hex": "06 00 66 0a 00 00 0c 47 00 17 00 47 00 ff 00 ff"
+      }
+    }
+  },
+  "audio": {
+    "mp3": [
+      {
+        "file": "snd/battle_cry.mp3",
+        "bytes": 117386,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm0_mf.mp3",
+        "bytes": 2152806,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm10_mf.mp3",
+        "bytes": 1451470,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm11_mf.mp3",
+        "bytes": 1748221,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm12_mf.mp3",
+        "bytes": 1637044,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm13_mf.mp3",
+        "bytes": 1323575,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm14_mf.mp3",
+        "bytes": 1091190,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm15_mf.mp3",
+        "bytes": 1009270,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm16_mf.mp3",
+        "bytes": 1730667,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm17_mf.mp3",
+        "bytes": 1009270,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm18_mf.mp3",
+        "bytes": 1027660,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm1_mf.mp3",
+        "bytes": 1908718,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm2_mf.mp3",
+        "bytes": 1257537,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm3_mf.mp3",
+        "bytes": 1323575,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm4_mf.mp3",
+        "bytes": 1968068,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm5_mf.mp3",
+        "bytes": 1231624,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm6_mf.mp3",
+        "bytes": 1033511,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm7_mf.mp3",
+        "bytes": 1263389,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm8_mf.mp3",
+        "bytes": 1544257,
+        "head_hex": "49 44 33 03"
+      },
+      {
+        "file": "snd/bgm9_mf.mp3",
+        "bytes": 1308528,
+        "head_hex": "49 44 33 03"
+      }
+    ],
+    "wav": [
+      {
+        "file": "snd/sd000_mf.wav",
+        "bytes": 66580,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd001_mf.wav",
+        "bytes": 673836,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd002_mf.wav",
+        "bytes": 357660,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd003_mf.wav",
+        "bytes": 31622,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd004_mf.wav",
+        "bytes": 179794,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd005_mf.wav",
+        "bytes": 52636,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd006_mf.wav",
+        "bytes": 15344,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd007_mf.wav",
+        "bytes": 176444,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd008_mf.wav",
+        "bytes": 352844,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd009_mf.wav",
+        "bytes": 289554,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd010_mf.wav",
+        "bytes": 134048,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd011_mf.wav",
+        "bytes": 130800,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd012_mf.wav",
+        "bytes": 223044,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd013_mf.wav",
+        "bytes": 176444,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 1,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd014_mf.wav",
+        "bytes": 67960,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd015_mf.wav",
+        "bytes": 41476,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd016_mf.wav",
+        "bytes": 97280,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd017_mf.wav",
+        "bytes": 96892,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd018_mf.wav",
+        "bytes": 89116,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd019_mf.wav",
+        "bytes": 89116,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd020_mf.wav",
+        "bytes": 33528,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd021_mf.wav",
+        "bytes": 52012,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd022_mf.wav",
+        "bytes": 51080,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd023_mf.wav",
+        "bytes": 66636,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd024_mf.wav",
+        "bytes": 192316,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd025_mf.wav",
+        "bytes": 192316,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd026_mf.wav",
+        "bytes": 197228,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      },
+      {
+        "file": "snd/sd027_mf.wav",
+        "bytes": 197228,
+        "riff": true,
+        "format_tag": 1,
+        "channels": 2,
+        "sample_rate": 44100,
+        "bits": 16
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "game_id": "heroes_lore_4",
+  "display_name": "Heroes Lore 4",
+  "project_stage": "windows_runtime_validation",
+  "original_apk": {
+    "path": "Heroes_Lore_4_Phantasmal_Mask_V._1.0.0-spaces.im.apk",
+    "sha256": "96e6952623be870139b132ae9aba41ef189746aeb9a4abe8b08574ad540834be"
+  },
+  "targets": [
+    "windows-x64",
+    "linux-x86_64",
+    "android-arm64",
+    "nintendo-switch"
+  ],
+  "runtime_candidate": "Original ARM32/Thumb via Unicorn 2.1.4 with native WIPI HLE and SDL2 host",
+  "identifiers": {
+    "github_repository": "davidkalil10/Heroes-Lore-4-Phantasmal-Mask-Recomp",
+    "android_application_id": "com.davidbraga.heroeslore4",
+    "switch_title_id": "0100F4A400040000",
+    "google_oauth_client": null
+  },
+  "release": {
+    "version": "0.1.0",
+    "android_version_code": 1
+  },
+  "source_snapshot": "reference/hl5_snapshot",
+  "status_file": "docs/STATUS.json",
+  "next_task": "docs/tasks/S07_SWITCH_PERFORMANCE.md"
+}

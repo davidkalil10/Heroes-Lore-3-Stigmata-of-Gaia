@@ -1,0 +1,240 @@
+#define SDL_MAIN_HANDLED
+#include "service_data.h"
+#include "service_net.h"
+#include "services.h"
+#include "service_ui.h"
+#include "localization.h"
+#include "input_mapping.h"
+#include "hle/hle.h"
+#include "vendor/json.hpp"
+#include <SDL.h>
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <filesystem>
+#include <iostream>
+#include <stdexcept>
+
+using namespace services;
+using json=nlohmann::json;
+namespace fs=std::filesystem;
+static std::atomic<int> uploads{0},updateChecks{0},offlineChecks{0};
+static std::atomic<bool> holdDownload{false};
+static std::string remotePackage;
+static bool remoteExists=true,corruptDownload=false;
+static std::string updateBytes(2*1024*1024,'\0');
+static json releaseJson() {
+    updateBytes[0]='P';updateBytes[1]='K';
+    std::string asset=platformName()=="Windows"?"heroes_lore_5_windows_x64.zip":"heroes_lore_5_linux_x86_64.AppImage";
+    if(platformName()!="Windows") updateBytes.replace(0,4,std::string("\x7f" "ELF",4));
+    return {{"tag_name","v9.2.1"},{"name","Test release"},{"body","Notes with \"quotes\"\nnext line"},
+        {"draft",false},{"prerelease",false},{"assets",json::array({{{"name",asset},
+            {"browser_download_url","https://github.com/"+std::string(Repository)+"/releases/download/v9.2.1/"+asset},
+            {"size",updateBytes.size()},{"digest","sha256:"+sha256({updateBytes.begin(),updateBytes.end()})}}})}};
+}
+namespace services {
+void initNetwork() {}
+void shutdownNetwork() {}
+bool installAndroidApk(const std::string&) {return false;}
+void downloadFile(const std::string&,const std::string& path,const DownloadProgress& progress) {
+    if(progress)progress(updateBytes.size()/2,updateBytes.size());
+    while(holdDownload)SDL_Delay(1);
+    if(progress)progress(updateBytes.size(),updateBytes.size());
+    auto bytes=updateBytes;if(corruptDownload) bytes[10]='!';writeText(path,bytes);
+}
+HttpResponse httpExecute(const std::string& method,const std::string& url,const std::vector<std::string>&,const std::string& body) {
+    if(url.find("api.github.com")!=std::string::npos){updateChecks++;if(offlineChecks>0){offlineChecks--;return {0,""};}return {200,releaseJson().dump()};}
+    if(url.find("alt=media")!=std::string::npos) return {200,remotePackage};
+    if(url.find("upload/drive")!=std::string::npos) {uploads++;return {200,"{\"id\":\"save\"}"};}
+    if(url.find("mimeType")!=std::string::npos) return {200,"{\"files\":[{\"id\":\"folder\"}]}"};
+    if(method=="PATCH") return {200,"{}"};
+    if(url.find("orderBy=")!=std::string::npos) {
+        return {200,remoteExists?"{\"files\":[{\"id\":\"save\",\"modifiedTime\":\"2026-10-20T12:34:56Z\",\"description\":\"Windows | 2 save files\",\"version\":\"1\"}]}":"{\"files\":[]}"};
+    }
+    throw std::runtime_error("Unexpected mock HTTP request: "+method+" "+url);
+}
+}
+static void require(bool value,const char* message) {if(!value) throw std::runtime_error(message);}
+template<class F> static void rejects(F fn,const char* message) {bool threw=false;try{fn();}catch(...){threw=true;}require(threw,message);}
+static void waitTask() {
+    auto start=SDL_GetTicks();while(status().busy && SDL_GetTicks()-start<5000) SDL_Delay(10);
+    require(!status().busy,"Background task timeout");
+}
+static void key(SDL_Keycode code) {SDL_Event event{};event.type=SDL_KEYDOWN;event.key.keysym.sym=code;serviceui::event(event,false);}
+int main(int argc,char** argv) {
+    fs::path temporary;
+    try {
+        require(sha256({})=="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","SHA256 empty vector");
+        require(sha256({'a','b','c'})=="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad","SHA256 abc");
+        require(sha256(std::vector<uint8_t>(1000000,'a'))=="cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0","SHA256 million a");
+        std::vector<uint8_t> binary;for(int i=0;i<256;i++)binary.push_back(uint8_t(i));
+        require(unbase64(base64(binary))==binary,"binary base64 roundtrip");
+        for(auto bad:{"=AAA","AA=A","A===","AB==","AA!A","AA"}) rejects([&](){unbase64(bad);},"invalid base64 accepted");
+        require(newerVersion("v1.10.0","1.2.9"),"numeric version ordering");
+        require(!newerVersion("v1.0.0",Version),"downgrade accepted");
+        rejects([](){newerVersion("v2.0.0-beta","1.0.0");},"prerelease version accepted");
+        auto release=releaseJson();
+        require(parseRelease(release.dump(),platformName()).notes.find("quotes")!=std::string::npos,"escaped release JSON");
+        release["assets"][0]["browser_download_url"]="https://example.org/evil.zip";
+        rejects([&](){parseRelease(release.dump(),platformName());},"foreign release asset accepted");
+        for(auto bad:{"../cloud_auth.json","internal/../services.json","external/../../x","internal/C:/x","internal/xx\\x","internal/.hidden","internal/","data/dict.bin"})
+            require(!safeSavePath(bad),"unsafe save path accepted");
+        SaveFiles original={{"internal/kickass",binary},{"internal/LOCAL.sav",{'a',0,'b'}},{"external/slot/data",{0,1,2}}};
+        auto package=packSaves(original,"Windows");
+        require(unpackSaves(package)==original,"cross-platform binary save roundtrip");
+        auto badPackage=json::parse(package);badPackage["app"]="heroes_lore_zero";
+        rejects([&](){unpackSaves(badPackage.dump());},"different game backup accepted");
+        badPackage=json::parse(package);badPackage["files"]["internal/LOCAL.sav"]["data"]="AAAA";
+        rejects([&](){unpackSaves(badPackage.dump());},"damaged backup accepted");
+        require(gameKey(SDLK_c)=='#' && gameKey(SDLK_TAB)=='#',"keyboard skill row mapping");
+        require(gamepadKey(SDL_CONTROLLER_BUTTON_BACK,false)=='#',"Select mapping");
+        require(gamepadKey(SDL_CONTROLLER_BUTTON_LEFTSTICK,true)=='0',"L3 map mapping");
+        require(gamepadKey(SDL_CONTROLLER_BUTTON_B,true)==WK_SELECT,"Nintendo physical A attacks");
+        require(gamepadKey(SDL_CONTROLLER_BUTTON_A,true)==WK_CLEAR,"Nintendo physical B cancels");
+        require(gamepadKey(SDL_CONTROLLER_BUTTON_Y,true)=='1' && gamepadKey(SDL_CONTROLLER_BUTTON_X,true)=='3',"Nintendo X/Y swap");
+        require(gamepadKey(SDL_CONTROLLER_BUTTON_A,false)==WK_SELECT,"Xbox mapping retained");
+
+        temporary=fs::temp_directory_path()/("hl5-services-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+        fs::create_directories(temporary/"internal");fs::create_directories(temporary/"external");
+        writeText((temporary/"internal/old-save").string(),"previous");
+        writeText((temporary/"cloud_auth.json").string(),"KEEP");
+        auto backup=restoreSaves(temporary.string(),original);
+        require(readSaves(temporary.string())==original,"restored files mismatch");
+        require(!fs::exists(temporary/"internal/old-save") && readText(backup+"/internal/old-save")=="previous","old slot not isolated in safety backup");
+        require(readText((temporary/"cloud_auth.json").string())=="KEEP","restore changed auth token");
+        rejects([&](){restoreSaves(temporary.string(),{{"../escape",{1,2,3}}});},"restore accepted traversal");
+        require(readSaves(temporary.string())==original,"rejected restore changed saves");
+
+        SDL_setenv("SDL_VIDEODRIVER","dummy",1);require(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)==0,"SDL init failed");
+        writeText((temporary/"services.json").string(),"{\"check_updates\":false}");
+        writeText((temporary/"cloud_auth.json").string(),"{\"refresh_token\":\"fake\",\"access_token\":\"fake\",\"expires_at\":9999999999}");
+        init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");
+        std::string nroBytes(8192,'N');nroBytes.replace(16,4,"NRO0");
+        Release nro;nro.asset="heroes_lore_5.nro";nro.size=nroBytes.size();nro.digest="sha256:"+sha256({nroBytes.begin(),nroBytes.end()});
+        auto portable=(temporary/"heroes_lore_5.nro").string(),download=(temporary/"download.nro").string();
+        writeText(portable,"previous NRO");writeText(download,nroBytes);
+        auto nroBackup=installPortableUpdate(download,portable,nro);
+        require(readText(portable)==nroBytes && readText(nroBackup)=="previous NRO","Portable NRO installation/backup");
+        bool unmounted=false;writeText(download,std::string(nroBytes.size(),'X'));
+        rejects([&](){installPortableUpdate(download,portable,nro,[&](){unmounted=true;});},"Corrupt NRO staged");
+        require(!unmounted && readText(portable)==nroBytes,"Invalid NRO changed current app or unmounted RomFS");
+        writeText(download,nroBytes);
+        rejects([&](){installPortableUpdate(download,portable,nro,[&](){fs::remove(portable+".new");});},"Missing staged NRO accepted");
+        require(readText(portable)==nroBytes,"Portable swap failure did not restore previous NRO");
+        auto extracted=(temporary/"extracted/locales/pt-BR.json").string();
+        auto copyAsset=[&](const std::string& bytes,size_t expected,const std::string& digest){
+            size_t offset=0;
+            return extractAsset(extracted,expected,digest,[&](char* out,int capacity){
+                size_t n=std::min(size_t(capacity),bytes.size()-offset);
+                std::copy_n(bytes.data()+offset,n,out);offset+=n;return int(n);
+            });
+        };
+        std::string oldAsset="old language",newAsset="new language";
+        require(copyAsset(oldAsset,oldAsset.size(),sha256({oldAsset.begin(),oldAsset.end()})),"Initial extraction");
+        require(copyAsset(newAsset,newAsset.size(),sha256({newAsset.begin(),newAsset.end()})),"Same-size OTA asset replacement");
+        require(readText(extracted)==newAsset,"OTA opened old extracted asset");
+        require(!copyAsset("",newAsset.size(),""),"Truncated asset accepted");
+        require(!copyAsset(oldAsset,oldAsset.size(),sha256({newAsset.begin(),newAsset.end()})),"Old source with new digest accepted");
+        require(readText(extracted)==newAsset,"Failed extraction destroyed previous file");
+        Locale::init((temporary/"missing-assets").string(),temporary.string(),"pt-BR");
+        require(Locale::text("Music")=="Música","Embedded native options missing");
+        require(Locale::text("Back to game")=="Voltar ao jogo","Embedded host settings missing");
+        Locale::setLanguage("en",false);require(Locale::text("Music")=="Music","Embedded English switch");
+        Locale::setLanguage("pt-BR",false);require(Locale::text("Music")=="Música","Embedded live Portuguese switch");
+        Locale::init(argc>1?argv[1]:"assets",temporary.string(),"pt-BR");
+        require(Locale::text("Warrior")=="Guerreiro","PT-BR dictionary missing");
+        require(Locale::glyph(0xe7,12) && !Locale::glyph(0xe7,12)->alpha.empty(),"Latin accent rasterizer failed");
+        Locale::setLanguage("en",false);require(Locale::text("Warrior")=="Warrior","live English switch failed");
+        remotePackage=package;
+        refreshBackup();waitTask();require(status().backupExists,"Drive backup query");
+        serviceui::init(resourcePath("ui_font.ttf"),[](){},[](){return AspectMode::Auto;});
+        auto* window=SDL_CreateWindow("Test",0,0,960,720,SDL_WINDOW_HIDDEN);
+        auto* renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);
+        require(renderer!=nullptr,"SDL test renderer");
+        require(!serviceui::active(),"Settings opened without an explicit request");
+        SDL_Event shortcut{};shortcut.type=SDL_CONTROLLERBUTTONDOWN;shortcut.cbutton.button=SDL_CONTROLLER_BUTTON_RIGHTSTICK;
+        require(serviceui::event(shortcut,false) && serviceui::active(),"R3 shortcut missing");
+        key(SDLK_ESCAPE);require(!serviceui::active(),"R3 panel cannot close");
+        key(SDLK_F10);require(serviceui::active(),"F10 shortcut missing");
+        key(SDLK_ESCAPE);require(!serviceui::active(),"F10 panel cannot close");
+        for(auto context:{Locale::UiText::Grid,Locale::UiText::Tab}) {
+            auto skill=Locale::uiText("SKILL",context);require(skill=="SKILL","English compact labels changed");
+        }
+        Locale::setLanguage("pt-BR",false);
+        require(Locale::uiText("SKILL",Locale::UiText::Grid)=="HABIL.","Grid skill label");
+        require(Locale::uiText("SKILL",Locale::UiText::Tab)=="HAB.","Tab skill label");
+        require(Locale::uiText("SKILL",Locale::UiText::Full)=="HABILIDADES","Full skill heading was abbreviated");
+        require(Locale::uiText("SHOP",Locale::UiText::Hud)=="Comprar","HUD shop wording");
+        require(Locale::text("Phys. Def.")=="DEF fís.","Stat terminology");
+        Locale::setLanguage("en",false);
+        serviceui::open();key(SDLK_ESCAPE);
+        require(!serviceui::active(),"Settings did not close");
+        serviceui::open();key(SDLK_ESCAPE);
+        require(!serviceui::active(),"Settings reopened or trapped input after closing");
+        serviceui::open();
+        for(int i=0;i<3;i++) {key(SDLK_DOWN);}
+        key(SDLK_RETURN);waitTask(); // Cloud page
+        key(SDLK_DOWN);key(SDLK_RETURN); // Upload confirmation
+        key(SDLK_DOWN);key(SDLK_RETURN); // Cancel
+        waitTask();require(uploads==0,"Cancel confirmation uploaded saves");
+        serviceui::draw(renderer,960,720);
+        auto capture=fs::path("build/services-verification");fs::create_directories(capture);
+        auto saveImage=[&](int w,int h,const char* name) {
+            SDL_SetWindowSize(window,w,h);SDL_RenderClear(renderer);serviceui::draw(renderer,w,h);
+            auto* surface=SDL_CreateRGBSurfaceWithFormat(0,w,h,32,SDL_PIXELFORMAT_ARGB8888);
+            require(SDL_RenderReadPixels(renderer,nullptr,surface->format->format,surface->pixels,surface->pitch)==0,"UI capture failed");
+            SDL_SaveBMP(surface,(capture/name).string().c_str());SDL_FreeSurface(surface);
+        };
+        saveImage(960,720,"cloud-landscape.bmp");saveImage(480,800,"cloud-portrait.bmp");
+        serviceui::open();Locale::setLanguage("pt-BR",false);
+        saveImage(1280,720,"settings-switch.bmp");
+        SDL_setenv("HL5_UI_LAYOUT_ANDROID","1",1);
+        saveImage(1440,3200,"settings-android-portrait.bmp");saveImage(3200,1440,"settings-android-landscape.bmp");
+        SDL_setenv("HL5_UI_FONT_FALLBACK","1",1);saveImage(1280,720,"settings-font-fallback.bmp");
+        SDL_setenv("HL5_UI_FONT_FALLBACK","",1);SDL_setenv("HL5_UI_LAYOUT_ANDROID","",1);
+        // Empty environment values are removed below; draw uses nonempty checks.
+        for(int i=0;i<4;i++) {key(SDLK_DOWN);}
+        key(SDLK_RETURN);
+        require(Locale::language()=="en","Settings language toggle failed");
+        uploadBackup();waitTask();require(uploads==1,"Drive upload route");
+        checkUpdate(true);waitTask();require(status().updateAvailable,"release update not found");
+        corruptDownload=true;downloadUpdate();waitTask();require(!status().downloadReady,"corrupt update accepted");
+        serviceui::open();key(SDLK_DOWN);key(SDLK_DOWN);key(SDLK_RETURN);waitTask();
+        Locale::setLanguage("pt-BR",false);
+        corruptDownload=false;holdDownload=true;downloadUpdate();
+        for(int i=0;i<200 && status().downloadedBytes!=updateBytes.size()/2;i++)SDL_Delay(1);
+        auto progress=status();require(progress.busy && progress.downloading && progress.downloadedBytes==updateBytes.size()/2 && progress.totalBytes==updateBytes.size(),"Live byte progress missing");
+        saveImage(1280,720,"update-progress-switch.bmp");
+        holdDownload=false;waitTask();require(status().downloadReady && !status().downloading,"valid download rejected");
+        writeText((temporary/"internal/kickass").string(),"old in-memory campaign");
+        auto beforeRestore=readSaves(temporary.string());
+        restoreBackup();waitTask();require(status().restoreReady,"restore must stage main-thread handoff");
+        require(readSaves(temporary.string())==beforeRestore,"worker wrote saves before native state teardown");
+        require(applyPendingRestore(),"main-thread restore failed");
+        require(!status().restartRequired && !status().quitRequested && !status().restoreReady,"restore requested process restart");
+        serviceui::restoredToTitle();require(!serviceui::active(),"restore left modal open");
+        serviceui::draw(renderer,480,800);saveImage(480,800,"restore-complete.bmp");
+        require(readSaves(temporary.string())==original,"Drive restore changed file content");
+        serviceui::shutdown();shutdown();
+        writeText((temporary/"services.json").string(),"{\"check_updates\":true}");
+        int checks=updateChecks;offlineChecks=1;
+        init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");waitTask();
+        require(updateChecks==checks+1 && !status().updateAvailable,"Startup check was not attempted automatically");
+        pollStartup(SDL_GetTicks64()+6000);waitTask();
+        require(updateChecks==checks+2 && status().updateNotice,"Offline startup did not retry or notify");
+        serviceui::init(resourcePath("ui_font.ttf"),[](){},[](){return AspectMode::Auto;});
+        serviceui::poll();require(serviceui::active() && !status().updateNotice,"Startup update did not open notice");
+        Locale::setLanguage("pt-BR",false);saveImage(1280,720,"startup-update-switch.bmp");
+        key(SDLK_ESCAPE);serviceui::poll();require(!serviceui::active(),"Dismissed startup update reopened");
+        serviceui::shutdown();shutdown();
+        writeText((temporary/"services.json").string(),"{\"check_updates\":false}");checks=updateChecks;
+        init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");waitTask();pollStartup(SDL_GetTicks64()+60000);
+        require(updateChecks==checks && !status().updateNotice,"Disabled startup preference ignored");shutdown();
+        SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);SDL_Quit();
+        // This directory was freshly created by this test, never a player data root.
+        require(fs::canonical(temporary).parent_path()==fs::canonical(fs::temp_directory_path()) && temporary.filename().string().rfind("hl5-services-",0)==0,"Unexpected cleanup path");
+        fs::remove_all(temporary);
+        std::cout<<"PASS: save isolation/checksums/restore; mocked Drive upload/restore; update validation; settings cancel; input mapping.\n";
+    } catch(const std::exception& e) {std::cerr<<"FAIL: "<<e.what()<<"\n";return 1;}
+    return 0;
+}

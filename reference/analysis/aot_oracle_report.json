@@ -1,0 +1,205 @@
+{
+  "project": "Heroes Lore 3: Stigmata of Gaia",
+  "oracle": "Unicorn ARMv6 CPU (Registers R0..R12, SP, LR, CPSR flags)",
+  "total_blocks": 28,
+  "total_comparisons": 48,
+  "blocks": [
+    {
+      "address": "0x0000d944",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0000f6a0",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "REJECTED_FALLBACK"
+    },
+    {
+      "address": "0x0000f6c8",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0000f6e4",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 4,
+      "status": "REJECTED_FALLBACK"
+    },
+    {
+      "address": "0x0000f6ec",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 8,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0000f6fc",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 8,
+      "status": "PASS"
+    },
+    {
+      "address": "0x00012dd8",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x00012de4",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x00075934",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "REJECTED_FALLBACK"
+    },
+    {
+      "address": "0x0008bfe0",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c000",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c0ac",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c0b4",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c11c",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c140",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c208",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 8,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c31c",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 8,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008c33c",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "REJECTED_FALLBACK"
+    },
+    {
+      "address": "0x0008cd0c",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008e3f0",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008e438",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008e478",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008e4d8",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008e4ec",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 8,
+      "status": "PASS"
+    },
+    {
+      "address": "0x0008e9ac",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 4,
+      "status": "REJECTED_FALLBACK"
+    },
+    {
+      "address": "0x000bdd28",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x000bdd40",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    },
+    {
+      "address": "0x000bdec0",
+      "guard_verified": true,
+      "trials_run": 8,
+      "trials_passed": 0,
+      "status": "PASS"
+    }
+  ],
+  "result": "PASS"
+}

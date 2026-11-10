@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+reference/hl5_snapshot/** -text
+reference/hl4_snapshot/** -text
+reference/jar_ports_docs/** -text
+*.apk binary
+*.ipa binary
+*.so binary
+*.pvr binary
+*.rff binary
+*.mp3 binary
+*.wav binary
+*.png binary
+*.jpg binary
+*.sqlite binary

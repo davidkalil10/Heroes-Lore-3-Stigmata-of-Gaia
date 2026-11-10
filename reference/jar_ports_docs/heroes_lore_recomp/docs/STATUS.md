@@ -1,0 +1,246 @@
+# STATUS
+
+_Ãšltima atualizaÃ§Ã£o: 2026-10-04_
+
+## Ambiente
+- Java 17 (Temurin), Python 3.13, Git: OK.
+- Toolchain C++ instalada (MSYS2 UCRT64: g++, CMake, Ninja, gdb, SDL2, SDL2_mixer). Ver LEARNINGS.
+- Os dois projetos Flutter estÃ£o copiados em `dados de consulta/` (somente consulta).
+
+## Estado
+- [x] Linguagem: C++17 + SDL2 (acordado).
+- [x] Docs base: AGENTS.md, STATUS, LEARNINGS, CLASS_MAP, CLASS_INDEX.
+- [x] JAR copiado: `reference/heroes.jar`; extraído em `reference/extracted/`.
+- [x] Decompilado: `reference/decompiled_cfr/` (90 classes, `--renamedupmembers`); bytecode em `reference/javap/`.
+- [x] Ferramentas: `tools/cfr.jar`, `tools/class_index.py`.
+- [x] Motor de Execução JVM Nativo: Class loader, Garbage Collector, Interpretador CLDC 1.1 completo (`src/vm/`).
+- [x] Camada MIDP 2.0 / LCDUI / RMS / Media: Display, Canvas, Graphics, Image, RecordStore, Sound (`src/midp/`).
+- [x] Camada de plataforma SDL2: Janela escalada 240x320 com aspect-ratio mantido, áudio WASAPI/SDL_mixer, mapeamento completo de teclado PC (`src/platform/`).
+- [x] Resolução de colisões de identificadores em classes ofuscadas (`name:desc` para campos e métodos).
+- [x] Correção de Streams e RMS (Save Game):
+  - Resolvido crash de Access Violation ao salvar pelo menu in-game (`ah.f()` -> `n.o()`). O método virtual `OutputStream.write:([B)V` recebia uma instância de `DataOutputStream` (`Dos*`) que era incorretamente castada para `ByteArrayOutputStream` (`Baos*`), corrompendo a memória de `std::vector`.
+  - Implementado unwrapping universal recursivo (`getUnderlyingBaos`) e registro completo de todos os métodos de escrita, flush, reset e conversão de stream (`ByteArrayOutputStream`, `DataOutputStream`, `OutputStream`).
+  - Suporte completo a `RecordStore` (open, addRecord, setRecord, getRecord, delete, close) com persistência em disco em arquivos binários `.rms`.
+  - Validado via teste unitário automatizado (`tests/test_stream_rms.cpp`) com 100% de sucesso.
+- [x] Jogabilidade confirmada pelo usuário no Windows ("abriu, consegui jogar e está redondinho").
+- [x] README completo e caprichado com instruções de compilação, arquitetura, controles e documentação técnica.
+- [x] Passo 1 do Roadmap — Movimentação Contínua Fluida:
+  - Fim das paradas ao andar: implementado rastreamento de estado contínuo de teclas (`SDL_GetKeyboardState`) e repetição typematic suave (delay inicial de 160ms para toques simples e repetição a 40ms / ~25Hz enquanto a tecla for mantida).
+  - Transições suaves entre direções e parada imediata ao soltar a tecla.
+- [x] Passo 2 do Roadmap — Suporte Completo a Gamepads:
+  - Plug-and-play e hotplug automático para controles de Xbox, PlayStation, Switch Pro e 8BitDo via `SDL_GameController`.
+  - Movimentação analógica e D-Pad integrados ao sistema contínuo sem engasgos.
+  - Ergonomia refinada: Mapa no botão Select/Back (<kbd>0</kbd>), alternância bidirecional de poções nos gatilhos analógicos LT/RT (esq/dir via `#`), uso de poção em R1, ataque secundário em L1 e ataques do Guardião em X/Y.
+  - Suporte a feedback tátil de vibração (rumble).
+
+- [x] Passo 3 do Roadmap — Port Nativo para Android:
+  - Projeto Android nativo completo em `android/` com Gradle 8.1.1, NDK 26 (`26.1.10909125`), CMake 3.22.1 e Java 17.
+  - Compilação multi-arquitetura (`arm64-v8a` para smartphones modernos e `armeabi-v7a` para compatibilidade total).
+  - Bibliotecas nativas compiladas: `libSDL2.so`, `libSDL2_mixer.so` (MIDI Timidity integrado, Vorbis STB, WAV) e `libmain.so` (C++17, VM CLDC 1.1, MIDP 2.0).
+  - I/O unificado e transparente: `Platform::readAsset` acessa diretamente o `AAssetManager` do APK via `SDL_RWFromFile`; `Platform::getStorageDir` persiste saves RMS no armazenamento interno do app (`SDL_AndroidGetInternalStoragePath`).
+  - Controles virtuais na tela (Virtual Gamepad Fullscreen Overlay):
+    - Layout de emulador moderno (Overlay Translúcido sobre o Jogo): o jogo ocupa o tamanho máximo da tela mantendo o aspect ratio original (240x320) perfeitamente centralizado.
+    - Controles estilo vidro fosco (*frosted glass* translúcido a ~60% de opacidade quando em repouso), permitindo enxergar toda a ação por baixo dos botões sem obstruir a visão.
+    - Ao tocar em qualquer botão ou direção do D-Pad, o controle ilumina a 100% de opacidade com efeito de brilho neon ciano e setas ativas.
+    - Topo limpo no modo vertical com apenas 2 botões pílula amplos e equilibrados: `[ MENU ]` à esquerda e `[ MAPA ]` à direita.
+    - Disposição de ação clássica ergonômica em arco 100% preservada: 5 no centro (ataque), 1 (Skill 1) à esquerda-cima, 3 (Skill 2) no topo, 7 (Poção) à esquerda-baixo, 9 (Item) à direita-cima, e novo botão circular **R BACK** na direita-baixo (abaixo de 9 e espelhando o 7).
+    - D-Pad e cluster de botões rebaixados ergonomicamente (~31% da borda inferior), e tela do jogo subida até o limite das pílulas de topo no modo vertical, eliminando a sobreposição de botões sobre o herói e balões de diálogo dos NPCs.
+    - Setas circulares de alteração de poção (◀ e ▶) centralizadas na base da tela (`winW / 2`).
+    - Algoritmo de hit-test por menor razão de distância (`d / maxR`): elimina qualquer ambiguidade de clique ou necessidade de "adivinhar o ponto", registrando sempre com 100% de precisão o botão mais próximo do polegar.
+    - Modo Paisagem (Horizontal) totalmente proporcional e balanceado: setas ◀ e ▶ movidas para a coluna esquerda (entre MENU e D-Pad), deixando o lado direito limpo e espaçoso para os 5 botões de ação e os botões MAPA e R.
+    - Botão de Ocultar/Reexibir Controles Virtuais (Ícone discreto de olho no canto inferior esquerdo): permite alternar entre a sobreposição de controles e uma visualização 100% limpa da tela do jogo (ideal para jogar com gamepad Bluetooth/USB ou apreciar cutscenes/cenários), com resposta tátil háptica e persistência elegante.
+  - Ícone personalizado oficial extraído de `logo 512.png` integrado em todas as densidades (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) em versões padrão e circular (`ic_launcher_round`).
+  - Suporte nativo a gamepads Bluetooth/USB (Xbox, PlayStation, Gamesir, Razer Kishi) com rumble.
+  - APKs Release assinados e otimizados (~2.74 MB em `arm64-v8a`) gerados e prontos em `bin/heroes_lore-arm64-v8a.apk`, `bin/heroes_lore.apk` e `bin/heroes_lore-universal.apk`.
+
+- [x] Passo 4 do Roadmap — Port Homebrew para Nintendo Switch (`.nro`):
+  - Camada de compatibilidade libnx integrada em `src/platform/platform_sdl.cpp`:
+    - Inicialização e fechamento do subsistema RomFS (`romfsInit()` / `romfsExit()`).
+    - Ciclo de vida integrado ao sistema operacional do Switch via `appletMainLoop()` (suspensão, sleep e encerramento limpo para o hbmenu).
+    - Janela em modo tela cheia 1280x720 nativo em modo portátil e resolução adaptativa para 1080p na Dock.
+    - I/O transparente via `romfs:/` com empacotamento completo de dados, classes e assets.
+    - Persistência dos saves RMS fora da RomFS diretamente no SD Card (`sdmc:/switch/heroes_lore/`).
+    - Suporte nativo a Joy-Cons acoplados, controles desacoplados e Switch Pro Controller via `SDL_GameController`.
+    - Suporte a tela de toque capacitiva com opção de overlay touch ativável pelo botão discreto de olho.
+  - Ícone oficial do Switch em alta qualidade (256x256 JPEG) gerado em `switch/icon.jpg`.
+  - Pipeline de RomFS automatizado em `tools/prepare_switch_romfs.py` para empacotar o jogo completo em um único executável `.nro` autocontido de ~5 MB.
+  - Makefile devkitPro oficial configurado em `Makefile.switch` com metadados NACP (Título, Descrição, Autor, Versão e Ícone), flags C++17 com suporte a exceções (`-fexceptions`) e threading (`-pthread`).
+  - Workflow de Integração Contínua (CI) em `.github/workflows/build-switch.yml` utilizando o container oficial `devkitpro/devkita64:latest` para compilar e gerar o arquivo `heroes_lore.nro` automaticamente a cada push.
+  - Estabilidade em Hardware Real (Atmosphère):
+    - Removido `--titleid` fixo do `nacptool` que causava pânico do kernel (`2168-0001` no `hbloader`).
+    - Identificada e documentada a restrição do Applet Mode (~32MB RAM) vs Title Override (acesso a 3.5GB RAM).
+    - Redirecionamento de `stdout`/`stderr` via `dup2` para `sdmc:/heroes_lore_boot.log` e unificação de `hl::boot_log`.
+    - Substituição de `std::thread` por `SDL_CreateThreadWithStackSize` (2MB de stack) com suporte nativo da libnx.
+    - Remoção de `thread_local` no ponteiro `tctx`, eliminando corrupção de TLS no Switch.
+
+- [x] Correções e Melhorias no Port do Nintendo Switch (Hardware Real):
+  - [x] Sintetizador MIDI em Tempo Real (BGM):
+    - Solucionada a ausência de músicas de fundo no Switch integrando `TinySoundFont` (`tsf.h`) e `TinyMidiLoader` (`tml.h`).
+    - Empacotado o soundfont general midi de alta fidelidade `TimGM6mb.sf2` (~5.7 MB) diretamente dentro do `.nro` via RomFS (`romfs:/soundfont/TimGM6mb.sf2`).
+    - Implementado `MidiSynth` com síntese contínua em 44.1kHz estéreo 16-bit PCM conectado ao `Mix_HookMusic` e detecção universal de arquivos MIDI via magic bytes `MThd`.
+  - [x] Correção do Mapeamento Físico de Botões do Switch:
+    - Invertidos os botões posicionais do SDL sob `#ifdef __SWITCH__` para alinhar com os rótulos oficiais da Nintendo: botão <kbd>A</kbd> (direita) para Confirmar/Atacar ('5') e botão <kbd>B</kbd> (baixo) para Cancelar/Status (RSK), além de <kbd>X</kbd> (topo) e <kbd>Y</kbd> (esquerda) para habilidades.
+  - [x] Modo Retrato / Vertical (TATE Mode) no Switch:
+    - Implementada alternância dinâmica de orientação entre Paisagem (1280x720) e Retrato (TATE 90° horário e 270° anti-horário / Flip Grip).
+    - Botão de rotação intuitivo (`btn_rotate`) posicionado ergonomicamente na barra de utilitários da tela.
+    - Renderização acelerada em target texture (`SDL_TEXTUREACCESS_TARGET`) e rotação via `SDL_RenderCopyEx`.
+    - Mapeamento matemático 1:1 de toques da tela capacitiva para a geometria rotacionada.
+
+- [x] Passo 5 — Créditos Oficiais do Port para David Kalil Braga (2026):
+  - [x] Menu Principal -> SOBRE (`bl.class`): versão original de tradução de 2008 (`v.0.0.2`) mantida associada à Open Mind Team, seguida por "Port Nativo (Windows, Android, Switch): David Kalil Braga (2026)".
+  - [x] Menu INFO -> CRED (string 1237): adicionado "Port Nativo (Windows, Android, Nintendo Switch): David Kalil Braga (2026)" ao final da seção de créditos.
+  - [x] Modificação binária limpa de `lang.en-GB` e `bl.class` com preservação matemática dos offsets e bytecodes via `tools/patch_credits.py`.
+  - [x] Metadados da build do Nintendo Switch (`Makefile.switch`): `APP_AUTHOR := EA Mobile / Port por David Kalil Braga (2026)` e `APP_DESCRIPTION := Recompilacao Nativa C++17 + SDL2 por David Kalil Braga (2026)`.
+  - [x] Banner de inicialização da VM nativa (`src/main.cpp`): exibição de "Port Nativo por David Kalil Braga (2026) (Windows, Android, Switch)".
+  - [x] Recursos do Android (`strings.xml`): inclusão de `app_author` e `app_description` com David Kalil Braga (2026).
+  - [x] Documentação oficial (`README.md`): seção dedicada de Créditos & Agradecimentos para David Kalil Braga (2026).
+
+- [x] Passo 6 — Build Automatizada Multiplataforma e Releases via GitHub Actions:
+  - [x] Workflow unificado e paralelo em `.github/workflows/build.yml` para compilar as 4 plataformas simultaneamente a cada push ou pull request:
+    - **Nintendo Switch:** gera `heroes_lore.nro` utilizando container `devkitpro/devkita64:latest`.
+    - **Windows x64:** compila via CMake + Ninja no ambiente MSYS2 UCRT64, empacotando o executável, DLLs e pasta `assets/` em `heroes_lore_windows_x64.zip`.
+    - **Linux x86_64 (AppImage / Steam Deck):** compila via CMake + Ninja no Ubuntu 22.04 e empacota em binário único autônomo `heroes_lore_linux_x86_64.AppImage` com AppRun, ícone, arquivo `.desktop` e dependências.
+    - **Android:** compila com Gradle + NDK 26 nativo (utilizando o NDK 26.1 e Build-Tools 34.0.0 pré-instalados na imagem do GitHub Actions, com cache de Gradle e repositórios SDL2/SDL2_mixer) gerando os APKs `heroes_lore_android_universal.apk` e `heroes_lore_android_arm64.apk`.
+  - [x] Publicação automatizada de GitHub Release com todos os binários anexados ao criar tags de versão (`v*`) ou por disparo manual (`workflow_dispatch`).
+
+- [x] Passo 7 — True Widescreen (16:9), Molduras Temáticas (Bezels) e Taxa de Quadros (15 vs 30 FPS):
+  - [x] Molduras Temáticas Widescreen (Bezels) de Alta Fidelidade:
+    - Textura procedural rica `bezel_soltia` (1920x1080) com pilares ancestrais de ardósia, runas nórdicas gravadas (Algiz, Tiwaz, Fehu, Sowilo, Gebo, Othala) emitindo brilho ciano, medalhão da espada alada e placa comemorativa de ouro e bronze com créditos oficiais para David Kalil Braga (2026).
+    - Textura minimalista `bezel_slate` em ardósia vulcânica e aço escovado com chanfros de iluminação suave.
+    - Modo clássico de barras pretas puras (`bezel_black`) para puristas.
+    - Alternância rápida via tecla <kbd>F5</kbd> ou clique do analógico esquerdo (<kbd>L3</kbd>).
+  - [x] Aspect Ratio & Modos de Visualização (3 Modos no Menu de Opções):
+    - **Modo Auto (Padrão / Inicialização):** Descobre a orientação do dispositivo/janela em tempo real: aplica **16:9 Widescreen** se estiver na horizontal (`winW >= winH`) e **3:4 Original com Molduras** se estiver na vertical (`winH > winW`). Adaptação dinâmica imediata ao rotacionar o aparelho.
+    - **Proporção 3:4 Original (240x320):** Escala com pixels perfeitos 1:1 e molduras temáticas de Soltia preenchendo as abas laterais em telas widescreen (16:9 / 16:10).
+    - **16:9 True Widescreen (568x320 - Expansão Real de Viewport):** Renderiza **35 colunas de tiles de 16x16** (em vez de 15), ampliando a visão do mapa e revelando mais terreno sem esticar pixels (100% quadrado).
+    - Alternância rápida via tecla <kbd>F7</kbd> / <kbd>F10</kbd> (teclado), atalho de controle <kbd>SELECT + START</kbd> ou botão <kbd>GUIDE</kbd> (gamepad), e agora diretamente no **Menu de Opções do jogo (`be.class`)**.
+    - Alternância de Tela Cheia com <kbd>F11</kbd> ou <kbd>Alt+Enter</kbd>.
+  - [x] Seletor de Taxa de Quadros de Alta Precisão (Hardware Frame Pacer):
+    - **15 FPS (Padrão Original J2ME / ~66.6ms):** Reprodução fiel e autêntica da cadência clássica do celular de 2007.
+    - **30 FPS (Modo Turbo / Fluido / ~33.3ms):** Movimentação e combates ágeis sem acelerar a física além da conta.
+    - Modo 60 FPS descontinuado para evitar aceleração indesejada da física/animações atreladas a ticks.
+    - Frame pacer ultra-preciso via `SDL_GetPerformanceCounter()` com espera inteligente (`SDL_Delay` + spin-wait sub-milissegundo).
+    - Alternância rápida via tecla <kbd>F6</kbd> / <kbd>F8</kbd>, clique do analógico <kbd>R3</kbd>, e agora diretamente no **Menu de Opções do jogo (`be.class`)**.
+  - [x] Controles de Gamepad Otimizados com Atalhos de Combos:
+    - **Proporção (Aspect Ratio: Auto <-> 3:4 Original <-> 16:9 True Widescreen):** <kbd>SELECT + START</kbd> ou <kbd>GUIDE</kbd>.
+    - **Moldura Temática (Bezel: Soltia <-> Ardósia <-> Preto):** <kbd>SELECT + R3</kbd>.
+    - **Velocidade (FPS: 15 Padrão <-> 30 Turbo):** <kbd>R3</kbd> (clique isolado do analógico direito).
+    - **Minimapa:** <kbd>SELECT</kbd> (ao soltar isolado sem combo) e <kbd>L3</kbd> (clique do analógico esquerdo).
+    - **Menu Principal:** <kbd>START</kbd> (ao pressionar isolado sem combo).
+  - [x] Limpeza e Modernização dos Botões Virtuais Touchscreen (Celular Android / Nintendo Switch):
+    - Migração definitiva das opções de Proporção (Tela) e Taxa de Quadros (FPS) para a tela nativa de Opções (`be.class`) do jogo.
+    - Remoção dos botões virtuais do canto inferior direito no overlay touch, deixando a área inferior dos polegares totalmente limpa, espaçosa e livre de toques acidentais em smartphones e no Switch.
+  - [x] Correção de Sincronização e Centralização de Menus Modais no Aspect Ratio:
+    - Atualização imediata das coordenadas `x, y` centralizadas de todas as janelas modais (`ai`: Status/Item/Equip, `bp`: Loja, `bf`: Armazenamento, `ax`: Refino, `aa`: Forja) ao alternar entre 3:4 e 16:9 True Widescreen.
+    - Invalidação recursiva das flags de repintura na hierarquia `cb` (`var_boolean_a`, `var_boolean_b`, `var_cb_b`), garantindo posicionamento 100% centrado sem deslocamentos visuais mesmo com menus abertos.
+  - [x] Assinatura Estática do APK Android (Resolução do Conflito de Pacote):
+    - Configurado keystore dedicado permanente (`android/app/heroes_lore.keystore`) em `signingConfigs.release`, garantindo que todas as compilações (locais ou via GitHub Actions) usem sempre a mesma chave e permitam instalação direta como atualização sem necessidade de desinstalar o jogo.
+  - [x] HUD On-Screen Display (OSD) Responsivo em Alta Resolucao:
+    - Banner flutuante no topo da tela com visual moderno de vidro fosco, contorno cyan brilhante e fonte bitmap em alta fidelidade (`font_osd.rgba` 704x432 em celulas 44x72).
+    - Suporte a múltiplas linhas (`\n`) com quebra inteligente de palavras e centralização individual por linha, impedindo que mensagens longas sofram encolhimento de fonte.
+    - Mensagem de inicialização customizada por plataforma (Mobile Android, Switch e PC Desktop) em 2 linhas concisas, exibida sempre no tamanho máximo ampliado desde o primeiro instante de execução.
+    - Escalonamento dinamico baseado na menor dimensao da tela (`minDim`), garantindo legibilidade perfeita e ampliada tanto em smartphones com telas de alta densidade (1080p/1440p) quanto no Nintendo Switch (720p).
+    - Ajuste automatico de largura em telas estreitas (Modo Retrato) para evitar corte de texto pelas bordas, com margem vertical segura para notches e camera frontal.
+    - Suporte a renderizacao no Nintendo Switch em modos rotacionados (TATE 90° e 270° Flip Grip) e confirmacao visual ao alternar orientacao.
+    - Exibe confirmacao visual por 2.5s com fade out suave ao alternar qualquer ajuste.
+  - [x] Hook Nativo C++ e Culling Dinâmico de Cenário (`aj`) no Aspect Ratio (Fim dos Objetos Sumindo):
+    - Identificada e corrigida a causa raiz do desaparecimento de objetos decorativos (mesas, camas, plantas, estantes, baús, lareiras) ao alternar para o modo True Widescreen 16:9. A classe `aj` salvava os limites de tela nos campos de instância `this.b` e `this.e` no momento do carregamento do mapa.
+    - Implementado **Hook Nativo C++ (`aj_draw_native`)** registrado na VM para `aj.a:(Ljavax/microedition/lcdui/Graphics;II)V`, vinculado automaticamente em `VM::findClass()`. O método nativo calcula o culling dinâmico contra a largura e altura reais ativas (`g_screenWidth`, `g_screenHeight`), renderizando 100% de todos os objetos do mapa sem qualquer corte ou dependência de manipulação de memória Java, validado com perfeição tanto no PC quanto no Nintendo Switch e Android.
+  - [x] Redesign Heráldico Completo do Painel Lateral da Moldura Soltia (Bezel):
+    - Reestruturação completa do painel direito da moldura temática de 1920x1080: eliminação do bloco condensado de textos e substituição por uma placa heráldica nobre entalhada em ardósia e ouro.
+    - Divisores dourados com losangos facetados, rebites de bronze nos cantos, tipografia com contraste hierárquico e alinhamento milimétrico simétrico com a coluna rúnica e medalhão do painel esquerdo.
+  - [x] Persistência de Configurações:
+    - Salva e restaura automaticamente as opções do usuário e o tamanho/posição da janela em `hl_settings.ini`.
+
+- [x] Passo 8 — Sistema de Detecção e Atualização Automática OTA via GitHub Releases (In-App Updater):
+  - [x] Arquitetura de Rede Nativa e Segura por Plataforma:
+    - **Windows:** Utiliza a API de sistema `WinHTTP` (`winhttp.h` / `winhttp.lib`), suportando HTTPS/TLS moderno, redirecionamentos automáticos e headers de User-Agent sem demandar qualquer DLL externa.
+    - **Nintendo Switch & Linux:** Utiliza `libcurl` e `mbedtls` fornecidos pelas portlibs oficiais devkitPro e sistema, com callbacks de progresso em tempo real e verificação de integridade de buffers.
+    - **Android:** Download do APK atualizado diretamente no armazenamento interno com disparo de intenção de instalação (`ACTION_VIEW`) via `PackageInstaller` preservando saves e dados locais.
+  - [x] Comparação Semântica de Versões & Parser Leve de Releases:
+    - Algoritmo em C++ para parsing de JSON da GitHub API (`/repos/davidkalil10/Heroes-Lore-Recomp/releases/latest`) e comparação semântica (`v1.0.2` < `v1.0.3`) com suporte a tags alfanuméricas e sanitização de prefixos `v`.
+  - [x] Diálogo Modal Nobre e Segurança de Salvamento (Save Game Safe):
+    - Visual imersivo medieval de Soltia: moldura de pedra ardósia, filetes de ouro polido, rebites de bronze e tipografia legível via fonte bitmap OSD.
+    - **Aviso Obrigatório de Salvamento:** Exibe em destaque o alerta `"ATENCAO: Salve seu progresso no jogo antes de atualizar, pois o jogo precisara reiniciar!"` antes de qualquer download.
+    - Opção explícita de cancelamento `[7 / B] Cancelar (Salvar Primeiro)` para fechar o diálogo sem tocar em arquivos, permitindo que o jogador salve seu jogo antes de prosseguir.
+    - Opção `[5 / A] Salvei e Quero Atualizar` com barra gráfica de progresso em tempo real (0 a 100%).
+    - Bloqueio total de propagação de inputs para a VM enquanto o modal estiver ativo, garantindo foco exclusivo na interação do atualizador.
+  - [x] Integração Orgânica ao Menu do Jogo J2ME & Alinhamento Widescreen:
+    - **Hook Nativo de Renderização (`bl_draw_native`):** Corrigido o bug histórico do bytecode J2ME original (`n2 + 201 >> 1`) que deslocava todo o texto dos créditos em quase 100 pixels para a esquerda em Widescreen. O pergaminho agora é renderizado centralizado na tela ativa (240x320 ou 568x320), conectando a aba superior de forma contínua sem faixas roxas dividindo, e com altura ampliada (repetição 4) acomodando confortavelmente todas as 10 linhas de texto.
+    - **Hook Nativo de Entrada (`bl_a_native`):** Suporte robusto a todas as variantes da tecla '5' (53), Enter (13), Fire (8 / -5) e clique de mouse disparando a checagem com feedback OSD imediato ("Verificando atualizacoes no GitHub...").
+    - **Tratamento de Feedback Resiliente:** Exibe retorno claro ao usuário via banner OSD em todas as situações (versão já atualizada, repositório privado / 404, sem conexão à internet ou nova versão disponível com diálogo modal).
+    - Texto da tela "Sobre" atualizado via `tools/patch_credits.py` para incluir a indicação visual oficial `[5 / A]: ATUALIZAR`.
+    - Atalho global no teclado via tecla <kbd>F9</kbd> e suporte a clique do mouse na tela.
+
+## Versões e Releases Oficiais
+- **v1.0.0:** Primeiro release oficial da recompilação nativa em C++17 (Passos 1 a 6 concluídos: áudio MIDI/SF2, salvamento RMS, typematic controls, gamepads, APK Android, Homebrew Nintendo Switch).
+- **v1.0.1:** Ajustes de empacotamento, documentação e distribuição multiplataforma.
+- **v1.0.2:** Passo 7 Finalizado com Sucesso — True Widescreen 16:9, bezels temáticos artísticos em alta definição, seletor de FPS (15/30), hook nativo de cenário `aj`, menus centralizados em tempo real, OSD responsivo para Mobile/Switch/PC, e controles ergonômicos touch & gamepad.
+- **v1.0.3:** Passo 8 — Sistema Completo de Atualização OTA In-App via GitHub Releases integrado ao menu "Sobre" do jogo, suporte multiplataforma (Windows WinHTTP, Switch libcurl via SDL_CreateThread, Android JNI com HttpURLConnection e ApkFileProvider nativo, Linux AppImage), aviso de segurança para salvar o jogo antes de reiniciar, inicialização blindada no Switch e Android sem crashes no boot, alinhamento pixel-perfect da faixa de seleção do menu principal (`bf`), do menu Sobre (`bl`) e dos submenus de Informações (`bx`) em True Widescreen 16:9, e controles de touch isolados no Android/Switch sem disparos acidentais de ataque.
+- **v1.0.4:** Validação Real e Aperfeiçoamento do Auto-Updater Multiplataforma — Redesenho nobre da janela modal (proporções estáveis no widescreen, espaçamento natural de caracteres e botões chanfrados iluminados), correção de hit-testing de clique/toque nos botões de confirmar e cancelar, distribuição e substituição do binário nativo `heroes_lore.exe` no Windows, diretório de cache gravável e integração com AppImage no Linux, e encadeamento limpo sem crash no Nintendo Switch via `envSetNextLoad` com término gracioso.
+- **v1.0.5:** Target Release de Validação OTA End-to-End — Publicação da release v1.0.5 no GitHub Releases para os clientes v1.0.4 realizarem a detecção automática com a nova interface nobre, download dos novos binários e auto-atualização em todas as plataformas (Windows, Switch, Linux, Android).
+- **v1.0.6:** Aperfeiçoamento e Robustez do Auto-Updater OTA Multiplataforma — Layout responsivo adaptado para telas de altíssima densidade em smartphones e consoles portáteis, fontes grandes e botões táteis ampliados; inversão dos botões A e B no modal do Switch respeitando a convenção física da Nintendo (A confirma / B cancela); resolução canônica do caminho do NRO no cartão SD (`sdmc:/`) com backup atômico `.old` e validação de tamanho antes do reinício via hbmenu; parser flexível com seleção prioritária de assets no Windows (suportando tanto o executável solto `heroes_lore.exe` quanto o pacote `.zip` com descompactação automática nativa via `tar` / PowerShell); e upload simultâneo de executável e ZIP portátil no GitHub Actions.
+- **v1.0.7:** Release Oficial de Validação OTA Multiplataforma dos Clientes v1.0.6 — Nova versão no GitHub Releases para validação de detecção e instalação. Sucesso total confirmado no Android.
+- **v1.0.8:** Atualização de Pacote Completo no Windows e Resolução Canônica SDMC no Switch — No Windows, o auto-updater prioriza o download do pacote portátil ZIP completo (contendo binário, DLLs e pasta `assets/`), renomeando `heroes_lore.exe` para `.old` antes da extração para evitar erros de compartilhamento do NTFS (`sharing violation`) e garantindo que o pergaminho "Sobre" reflita a nova versão instalada; no Nintendo Switch, `resolveSwitchNroPath` foi blindado para garantir que todos os caminhos iniciem estritamente com `sdmc:/`, eliminando falhas de gravação com nomes relativos, e substituição em cascata direta ou via rotação atômica `.old`.
+- **v1.0.9:** Release de Validação da Correção de Pacote Completo e SDMC — Publicada para permitir aos clientes v1.0.8 no Windows (extração do ZIP completo substituindo pasta `assets/` e executável ativo via rename `.old`), no Nintendo Switch (substituição NRO com caminho absoluto `sdmc:/`) e Android validarem o fluxo OTA fim a fim.
+- **v1.1.0:** Auto-Updater Definitivo (CreateProcessA sem Corrupção de Aspas e Liberação de RomFS no Switch) — No Windows, elimina totalmente o uso de `cmd.exe /c` e `system()`, executando `tar.exe` e `powershell.exe` diretamente via `CreateProcessA` em subpasta temporária isolada (`_update_extract/`), permitindo extração 100% livre de bloqueios em caminhos com espaços (ex: `teste build`) e sem conflito com DLLs em execução, seguida de movimentação atômica dos assets, DLLs e executável; no Nintendo Switch, adiciona fechamento preventivo do RomFS (`romfsExit()`) antes da gravação para descarregar qualquer descritor de arquivo aberto pela `libnx` no próprio NRO.
+- **v1.1.1:** Passo 8 100% Concluído e Validado com Sucesso em Todas as Plataformas — Auto-updater OTA in-app confirmado e homologado no PC Desktop (extração silenciosa e isolada via CreateProcessA, atualização completa de assets e executável em diretórios com espaços), no Nintendo Switch (substituição no cartão SD sdmc:/ com liberação idempotente de RomFS e reinicialização atualizada via hbmenu) e no Android (instalação nativa via PackageInstaller).
+- **v1.2.0:** Suporte Oficial a Cloud Save Multiplataforma (Google Drive RFC 8628 Device Flow) e Seletor de 4 Idiomas em Tempo Real (PT-BR, EN, IT, ES).
+- **v1.2.1:** Engine de Tipografia Vetorial TrueType (stb_truetype + Inter-SemiBold) e Refatoração Moderna de Cloud Save — Integração de rasterizador TTF com antialiasing linear suave e kerning proporcional real substituindo a antiga fonte bitmap pixelada; suporte completo a acentos em PT-BR; layout responsivo reformulado para telas móveis de alta densidade (High-DPI / 1080p / 2400x1080) e console com cards empilhados no modo retrato e lado a lado no modo paisagem; botões táteis ampliados em grade 2x2 no mobile touch sem atalhos de teclado confusos; botão dedicado de fechar [X] no cabeçalho; e calibração de escala proporcional sem tetos restritivos.
+- **v1.2.2:** Alinhamento Tipográfico e Redimensionamento Responsivo do Auto-Updater OTA Multiplataforma — Migração integral do modal de atualização para a engine vetorial TrueType (Inter-SemiBold); resolução definitiva dos textos deslocados/tortos através da unificação do cálculo de largura e renderização com o mesmo fontSize; centralização matemática composta em botões de 2 linhas; redimensionamento responsivo equilibrado para Nintendo Switch e PC (~48% da largura útil em 620x360), eliminando a janela desproporcional anterior; proporção áurea equilibrada no Android landscape (2400x1080) e conforto visual no portrait (1080x2400) com botões táteis limpos de até 86px sem poluição de `[ TOQUE ]`; botão fechar [X] no cabeçalho; e suporte completo a 4 idiomas (PT-BR, EN, IT, ES).
+- **v1.2.3:** Migração de Aspect Ratio e FPS para o Menu de Opções (`be.class`) e Proporção Automática — Integração das opções de tela e taxa de quadros (8 itens) com navegação fluida `<` e `>`, eliminação dos botões virtuais touch do rodapé direito (layout 100% limpo), e suporte ao modo `AspectMode::ASPECT_AUTO` dinâmico (aplica widescreen 16:9 na horizontal e 3:4 com molduras na vertical de forma adaptativa).
+- **v1.2.4:** Organização do Cloud Save em Pasta Dedicada no Google Drive e Auto-Migração — Criação e detecção automática da pasta "Heroes Lore - Wind of Soltia" no Google Drive para novos backups, e migração silenciosa e transparente de saves soltos na raiz (via PATCH ?addParents=...&removeParents=...) preservando ID e integridade dos dados.
+- **v1.2.5:** Otimização Ergonômica de Tela e Controles Virtuais no Modo Vertical — Elevação inteligente da tela do jogo no modo vertical (iniciando logo abaixo das pílulas superiores, liberando centenas de pixels limpos na base), rebaixamento ergonômico dos controles virtuais (eliminando a sobreposição sobre o herói e balões de diálogo dos NPCs), migração do botão R para o cluster de ação como botão circular **R BACK** (abaixo de 9 e espelhando 7 com o arco 1, 3, 5, 7, 9 100% preservado), e topo simplificado com apenas 2 pílulas amplas e equilibradas (`[ MENU ]` e `[ MAPA ]`).
+- **v1.2.6:** Refinamentos Nintendo Switch (Dock & Modo Retrato TATE) e Layout Mobile Ergonômico — Detecção nativa do modo TV/Dock via `libnx` (desativação total de botões virtuais e rotação ao jogar na TV com mensagens OSD informativas); correção definitiva de congelamento de modais (Cloud Save e Atualizador OTA) em modo vertical TATE (720x1280) no Switch desenhando direto em `s_rotateTarget`; e layout retrato mobile 100% desobstruído com elevação total do jogo ao topo (`gameY = 1.5%`) e pílulas de sistema `[ MENU ]` (-8) e `[ MAPA ]` (48) ao alcance direto dos polegares logo acima da borda do D-Pad.
+
+## Próximos passos (Roadmap)
+- [x] Passo 8: Possibilidade de detecção de update disponível no github releases para atualizar o app diretamente via rede (concluído para todas as plataformas)
+- [x] Passo 10: Seletor de Idiomas / Localização (PT-BR, EN, IT, ES):
+  - 4 idiomas suportados com 3951 strings alinhadas por ID (`assets/lang/`):
+    - `PT-BR`: Tradução oficial da comunidade brasileira Open Mind Team (2008).
+    - `EN`: Inglês oficial da versão Nokia 6280/N73.
+    - `IT`: Italiano oficial da versão S60v3 BiNPDA.
+    - `ES`: Espanhol 100% completo com todos os diálogos, missões, itens e menus traduzidos e adaptados ao charset J2ME (sem acentos incompatíveis).
+  - Opção "Idioma" integrada perfeitamente no menu de **Opções da Tela de Título** e no menu de **Opções do Pause In-Game** (`be.class`).
+  - Navegação fluida com setas `<` e `>` usando Direcional Esquerda / Direita ou Botão de Ação ('5' / Enter).
+  - Recarregamento a quente do buffer de strings em `cj` e fontes em `bh` diretamente em memória C++ em tempo real sem crashar, sem deadlocks e sem reiniciar o jogo.
+  - Atualização instantânea em memória de todos os itens e equipamentos instanciados (`ad`, `l`, `t`, `e`), diálogos do mapa ativo lidos do `.evt` correspondente (`aeInst.a:B`) e balão de fala ativo (`ah.a:[C`), nome da zona (`ae.a:[C`) e invalidação de repintura/atualização de rótulos de menus abertos (`cb`, `bt`, `s`, `q`).
+  - Prevenção total de deadlocks via detecção de posse do GIL (`VM::isGilOwner()`).
+  - Persistência em `hl_settings.ini` sob `[Localization]\nlanguage=...`.
+  - Atalho de teclado rápido via <kbd>F2</kbd> com banner OSD instantâneo.
+- [x] Passo 9: Cloud Save & Sincronização Cruzada (PC/Linux <-> Celular <-> Switch) (Em validação de testes):
+  - Integração com Google Drive API utilizando o escopo seguro e compatível com Device Flow `drive.file` (`https://www.googleapis.com/auth/drive.file`), garantindo isolamento total (o jogo acessa exclusivamente o arquivo de save que ele próprio cria).
+  - Pasta Dedicada e Auto-Migração Transparente: criação/busca automática da pasta `"Heroes Lore - Wind of Soltia"` no Google Drive; gravação de novos backups diretamente nessa pasta (`"parents": [folderId]`) e migração silenciosa automática de arquivos que estavam na raiz via `PATCH ?addParents=...&removeParents=...`, mantendo a raiz do Drive limpa e organizada.
+  - Autenticação Universal OAuth 2.0 Device Flow (RFC 8628): permite login no Nintendo Switch, Android, PC e Linux sem requerer navegador embutido ou popups no jogo (usuário autoriza com código via celular ou computador em `google.com/device`).
+  - Resolução centralizada de diretório RMS via `Platform::getRmsDir(VM* vm)` unificada entre a VM/MIDP e o Cloud Save em todas as plataformas.
+  - Empacotamento atômico em JSON (`heroes_lore_save.json`) contendo todos os arquivos RMS (`_k.rms`, `_s.rms`, `_w.rms`, `_o.rms`, `_c.rms`) codificados em Base64, preservando integridade perfeita e evitando saves corrompidos/parciais.
+  - Extração autêntica de resumo dos slots com nomes canônicos de Heroes Lore: Wind of Soltia (Slot 1 `_k`: **Ronin**, Slot 2 `_s`: **Reah**, Slot 3 `_w`: **Aramor**, lidos de `char/hero.tdf` / strings 685-687) e nível autêntico decodificado via cifra `bq.b`.
+  - Preservação do Timestamp Real do Save: implementação de flag `dirty` no subsistema MIDP RMS (`RecordStoreObj`), impedindo regravações em disco em operações somente de leitura e preservando com 100% de exatidão o `st_mtime` original de quando o save foi gravado in-game.
+  - Normalização de Fuso Horário Local: o timestamp UTC retornado pelo Google Drive (`modifiedTime`) é convertido dinamicamente para o fuso horário local do dispositivo via `formatUtcIsoToLocalDate()`, permitindo comparação cronológica direta e precisa entre Nuvem e Local.
+  - Limpeza de Estado e Ciclo de Vida do Modal: mensagens de status são redefinidas ao abrir/fechar a janela e resolvidas dinamicamente via `tr(s_statusMsgId)`, eliminando resquícios de operações anteriores e atualizando imediatamente na troca de idioma.
+  - Recarregamento inteligente e seguro de dados (Thread-Safe):
+    - A substituição de arquivos RMS em background despacha o recarregamento da VM para a thread principal (`CloudSave::update`), evitando aborts fatais de falta de `ThreadCtx`.
+    - Na Tela de Título: invoca `n.p()` para atualizar os slots e habilitar o botão "Carregar Jogo" imediatamente sem fechar o app.
+    - Em partida ativa: exibe confirmação modal de segurança e invoca `bu.d()` para retornar limpo ao menu principal com reciclagem de memória da VM e recarregamento sem crashes.
+  - Interface Nobre (Soltia Theme) com suporte a Touch, Teclado e Gamepad:
+    - 100% Localizada nos 4 idiomas suportados (Português, Inglês, Italiano e Espanhol), adaptando títulos, cards, avisos e botões em tempo real.
+    - **Engine de Tipografia Vetorial TrueType (`stb_truetype.h` + Inter-SemiBold):**
+      - Substituição definitiva da antiga fonte monospace pixelada por renderização tipográfica vetorial em alta definição com antialiasing linear e kerning proporcional (`xadvance`).
+      - Suporte nativo completo a acentuação em Português, Espanhol e Italiano via decodificador UTF-8 para Latin-1.
+      - Larguras e espaçamentos naturais idênticos a interfaces modernas do Flutter.
+    - **Layout Responsivo Moderno por Orientação e Plataforma:**
+      - **Retrato (Mobile Vertical, 1080x2400+):** Modal amplo ocupando 94% da largura da tela, cartões de saves empilhados com respiro e informações claras (Herói, Nível, Modificado em), botões táteis dispostos em **grade 2x2 ampla** para fácil alcance dos polegares.
+      - **Paisagem (Horizontal / Switch / PC):** Modal com proporção áurea ocupando 82% da largura útil, cartões lado a lado e barra inferior de 4 botões horizontais uniformes.
+      - **Adaptação por Plataforma:** No Android/Mobile Touch, botões exibem rótulos limpos (`ENVIAR BACKUP`, `RESTAURAR`, `DESCONECTAR`, `FECHAR`), sem poluição de atalhos de teclado físico. No Nintendo Switch, botões exibem o mapeamento claro do Joy-Con: `( A )`, `( X )`, `( Y )`, `( B )`. No PC Desktop, atalhos discretos são exibidos abaixo do título.
+      - **Botão Fechar [X] no Cabeçalho:** Adicionado botão dedicado de fechar no canto superior direito para toque direto no celular.
+    - Paridade High-DPI no Auto-Updater OTA (`src/platform/updater.cpp`): modal de atualização do GitHub alinhado com a mesma arquitetura de escala responsiva móvel.
+    - Portabilidade Universal: conversão de data UTC via algoritmo autônomo `portableTimegm()`, eliminando dependências não-portáveis de libc e garantindo compilação no Nintendo Switch (devkitA64/newlib), Windows, Linux e Android.
+    - Estabilidade JNI no Android: despachador `runAsync` com ciclo de vida gerenciado do SDL e referência global (`NewGlobalRef`) para `SDLActivity.httpExecute`, evitando crashes de runtime no ART ao conectar.
+    - Integrado ao Menu de Opções (`be.class`) na Tela de Título e no Pause In-Game como 6º item.
+    - Atalho global de teclado via <kbd>F4</kbd>.
+- [ ] Passo 11: Port Imersivo VR / Realidade Mista para Meta Quest (OpenXR, Voxel/Diorama 3D Tabletop & Primeira Pessoa 360°). Detalhado em [`docs/VR_QUEST_CONCEPT.md`](VR_QUEST_CONCEPT.md).
+
+
+
+
+

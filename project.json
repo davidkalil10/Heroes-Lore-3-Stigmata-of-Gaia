@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "game_id": "heroes_lore_3",
+  "display_name": "Heroes Lore 3: Stigmata of Gaia",
+  "project_stage": "static_inventory_complete",
+  "original_apk": {
+    "path": "Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk",
+    "bytes": 61755432,
+    "sha256": "2a96e02ab65e8c4180b91cfd7bb3c403f99bc239b8edd522af65278504458016"
+  },
+  "nested_ipa": {
+    "apk_entry": "assets/game.ipa",
+    "bytes": 43686130,
+    "sha256": "56dd27225077df0afa61082d5e40590a7dea730c16d47ed6b7ea93f9725558f3"
+  },
+  "macho_executable": {
+    "ipa_entry": "Payload/Heroes Lore.app/Heroes Lore",
+    "bytes": 915824,
+    "sha256": "39c6ed1db25cbf6020c9edd2cfa145410ff391f3361a9150d9646b9a4fada849",
+    "format": "Mach-O 32-bit ARMv6 (MH_EXECUTE)",
+    "bundle_id": "com.ea.heroesloresg.bv",
+    "bundle_version": "1.0.1"
+  },
+  "targets": [
+    "windows-x64",
+    "linux-x86_64",
+    "android-arm64",
+    "nintendo-switch"
+  ],
+  "reference_snapshots": {
+    "hl5_manifest": "reference/HL5_SNAPSHOT.json",
+    "hl4_manifest": "reference/HL4_SNAPSHOT.json",
+    "jar_ports_manifest": "reference/JAR_PORTS_DOCS.json"
+  },
+  "identifiers": {
+    "github_repository": "davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia-Recomp",
+    "android_application_id": "com.davidbraga.heroeslore3",
+    "switch_title_id": "0100F3A300030000",
+    "google_oauth_client": null
+  }
+}

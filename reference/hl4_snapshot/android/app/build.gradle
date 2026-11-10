@@ -1,0 +1,29 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.davidbraga.heroeslore4'
+    compileSdk 35
+    ndkVersion '27.2.12479018'
+    defaultConfig {
+        applicationId 'com.davidbraga.heroeslore4'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' }
+        externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_shared', '-DCMAKE_BUILD_TYPE=Release'; targets 'main', 'SDL2' } }
+    }
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk true
+        }
+    }
+    sourceSets { main { java.srcDirs += '../../third_party/SDL2/android-project/app/src/main/java'; assets.srcDirs += '../../build/runtime'; res.srcDirs += '../../build/android-res' } }
+    externalNativeBuild { cmake { path '../../CMakeLists.txt'; version '3.22.1' } }
+    buildTypes {
+        // Test APK has a separate HL4 certificate; never reuse an HL5 key.
+        release { minifyEnabled false }
+    }
+}

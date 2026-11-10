@@ -1,0 +1,2 @@
+# Heroes Lore III Stigmata Of Gaia iOS Version 1.0.1 (iOS 3.0 Version)
+com.ea.heroesloresg.bv: --landscape-left
