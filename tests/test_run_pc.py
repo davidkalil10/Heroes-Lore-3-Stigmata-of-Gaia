@@ -16,6 +16,12 @@ from run_pc import (
     BTN_TALK,
     BTN_MENU,
     BTN_BACK,
+    BTN_MAP,
+    BTN_ITEM,
+    BTN_ITEM2,
+    HUD_MAP,
+    HUD_POTION_1,
+    HUD_POTION_2,
     DPAD_UP,
     MENU_ITEMS_Y,
 )
@@ -45,6 +51,13 @@ class S04PCPlayableTests(unittest.TestCase):
         runner = PCRunner(scale=1, headless_frames=1)
         # Verify NPC talk button is at (450.0, 258.0) matching exact on-screen HUD button (id=7025)
         self.assertEqual(BTN_TALK, (450.0, 258.0))
+        # Verify HUD Map and Potion targets
+        self.assertEqual(HUD_MAP, (23.5, 22.0))
+        self.assertEqual(HUD_POTION_1, (29.0, 107.0))
+        self.assertEqual(HUD_POTION_2, (29.0, 157.0))
+        self.assertEqual(BTN_MAP, HUD_MAP)
+        self.assertEqual(BTN_ITEM, HUD_POTION_1)
+        self.assertEqual(BTN_ITEM2, HUD_POTION_2)
         # Verify menu items has 6 entries
         self.assertEqual(len(MENU_ITEMS_Y), 6)
         # Verify carousel swipe left and right execute without fault

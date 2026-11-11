@@ -83,18 +83,19 @@ POPUP_CANCEL = (395.0, 100.0)     # id=13302 / id=13202 No / Cancel X
 TUTORIAL_NEXT = (385.0, 207.0)    # id=13001 Next tutorial page checkmark
 TUTORIAL_CLOSE = (385.0, 74.0)    # id=13002 Close tutorial X button
 
-# Field HUD Buttons (form 70)
-HUD_TALK_PEACEFUL = (450.0, 258.0) # id=7025 Speech bubble talk button (peaceful mode)
-HUD_TALK_COMBAT = (397.0, 239.0)   # id=7026 Speech bubble talk button (combat mode)
-HUD_ATTACK_PRIMARY = (450.0, 258.0) # id=7007 Attack button (combat mode)
-HUD_ATTACK_SECONDARY = (405.0, 289.0) # id=7008 Secondary attack button
-HUD_PORTRAIT_MENU = (200.0, 292.0) # id=7009 Character portrait (opens Pause Menu)
-HUD_POTION_1 = (33.0, 107.0)       # id=7002 Quick potion 1
-HUD_POTION_2 = (33.0, 157.0)       # id=7003 Quick potion 2
-HUD_SKILL_1 = (447.0, 84.0)        # id=7004 Quick skill 1
-HUD_SKILL_2 = (447.0, 134.0)       # id=7005 Quick skill 2
-HUD_SKILL_3 = (447.0, 184.0)       # id=7006 Quick skill 3
-HUD_STATUS = (23.0, 22.0)          # id=7011 Avatar / status
+# Field HUD Buttons (form 70 - confirmed via live control tree dump)
+HUD_MAP = (23.5, 22.0)                # id=7011 Minimap / Compass button (top-left)
+HUD_POTION_1 = (29.0, 107.0)          # id=7002 Upper Potion / Quick Item 1 (left side)
+HUD_POTION_2 = (29.0, 157.0)          # id=7003 Lower Potion / Quick Item 2 (left side)
+HUD_SKILL_1 = (451.0, 184.0)          # id=7006 Quick skill 1 (right side)
+HUD_SKILL_2 = (451.0, 134.0)          # id=7005 Quick skill 2 (right side)
+HUD_SKILL_3 = (451.0, 84.0)           # id=7004 Quick skill 3 (right side)
+HUD_ATTACK_PRIMARY = (450.0, 258.0)   # id=7007 Attack button (combat mode)
+HUD_ATTACK_SECONDARY = (408.5, 289.0) # id=7008 Secondary attack / guard (combat mode)
+HUD_TALK_PEACEFUL = (450.0, 258.0)    # id=7025 Speech bubble talk button (peaceful mode)
+HUD_TALK_COMBAT = (397.0, 239.0)      # id=7026 Speech bubble talk button (combat mode)
+HUD_PORTRAIT_MENU = (200.0, 292.0)    # id=7009 Character portrait (opens Pause Menu)
+HUD_STATUS = (23.5, 22.0)             # id=7011 Avatar / status / map
 
 # Pause Menu (form 2)
 PAUSE_MENU_BACK = (28.0, 28.0)     # id=207 Back button
@@ -107,6 +108,12 @@ BTN_ATTACK = HUD_ATTACK_PRIMARY
 BTN_TALK = HUD_TALK_PEACEFUL
 BTN_CENTER = TITLE_CAROUSEL_CENTER
 BTN_MENU = HUD_PORTRAIT_MENU
+BTN_MAP = HUD_MAP
+BTN_ITEM = HUD_POTION_1
+BTN_ITEM2 = HUD_POTION_2
+BTN_SKILL1 = HUD_SKILL_1
+BTN_SKILL2 = HUD_SKILL_2
+BTN_SKILL3 = HUD_SKILL_3
 DPAD_UP = (65.0, 225.0)
 MENU_ITEMS_Y = PAUSE_MENU_ITEMS_Y
 
@@ -154,19 +161,19 @@ class PCRunner:
         if self.fullscreen:
             flags |= FULLSCREEN
         pygame.display.set_caption("Heroes Lore 3: Stigmata of Gaia Recomp (PC Native)")
+        self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
 
-        # Load and set official game window icon
+        # Set official game window icon after video mode initialization
         icon_path = ROOT / "assets" / "icon.png"
         if not icon_path.exists():
             icon_path = ROOT / "reference" / "extracted_ipa" / "Payload" / "Heroes Lore.app" / "Icon.png"
         if icon_path.exists():
             try:
-                icon_surf = pygame.image.load(str(icon_path))
-                pygame.display.set_icon(icon_surf)
+                icon_surf = pygame.image.load(str(icon_path)).convert_alpha()
+                icon_32 = pygame.transform.smoothscale(icon_surf, (32, 32))
+                pygame.display.set_icon(icon_32)
             except Exception as e:
                 print(f"[HL3 PC] Could not set window icon: {e}")
-
-        self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
 
     def get_engine_state(self) -> dict:
         if not hasattr(self, "rt") or not self.rt or not hasattr(self.rt, "m"):
@@ -223,6 +230,7 @@ class PCRunner:
             return
         try:
             vx, vy, vw, vh = self.rt.gl_bridge.viewport_rect if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge else (0, 0, self.win_w, self.win_h)
+            glPushAttrib(GL_ALL_ATTRIB_BITS)
             glViewport(vx, vy, vw, vh)
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
@@ -267,6 +275,8 @@ class PCRunner:
             glMatrixMode(GL_PROJECTION)
             glPopMatrix()
             glMatrixMode(GL_MODELVIEW)
+            glPopAttrib()
+            glEnable(GL_TEXTURE_2D)
         except Exception:
             pass
 
@@ -582,12 +592,25 @@ class PCRunner:
                         cur = self.rt.audio_mixer.master_volume
                         self.rt.audio_mixer.set_master_volume(cur - 0.1)
                         print(f"[HL3 Audio] Volume: {int(self.rt.audio_mixer.master_volume * 100)}%")
-                elif event.key == K_m:
+                # Map / Minimap: M or Tab (in field gameplay)
+                elif event.key in (K_m, K_TAB):
+                    st = self.get_engine_state()
+                    if st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id"):
+                        self.tap_once("hud_map", HUD_MAP, hold_frames=3)
+                    elif st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
+                        self.handle_skip()
+                    elif event.key == K_m:
+                        if hasattr(self.rt, "audio_mixer"):
+                            self.rt.audio_mixer.toggle_mute()
+                            print(f"[HL3 Audio] Muted: {self.rt.audio_mixer.muted}")
+
+                # Audio mute toggle (N or Ctrl+M)
+                elif event.key == K_n:
                     if hasattr(self.rt, "audio_mixer"):
                         self.rt.audio_mixer.toggle_mute()
                         print(f"[HL3 Audio] Muted: {self.rt.audio_mixer.muted}")
 
-                # Confirm: Enter / Space / E / Z
+                # Confirm / Talk / Advance: Enter / Space / E / Z
                 elif event.key in (K_RETURN, K_SPACE, K_e, K_z):
                     self.handle_confirm()
 
@@ -595,9 +618,13 @@ class PCRunner:
                 elif event.key in (K_ESCAPE, K_BACKSPACE):
                     self.handle_cancel()
 
-                # Skip cutscene: S / Tab
-                elif event.key in (K_s, K_TAB):
-                    self.handle_skip()
+                # Skip cutscene: S
+                elif event.key == K_s:
+                    st = self.get_engine_state()
+                    if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
+                        self.handle_skip()
+                    elif st.get("app_state") == 1:
+                        self.handle_nav("down")
 
                 # Menu navigation arrows
                 elif event.key in (K_UP, K_w):
@@ -609,17 +636,27 @@ class PCRunner:
                 elif event.key in (K_RIGHT, K_d):
                     self.handle_nav("right")
 
-                # Direct action keys during gameplay
-                elif event.key in (K_u, K_1):
+                # Quick Potions during gameplay
+                elif event.key in (K_q, K_1):
+                    # Upper Potion Slot (Potion 1)
+                    self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
+                elif event.key in (K_k, K_2):
+                    # Lower Potion Slot (Potion 2)
+                    self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
+
+                # Combat & Skills during gameplay
+                elif event.key in (K_u, K_3):
                     self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
-                elif event.key in (K_i, K_2):
+                elif event.key in (K_i, K_4):
                     self.tap_once("skill2", HUD_SKILL_2, hold_frames=2)
-                elif event.key in (K_o, K_3):
+                elif event.key in (K_o, K_5):
                     self.tap_once("skill3", HUD_SKILL_3, hold_frames=2)
-                elif event.key in (K_k, K_q):
-                    self.tap_once("potion", HUD_POTION_1, hold_frames=2)
+                elif event.key == K_j:
+                    self.tap_once("attack1", HUD_ATTACK_PRIMARY, hold_frames=2)
+                elif event.key in (K_l, K_h):
+                    self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
                 elif event.key in (K_p, K_c):
-                    self.tap_once("status", HUD_STATUS, hold_frames=2)
+                    self.tap_once("portrait_menu", HUD_PORTRAIT_MENU, hold_frames=3)
 
             # Gamepad Button Events
             elif event.type == JOYBUTTONDOWN:
@@ -628,25 +665,32 @@ class PCRunner:
                     self.handle_confirm()
                 elif btn == 1:  # B (Cancel / Back)
                     self.handle_cancel()
-                elif btn == 2:  # X (Attack)
-                    self.tap_once("pad_attack", HUD_ATTACK_PRIMARY, hold_frames=2)
-                elif btn == 3:  # Y (Skill 1 / Skip)
+                elif btn == 2:  # X (Attack Primary / Skill 1)
+                    st = self.get_engine_state()
+                    if st.get("combat_mode"):
+                        self.tap_once("pad_attack", HUD_ATTACK_PRIMARY, hold_frames=2)
+                    else:
+                        self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
+                elif btn == 3:  # Y (Secondary Attack / Skip / Skill 2)
                     st = self.get_engine_state()
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
                     else:
-                        self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
-                elif btn == 4:  # LB (Potion)
-                    self.tap_once("potion", HUD_POTION_1, hold_frames=2)
-                elif btn == 5:  # RB (Skill 2)
-                    self.tap_once("skill2", HUD_SKILL_2, hold_frames=2)
-                elif btn == 6:  # Select (Status)
-                    self.tap_once("status", HUD_STATUS, hold_frames=2)
+                        self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
+                elif btn == 4:  # LB (Upper Potion 1)
+                    self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
+                elif btn == 5:  # RB (Lower Potion 2)
+                    self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
+                elif btn == 6:  # Select (Minimap / Map)
+                    self.tap_once("hud_map", HUD_MAP, hold_frames=3)
                 elif btn == 7:  # Start (Pause Menu / Skip)
                     st = self.get_engine_state()
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
                     elif st.get("app_state") == 2:
+                        self.tap_once("open_pause", HUD_PORTRAIT_MENU, hold_frames=3)
+                    elif st.get("app_state") == 8:
+                        self.handle_cancel()
                         self.tap_once("open_pause", HUD_PORTRAIT_MENU, hold_frames=2)
                     elif st.get("app_state") == 8:
                         self.handle_cancel()

@@ -188,3 +188,28 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Extraído `Payload/Heroes Lore.app/Icon.png` do IPA original e gerados `assets/icon.png` e `assets/icon.ico`.
      - Aplicado como ícone da janela Pygame (`pygame.display.set_icon`) e embutido no executável standalone `dist/HeroesLore3_PC/HeroesLore3.exe` via PyInstaller.
 
+---
+
+## 2026-11-10 - Sessão 10: Resolução da Tela Preta (Vazamento de GL_TEXTURE_2D e Ordem de Ícone SDL2) e Descoberta dos Centros Reais do Mapa e Poções
+
+- **Descobertas verificáveis e correções críticas**:
+  1. **Causa Raiz da Tela Preta**:
+     - `_draw_menu_cursor()` desativava a textura 2D via `glDisable(GL_TEXTURE_2D)` para desenhar linhas douradas, mas omitia a restauração de `glEnable(GL_TEXTURE_2D)`. Qualquer quadro em que o cursor de pause fosse desenhado deixava a GPU em modo untextured permanentemente, impedindo a renderização de todos os sprites e tiles. Solução: Envolvido o cursor em `glPushAttrib(GL_ALL_ATTRIB_BITS)` ... `glPopAttrib()` com restauração explícita de `glEnable(GL_TEXTURE_2D)` e garantia de textura habilitada em `GLBridge.begin_frame()`.
+     - No Pygame 2 / SDL2 em Windows, `pygame.display.set_icon()` invocado antes de `pygame.display.set_mode()` com superfície não padronizada (57x57) falhava com `No video mode has been set` e interferia na criação do contexto OpenGL. Solução: Invocação movida para após `set_mode()` com imagem suavizada para 32x32 RGBA.
+  2. **Estrutura Real de Controles da HUD (`form_id = 70`)**:
+     - Inspecionados diretamente na memória guest os retângulos de toque de todos os nós:
+       - `id=7011`: Minimap / Bússola em `[9..38, 7..37]`, centro `(23.5, 22.0)`.
+       - `id=7002`: Poção Superior (Slot 1) em `[4..54, 86..128]`, centro `(29.0, 107.0)`.
+       - `id=7003`: Poção Inferior (Slot 2) em `[4..54, 136..178]`, centro `(29.0, 157.0)`.
+       - `id=7006`: Skill 1 em `[426..476, 163..205]`, centro `(451.0, 184.0)`.
+       - `id=7005`: Skill 2 em `[426..476, 113..155]`, centro `(451.0, 134.0)`.
+       - `id=7004`: Skill 3 em `[426..476, 63..105]`, centro `(451.0, 84.0)`.
+       - `id=7007`: Ataque Primário em `[425..482, 232..284]`, centro `(450.0, 258.0)`.
+       - `id=7008`: Ataque Secundário em `[380..437, 263..315]`, centro `(408.5, 289.0)`.
+  3. **Mapeamento de Teclas no Host PC**:
+     - Teclado: Mapa em `M` / `Tab`; Poção 1 em `Q` / `1`; Poção 2 em `K` / `2`; Skills em `U`/`3`, `I`/`4`, `O`/`5`; Ataque em `J`/`Espaço`; Guarda/Ataque 2 em `L`/`H`.
+     - Gamepad: Poção 1 em `LB`; Poção 2 em `RB`; Mapa em `Select`; Ataque em `X`; Skills/Skip em `Y`; Confirmar em `A`; Cancelar em `B`; Menu em `Start`.
+  4. **Distribuição Standalone Recompilada**:
+     - `dist/HeroesLore3_PC/HeroesLore3.exe` reempacotado com CFG desativado e validado rodando com mais de 102.000 cores.
+
+

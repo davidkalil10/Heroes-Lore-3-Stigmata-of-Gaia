@@ -103,6 +103,8 @@ class GLBridge:
         vx, vy, vw, vh = self.viewport_rect
         glViewport(vx, vy, vw, vh)
         try:
+            glEnable(GL_TEXTURE_2D)
+            glColor4f(1.0, 1.0, 1.0, 1.0)
             glMatrixMode(GL_PROJECTION)
             while glGetIntegerv(GL_PROJECTION_STACK_DEPTH) > 1:
                 glPopMatrix()

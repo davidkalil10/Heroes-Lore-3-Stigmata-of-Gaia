@@ -306,6 +306,44 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Falar com NPCs no campo responde com 100% de confiabilidade via `E`, `Enter`, `Espaço` e Gamepad `A`.
   - O executável standalone e a janela no PC ostentam a arte original de Heroes Lore 3 sem artefatos genéricos.
 
+---
+
+## ADR-017: Isolamento de Atributos OpenGL do Cursor, Ordem de Inicialização de Ícone no SDL2/Pygame e Mapeamento dos Botões Virtuais de Poções (Superior/Inferior) e Mapa
+
+- **Data**: 2026-11-10
+- **Status**: Aceito
+- **Contexto**:
+  - O usuário relatou dois problemas críticos após a execução da versão standalone:
+    1. A janela ficava completamente preta ("tá tudo preto agora!").
+    2. Os botões clicáveis da tela não respondiam ao teclado, especificamente o botão do mapa e os botões das poções.
+  - **Investigação Técnica e Descobertas**:
+    1. *Causa raiz da tela preta*:
+       - Em `tools/run_pc.py`, a função `_draw_menu_cursor()` invocava `glDisable(GL_TEXTURE_2D)` para desenhar o retângulo do cursor dourado do menu de pausa. No entanto, ela nunca restaurava `glEnable(GL_TEXTURE_2D)` ao concluir. Quando o menu de pausa era avaliado ou aberto, a renderização com texturas ficava desligada de forma permanente no contexto OpenGL. Como o pipeline de renderização do jogo pressupõe `GL_TEXTURE_2D` preservado entre frames, todos os desenhos subsequentes (inclusive após sair do menu ou carregar save) passavam a gerar quads untextured escuros.
+       - Além disso, `pygame.display.set_icon` estava sendo chamado antes de `pygame.display.set_mode()`. No Pygame 2 / SDL2 no Windows x64, chamar `set_icon` antes da criação da janela disparava silenciosamente `pygame.error: No video mode has been set` e corrompia os ponteiros de pixel format / swap chain do WGL.
+    2. *Causa raiz das poções e mapa*:
+       - O despejo em tempo real da árvore de controles do formulário de HUD (`form_id = 70`) revelou a disposição exata dos elementos na tela:
+         - `id=7011`: Minimap / Bússola / Mapa no canto superior esquerdo em `(23.5, 22.0)`.
+         - `id=7002`: Poção Superior (Slot 1) na lateral esquerda em `(29.0, 107.0)`.
+         - `id=7003`: Poção Inferior (Slot 2) na lateral esquerda em `(29.0, 157.0)`.
+       - O código anterior possuía apenas `HUD_POTION_1` apontando para `(415.0, 45.0)` (coordenada totalmente errada, no canto superior direito do céu), não possuía a segunda poção e não mapeava o botão do Mapa.
+- **Decisão**:
+  1. Em `tools/run_pc.py`, encapsular o desenho do cursor com `glPushAttrib(GL_ALL_ATTRIB_BITS)` e `glPopAttrib()`, forçando explicitamente `glEnable(GL_TEXTURE_2D)` no retorno.
+  2. Em `tools/hl3rt/gl_bridge.py`, adicionar `glEnable(GL_TEXTURE_2D)` e restauração de cor branca `glColor4f(1.0, 1.0, 1.0, 1.0)` em `begin_frame()`, blindando o motor gráfico contra qualquer vazamento de estado.
+  3. Em `_init_window()`, reposicionar a chamada de `set_icon` para logo após `set_mode()`, convertendo o ícone com `.convert_alpha()` e redimensionando para 32x32 via `pygame.transform.smoothscale`.
+  4. Mapear as teclas de HUD com as coordenadas reais:
+     - **Mapa / Bússola**: Tecla `M` e `Tab` (no campo aberto `sub_state == 3`), Gamepad `Select`.
+     - **Poção Superior (Slot 1)**: Tecla `Q` e `1`, Gamepad `LB`.
+     - **Poção Inferior (Slot 2)**: Tecla `K` e `2`, Gamepad `RB`.
+     - **Skills 1, 2, 3**: Teclas `U` / `3`, `I` / `4`, `O` / `5`, Gamepad `X` / `Y`.
+     - **Ataque Primário**: Tecla `J` e `Espaço`.
+     - **Ataque Secundário / Guarda**: Tecla `L` e `H`.
+  5. Recompilar e reempacotar `dist/HeroesLore3_PC/HeroesLore3.exe` com as correções e CFG desativado.
+- **Consequências**:
+  - A janela inicializa e roda com cores perfeitas (>100.000 cores únicas no frame de boot) sem risco de tela preta.
+  - O mapa abre e fecha instantaneamente pelo teclado (`M`, `Tab`) ou controle (`Select`).
+  - As duas poções (superior e inferior) são consumidas perfeitamente pelo teclado (`Q`/`1` e `K`/`2`) e controle (`LB`/`RB`).
+
+
 
 
 

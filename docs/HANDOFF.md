@@ -5,47 +5,45 @@
 - **Fase**: `pc_playable_complete`
 - **Etapas concluídas**: `S00`, `S01`, `S02`, `S03`, `S04`, `S05`, `S06`, `S07`
 - **Etapa ativa (`current_step`)**: `S08` (`True Widescreen e expansão de viewport`)
-- **Objetivo alcançado**: **Build PC Standalone 100% autônoma (`dist/HeroesLore3_PC/HeroesLore3.exe`) com ícone oficial embutido (`assets/icon.ico` e `assets/icon.png`), sem requerer Python ou dependências externas. Controlador unificado de entrada orientado diretamente à leitura da memória do motor guest (`AppManager`, `UI_Mgr`, `GameCtx`). Todas as telas possuem navegação, confirmação e cancelamento completos via teclado e gamepad: seleção de herói e classe, tela de resumo sem moldura amarela espúria, pulo instantâneo de cutscenes e fechamento de popups de tutoriais, diálogo com NPCs no campo com 100% de confiabilidade (botão de fala a 450,258 em paz e 397,239 em combate via E/Enter/Space/Gamepad A), e menu de pausa com navegação limpa sem auto-clique.**
+- **Objetivo alcançado**: **Build PC Standalone 100% autônoma (`dist/HeroesLore3_PC/HeroesLore3.exe`) com ícone oficial embutido (`assets/icon.ico` e `assets/icon.png`), sem requerer Python ou dependências externas. Resolvido o problema de tela preta (isolamento de atributos OpenGL do cursor, garantia de textura 2D ativa e chamada de set_icon após set_mode com tamanho padronizado 32x32). Mapeados os alvos e teclas reais de todos os botões clicáveis da HUD em jogo: Mapa / Bússola (id=7011 em 23.5, 22.0 via M, Tab ou Gamepad Select), Poção 1 Superior (id=7002 em 29.0, 107.0 via Q, 1 ou Gamepad LB) e Poção 2 Inferior (id=7003 em 29.0, 157.0 via K, 2 ou Gamepad RB), além de todas as skills, ataques e menus. 24 testes unitários automatizados passando com 100% de sucesso.**
 
 ## O que foi feito e validado nesta sessão
 
-1. **Controlador de Entrada Orientado ao Estado Real de Memória do Motor Guest**:
-   - **Diagnóstico**: Heurísticas baseadas em passos desacoplados (`self.step 0..4`) perdiam a sincronia quando o usuário usava o mouse, fechava popups ou passava por tutoriais e cutscenes com múltiplos `sub_states` (`4` ou `22`).
-   - **Solução**: Implementado `get_engine_state()` em `tools/run_pc.py` lendo diretamente a memória guest:
-     - `AppManager*` obtido em `*(uint32_t*)0x000d7dd4`.
-     - `app_state` (`+0x78`): `1` = Menus de Título e Seleção, `2` = In-Game/Cutscene, `8` = Menu de Pausa.
-     - `ui_main` (`+0x40`) -> `main_form` (`+0x98`, `form_id` em `+0x14`), `main_popup` (`+0xa0`).
-     - `ui_hud` (`+0x44`) -> `hud_form` (`+0x98`, `form_id = 70`), `hud_popup` (`+0xa0`, `form_id = 130` Tutorial).
-     - `GameCtx` em `0x000d8270`: `sub_state` em `*(int8_t*)0x000de30c`, `can_talk` em `*(uint8_t*)0x000de0ad`, `combat_mode` em `*(uint8_t*)0x000de0ac`.
-   - Adicionados métodos de conveniência em `tools/hl3rt/machine.py`: `rd16`, `rds16`, `rd8`, `rds8`, `rdf32`.
+1. **Diagnóstico e Resolução da Tela Preta**:
+   - **Causa raiz 1**: `_draw_menu_cursor()` desativava a textura 2D via `glDisable(GL_TEXTURE_2D)` para desenhar o retângulo do cursor dourado do menu de pausa, mas omitia a restauração de `glEnable(GL_TEXTURE_2D)` no final. Quando o cursor era avaliado ou desenhado, a GPU ficava em modo untextured permanentemente, impedindo a renderização de todos os sprites, tiles e textos e tornando os quadros subsequentes pretos.
+     - *Correção*: `_draw_menu_cursor()` foi envolvido em `glPushAttrib(GL_ALL_ATTRIB_BITS)` ... `glPopAttrib()` com restauração explícita de `glEnable(GL_TEXTURE_2D)`. Além disso, `GLBridge.begin_frame()` agora força `glEnable(GL_TEXTURE_2D)` e `glColor4f(1.0, 1.0, 1.0, 1.0)` a cada frame.
+   - **Causa raiz 2**: No Pygame 2 / SDL2 em Windows, `pygame.display.set_icon` invocado antes de `pygame.display.set_mode()` com superfície não padronizada (57x57) falhava silenciosamente com `No video mode has been set` e interferia na criação do contexto OpenGL.
+     - *Correção*: `set_icon` movido para após `set_mode()`, com imagem suavizada para 32x32 RGBA (`pygame.transform.smoothscale`).
 
-2. **Engenharia Reversa e Correção das Coordenadas da Árvore de Controles**:
-   - **Fala com NPCs no Campo (`form_id = 70`)**:
-     - No modo pacífico (`combat_mode == 0`), a HUD posiciona o botão de fala (id `7025`) exatamente em `(450.0, 258.0)` com bounding box `(421..479, 237..279)`. O código anterior clicava em `(445.0, 286.0)` (`y=286` é 7px fora da borda do botão).
-     - No modo de combate (`combat_mode == 1`), o botão de ataque (id `7007`) assume `(450.0, 258.0)` e o botão contextual de fala (id `7026`) desloca-se para `(397.0, 239.0)`.
-     - O motor avalia colisão com NPCs em `0x41550` (caixa 72x72) e aciona `0x90894` que escreve `1` na flag `can_talk` em `*(uint8_t*)0x000de0ad`. As teclas `E`, `Enter`, `Espaço` e Gamepad `A` acionam o alvo correto instantaneamente.
-   - **Seleção de Classe (`form_id = 42`)**:
-     - Botão `<` (id `4207`) localiza-se em `(73.0, 71.0)` e `>` (id `4206`) em `(400.0, 71.0)`. Setas do teclado `Esquerda`/`Direita`, `A`/`D` e números `1`, `2`, `3` agora alternam classes perfeitamente.
-   - **Resumo de Personagem (`form_id = 43`) e Eliminação da Moldura Amarela**:
-     - Confirmação em `(356.0, 295.0)` e voltar em `(28.0, 28.0)`.
-     - O cursor dourado de menu de pausa (`_draw_menu_cursor`) foi restrito rigorosamente a `app_state == 8 and form_id == 2`, impedindo qualquer aparição indevida fora do pause.
-   - **Pulo de Cutscenes (`form_id = 44`) e Popups**:
-     - Botão SKIP em `(408.0, 28.0)` disparado via `S`, `Tab`, Gamepad `Y`/`Start`.
-     - Popup de confirmação do Skip: Yes em `(395.0, 220.0)` disparado via `Enter`/`Espaço`.
-     - Popups de tutoriais (`form_id = 130`): Fechar (botão X) em `(385.0, 74.0)` via `Esc`/`Backspace`, Avançar em `(385.0, 207.0)` via `Enter`/`Espaço`.
-   - **Menu de Pausa (`app_state = 8`, `form_id = 2`)**:
-     - Migração de ações para eventos discretos `KEYDOWN` do Pygame, eliminando cliques duplos ao teclar `Enter`. Navegação suave com setas `Cima`/`Baixo` entre os 6 itens.
+2. **Descoberta e Mapeamento dos Botões da HUD (Mapa e Poções)**:
+   - Inspecionada a árvore em tempo real de `hud_form` (`form_id = 70`):
+     - `id=7011` (Minimap / Bússola / Mapa): retângulo `[9..38, 7..37]`, centro `(23.5, 22.0)`.
+     - `id=7002` (Poção Superior / Slot 1): retângulo `[4..54, 86..128]`, centro `(29.0, 107.0)`.
+     - `id=7003` (Poção Inferior / Slot 2): retângulo `[4..54, 136..178]`, centro `(29.0, 157.0)`.
+     - `id=7006` (Skill 1): centro `(451.0, 184.0)`.
+     - `id=7005` (Skill 2): centro `(451.0, 134.0)`.
+     - `id=7004` (Skill 3): centro `(451.0, 84.0)`.
+     - `id=7007` (Ataque Primário): centro `(450.0, 258.0)`.
+     - `id=7008` (Ataque Secundário / Guarda): centro `(408.5, 289.0)`.
+     - `id=7025` (Fala em modo pacífico): centro `(450.0, 258.0)`.
+     - `id=7026` (Fala em modo de combate): centro `(397.0, 239.0)`.
+     - `id=7009` (Retrato do Herói / Pause Menu): centro `(200.0, 292.0)`.
+   - **Mapeamento de Teclas**:
+     - **Mapa**: Teclas `M` e `Tab` (no campo livre `sub_state == 3`), Gamepad `Select`.
+     - **Poção 1 (Superior)**: Teclas `Q` e `1`, Gamepad `LB`.
+     - **Poção 2 (Inferior)**: Teclas `K` e `2`, Gamepad `RB`.
+     - **Skills 1, 2, 3**: Teclas `U`/`3`, `I`/`4`, `O`/`5`, Gamepad `X`/`Y`.
+     - **Ataque Primário**: Teclas `J` e `Espaço`.
+     - **Ataque Secundário**: Teclas `L` e `H`.
+     - **Fala com NPC / Confirmar**: Teclas `E`, `Enter`, `Espaço`, Gamepad `A`.
+     - **Menu de Pausa**: Tecla `Esc` (em jogo) ou clique no retrato `(200, 292)`.
 
-3. **Substituição do Ícone pelo Asset Oficial**:
-   - Extraído `Payload/Heroes Lore.app/Icon.png` do IPA original.
-   - Gerados `assets/icon.png` e `assets/icon.ico` (multi-tamanho: 16x16, 32x32, 48x48, 64x64, 128x128, 256x256).
-   - Aplicado no Pygame via `pygame.display.set_icon()` e embutido no executável standalone via PyInstaller (`HeroesLore3.spec` e `tools/build_standalone_pc.py`).
-
-4. **Reempacotamento e Validação da Build Standalone (`dist/HeroesLore3_PC/`)**:
-   - Compilado `dist/HeroesLore3_PC/HeroesLore3.exe` com PyInstaller e pós-processado com `strip_cfg` (limpeza da flag PE `0x4000`).
-   - Executável testado com `--frames 30` (código de saída 0).
+3. **Reempacotamento e Validação da Build Standalone (`dist/HeroesLore3_PC/`)**:
+   - Recompilado `dist/HeroesLore3_PC/HeroesLore3.exe` com PyInstaller e pós-processado com `strip_cfg`.
+   - Execução standalone testada com `--frames 30` (código 0, renderizando mais de 102.000 cores únicas).
+   - Teste de consumo das duas poções e alternância do mapa validado numericamente por diferença de pixels (`diff > 15.000` pixels).
    - 24 testes unitários automatizados passando com 100% de sucesso (`python -m unittest discover -s tests -v`).
-   - Registrados `ADR-016` em `docs/DECISIONS.md` e Sessão 09 em `docs/RESEARCH_LOG.md`.
+   - Registrados `ADR-017` em `docs/DECISIONS.md` e Sessão 10 em `docs/RESEARCH_LOG.md`.
 
 ## Próximo Passo (`S08`: True Widescreen e Expansão de Viewport)
 
