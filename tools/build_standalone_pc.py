@@ -43,6 +43,10 @@ Para rodar em tela cheia:
 Para ajustar a escala da janela (ex.: 3x = 1440x960):
   HeroesLore3.exe --scale 3
 
+Para escolher proporção (Original 3:2 / 16:9 Widescreen Real / Auto) e FPS (30 ou 60):
+  HeroesLore3.exe --aspect 16:9 --fps 30
+  HeroesLore3.exe --aspect auto --fps 60
+
 ------------------------------------------------------------------------
 CONTROLES
 ------------------------------------------------------------------------
@@ -63,6 +67,8 @@ CONTROLES
    * Status do Personagem: Tecla P
    * Atalhos de Modo de Tela: F1 (Alternar Título/Seleção/Jogo), F2 (Forçar Jogo), F3 (Forçar Título)
    * Volume: Teclas + / = (Aumentar), - (Diminuir), M (Mudo)
+   * F8: Alternar FPS alvo (30 FPS padrão / 60 FPS)
+   * F9: Alternar Aspect Ratio (Original 3:2 / 16:9 Widescreen Real / Auto)
    * F11: Alternar Tela Cheia / Janela
    * F12: Capturar Screenshot
 
@@ -88,8 +94,9 @@ SAVES E CONFIGURAÇÕES
 Os arquivos de progresso e saves são salvos localmente na pasta:
   data/internal/Documents/
 
-Ajustes de volume são persistidos automaticamente em:
+Ajustes de volume e exibição (FPS / proporção) são persistidos automaticamente em:
   config/audio.json
+  config/display.json
 
 Bom jogo!
 ========================================================================
@@ -206,8 +213,9 @@ def build():
     # Copy config directory
     out_config = output_dir / "config"
     out_config.mkdir(parents=True, exist_ok=True)
-    if (ROOT / "config" / "audio.json").exists():
-        shutil.copy2(ROOT / "config" / "audio.json", out_config / "audio.json")
+    for cfg_name in ("audio.json", "display.json"):
+        if (ROOT / "config" / cfg_name).exists():
+            shutil.copy2(ROOT / "config" / cfg_name, out_config / cfg_name)
 
     # Copy data directory (for Documents / saves)
     out_docs = output_dir / "data" / "internal" / "Documents"

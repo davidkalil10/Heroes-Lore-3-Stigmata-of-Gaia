@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
 import io
 import json
@@ -21,6 +22,10 @@ from unicorn import (
     Uc,
     UcError,
 )
+try:
+    from unicorn.unicorn_py3.unicorn import uclib as _uclib
+except Exception:  # pragma: no cover
+    _uclib = None
 from unicorn.arm_const import (
     UC_ARM_REG_C1_C0_2,
     UC_ARM_REG_CPSR,
@@ -46,6 +51,7 @@ else:
 sys.path.insert(0, str(ROOT / "tools"))
 import probe_macho_contract as probe  # noqa: E402
 from inspect_apk import parse_macho_armv6  # noqa: E402
+from .fast_stubs import install_native_fast_stubs
 
 APP_PREFIX = probe.APP_PREFIX
 
@@ -71,8 +77,10 @@ class GuestFault(Exception):
 
 
 class Machine:
-    def __init__(self, resource_loader: "Bundle"):
+    def __init__(self, resource_loader: "Bundle", native_fast_traps: bool = True):
         self.bundle = resource_loader
+        self.native_fast_traps = native_fast_traps
+        self.native_stubs: dict[str, int] = {}
         self.uc = Uc(UC_ARCH_ARM, UC_MODE_ARM)
         try:
             from unicorn.arm_const import UC_CPU_ARM_1176
@@ -93,6 +101,14 @@ class Machine:
         self.stop_reason: str | None = None
         self.import_addr: dict[str, int] = {}
         self.data_symbols: dict[str, int] = {}
+        self._uch = getattr(self.uc, "_uch", None) if _uclib is not None else None
+        self._reg_u32 = ctypes.c_uint32()
+        self._reg_u32_ptr = ctypes.byref(self._reg_u32)
+        self._mem_u32_ba = bytearray(4)
+        self._mem_u32_buf = (ctypes.c_char * 4).from_buffer(self._mem_u32_ba)
+        self._mem_u32_view = memoryview(self._mem_u32_ba).cast("I")
+        self._mem_buf_cap = 65536
+        self._mem_buf = (ctypes.c_char * self._mem_buf_cap)()
         self._map_memory()
         self._enable_vfp()
 
@@ -107,6 +123,8 @@ class Machine:
         uc.mem_map(STACK_BASE, STACK_TOP + 0x1000 - STACK_BASE)
         uc.mem_write(RET_STUB, struct.pack("<I", ARM_BX_LR))
         uc.mem_write(HOST_STOP, struct.pack("<I", ARM_BX_LR))
+        if self.native_fast_traps:
+            self.native_stubs = install_native_fast_stubs(uc)
 
     def _enable_vfp(self):
         uc = self.uc
@@ -122,6 +140,11 @@ class Machine:
             print(msg, file=sys.stderr)
 
     def rd32(self, addr: int) -> int:
+        if self._uch is not None:
+            status = _uclib.uc_mem_read(self._uch, addr, self._mem_u32_buf, 4)
+            if status != 0:
+                raise UcError(status, addr, 4)
+            return self._mem_u32_view[0]
         return struct.unpack("<I", self.uc.mem_read(addr, 4))[0]
 
     def rd16(self, addr: int) -> int:
@@ -140,10 +163,38 @@ class Machine:
         return struct.unpack("<f", self.uc.mem_read(addr, 4))[0]
 
     def wr32(self, addr: int, value: int):
+        if self._uch is not None:
+            self._mem_u32_view[0] = value & 0xFFFFFFFF
+            status = _uclib.uc_mem_write(self._uch, addr, self._mem_u32_buf, 4)
+            if status != 0:
+                raise UcError(status, addr, 4)
+            return
         self.uc.mem_write(addr, struct.pack("<I", value & 0xFFFFFFFF))
 
     def rdbytes(self, addr: int, n: int) -> bytes:
+        if n <= 0:
+            return b""
+        if self._uch is not None:
+            if n > self._mem_buf_cap:
+                self._mem_buf_cap = max(n, self._mem_buf_cap * 2)
+                self._mem_buf = (ctypes.c_char * self._mem_buf_cap)()
+            status = _uclib.uc_mem_read(self._uch, addr, self._mem_buf, n)
+            if status != 0:
+                raise UcError(status, addr, n)
+            return ctypes.string_at(self._mem_buf, n)
         return bytes(self.uc.mem_read(addr, n))
+
+    def rdinto(self, addr: int, buf, n: int):
+        """Read `n` bytes from guest `addr` directly into a ctypes char array `buf`."""
+        if n <= 0:
+            return
+        if self._uch is not None:
+            status = _uclib.uc_mem_read(self._uch, addr, buf, n)
+            if status != 0:
+                raise UcError(status, addr, n)
+            return
+        raw = bytes(self.uc.mem_read(addr, n))
+        ctypes.memmove(buf, raw, n)
 
     def wrbytes(self, addr: int, data: bytes):
         if data:
@@ -186,17 +237,30 @@ class Machine:
 
     # --------------------------------------------------------------- registers
     def reg(self, n: int) -> int:
+        if self._uch is not None:
+            _uclib.uc_reg_read(self._uch, UC_ARM_REG_R0 + n, self._reg_u32_ptr)
+            return self._reg_u32.value
         return self.uc.reg_read(UC_ARM_REG_R0 + n)
 
     def set_reg(self, n: int, value: int):
+        if self._uch is not None:
+            self._reg_u32.value = value & 0xFFFFFFFF
+            _uclib.uc_reg_write(self._uch, UC_ARM_REG_R0 + n, self._reg_u32_ptr)
+            return
         self.uc.reg_write(UC_ARM_REG_R0 + n, value & 0xFFFFFFFF)
 
     @property
     def sp(self) -> int:
+        if self._uch is not None:
+            _uclib.uc_reg_read(self._uch, UC_ARM_REG_SP, self._reg_u32_ptr)
+            return self._reg_u32.value
         return self.uc.reg_read(UC_ARM_REG_SP)
 
     @property
     def lr(self) -> int:
+        if self._uch is not None:
+            _uclib.uc_reg_read(self._uch, UC_ARM_REG_LR, self._reg_u32_ptr)
+            return self._reg_u32.value
         return self.uc.reg_read(UC_ARM_REG_LR)
 
     @property
@@ -239,13 +303,17 @@ class Machine:
             name = imp["name"]
             kind, payload = resolver(name)
             if kind == "func":
-                idx = len(self.trap_names)
-                self.trap_names.append(name)
-                self.trap_handlers.append(payload)
-                addr = TRAP_BASE + idx * 8
-                self.uc.mem_write(addr, struct.pack("<II", ARM_LDR_PC_MINUS4, RET_STUB))
-                self.import_addr[name] = addr
-                target = addr
+                if self.native_fast_traps and name in self.native_stubs:
+                    target = self.native_stubs[name]
+                    self.import_addr[name] = target
+                else:
+                    idx = len(self.trap_names)
+                    self.trap_names.append(name)
+                    self.trap_handlers.append(payload)
+                    addr = TRAP_BASE + idx * 8
+                    self.uc.mem_write(addr, struct.pack("<II", ARM_LDR_PC_MINUS4, RET_STUB))
+                    self.import_addr[name] = addr
+                    target = addr
             else:
                 target = payload
                 self.data_symbols[name] = payload

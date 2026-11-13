@@ -3,9 +3,9 @@
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
   "updated_at": "2026-11-13",
   "overall_phase": "pc_playable_complete",
-  "current_step": "S08",
-  "next_recommended_step": "S08",
-  "summary": "Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) com icone oficial 512x512 do iTunesArtwork (7 resolucoes no icon.ico + AppUserModelID + Win32 WM_SETICON/SetClassLongPtrW na janela SDL e console) e navegacao completa 100% funcional por teclado e gamepad em TODOS os menus, submenus (CHARACTER, EQUIPMENT, SKILLS, ITEMS, QUESTS, SYSTEM, PREFERENCES, HELP) e popups modais (SAVE, MAIN MENU) orientada pela arvore viva de controles (UIControl vis=0x0003, frect, sliders ctype=13, scroll ctype=10, analógico esquerdo e LB/RB/Tab). 26 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).",
+  "current_step": "S09",
+  "next_recommended_step": "S09",
+  "summary": "S08 concluida: True Widescreen real (Original 3:2 / 16:9 / Auto, janela redimensionavel e atalho F9) sem esticar sprites/HUD/menus via expansao de viewport GLES1 + GameCtx (0x000d8270) + trampolim UI_FLUSH_RETURN_STUB (0x0000c688), FPS configuravel (30 padrao calibrado / 60 opcional via F8 ou --fps) com persistencia em config/display.json, otimizacao fast_stubs e build standalone (dist/HeroesLore3_PC/HeroesLore3.exe) validada em 37 testes unitarios. Proxima etapa: S09 (Extracao de textos e fontes).",
   "steps": [
     {
       "id": "S00",
@@ -147,14 +147,24 @@
     },
     {
       "id": "S08",
-      "title": "True Widescreen e expansao de viewport",
-      "status": "pending",
-      "owner": null,
-      "completed_at": null,
+      "title": "True Widescreen, expansao de viewport e FPS (30/60)",
+      "status": "done",
+      "owner": "agent",
+      "completed_at": "2026-11-13",
       "evidence": [
-        "docs/tasks/S08_VIEWPORT_EXPANSION.md"
+        "docs/tasks/S08_VIEWPORT_EXPANSION.md",
+        "tools/hl3rt/display.py",
+        "tools/hl3rt/widescreen.py",
+        "tools/hl3rt/gl_bridge.py",
+        "tools/hl3rt/hle_gl.py",
+        "tools/hl3rt/fast_stubs.py",
+        "tools/run_pc.py",
+        "tools/build_standalone_pc.py",
+        "tests/test_viewport_aspect.py",
+        "tests/test_fast_stubs.py",
+        "research/sessions/2026-11-13-12.md"
       ],
-      "notes": "Expansao real de camera/viewport em 16:9, 16:10, 20:9 e 4:3 sem esticar HUD."
+      "notes": "FPS configuravel (30 padrao calibrado via benchmark em campo / 60 via F8 ou --fps) e proporcao selecionavel ao vivo (Original 3:2, 16:9, Auto via F9 ou --aspect) com expansao real de cenario via GameCtx (0x000d8270), ancora de HUD, centralizacao de menus/popups via GLBridge ui_offset + trampolim UI_FLUSH_RETURN_STUB, resize Win32 seguro e 37/37 testes passando."
     },
     {
       "id": "S09",

@@ -19,6 +19,8 @@ Controls:
   * Quick Skills: U / 1, I / 2 (RB), O / 3
   * Mouse: Left Click & Drag anywhere for 1:1 direct touch input!
   * Volume Controls: + / = Increase Volume, - Decrease Volume, M Toggle Mute
+  * F8: Toggle Target FPS (30 / 60)
+  * F9: Cycle Aspect Ratio (Original 3:2 / 16:9 / Auto True Widescreen)
   * F11: Toggle Fullscreen
   * F12: Capture Screenshot
 """
@@ -36,6 +38,8 @@ from pathlib import Path
 
 import pygame
 from pygame.locals import *
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from PIL import Image
 
@@ -55,6 +59,14 @@ sys.path.insert(0, str(ROOT / "tools"))
 from hl3rt.runtime import Runtime
 from hl3rt.gl_bridge import GLBridge
 from hl3rt.hle_uikit import Touch
+from hl3rt.display import (
+    UI_ASPECT_CYCLE,
+    compute_viewport_layout,
+    load_display_config,
+    normalize_aspect_mode,
+    normalize_fps,
+    save_display_config,
+)
 
 # Exact Control Coordinates & Targets (480x320 landscape)
 DPAD_CENTER = (65.0, 255.0)
@@ -130,11 +142,30 @@ def log_boot(msg: str):
 
 
 class PCRunner:
-    def __init__(self, scale: int = 2, fullscreen: bool = False, headless_frames: int = 0):
-        log_boot(f"PCRunner.__init__: scale={scale}")
+    def __init__(
+        self,
+        scale: int = 2,
+        fullscreen: bool = False,
+        headless_frames: int = 0,
+        aspect_mode: str | None = None,
+        target_fps: int | None = None,
+    ):
+        log_boot(f"PCRunner.__init__: scale={scale} aspect={aspect_mode} fps={target_fps}")
         self.scale = max(1, scale)
-        self.game_w, self.game_h = 480, 320
-        self.win_w, self.win_h = self.game_w * self.scale, self.game_h * self.scale
+        cfg = load_display_config() if headless_frames == 0 else {}
+        if aspect_mode is None:
+            aspect_mode = cfg.get("aspect_mode", "original")
+        if target_fps is None:
+            target_fps = cfg.get("target_fps", 30)
+        self.aspect_mode = normalize_aspect_mode(aspect_mode)
+        self.target_fps = normalize_fps(target_fps)
+        if self.aspect_mode == "16:9" and headless_frames == 0:
+            self.win_w = int(round(320.0 * (16.0 / 9.0) * self.scale))
+            self.win_h = 320 * self.scale
+        else:
+            self.win_w, self.win_h = 480 * self.scale, 320 * self.scale
+        self._windowed_size = (self.win_w, self.win_h)
+        self.game_w, self.game_h = 480.0, 320.0
         self.fullscreen = fullscreen
         self.headless_frames = headless_frames
         self.running = False
@@ -265,9 +296,15 @@ class PCRunner:
             except Exception as e:
                 print(f"[HL3 PC] Could not preload window icon: {e}")
 
-        flags = DOUBLEBUF | OPENGL
+        flags = DOUBLEBUF | OPENGL | RESIZABLE
         if self.fullscreen:
-            flags |= FULLSCREEN
+            try:
+                desktop_sizes = pygame.display.get_desktop_sizes()
+                if desktop_sizes:
+                    self.win_w, self.win_h = desktop_sizes[0]
+            except Exception:
+                pass
+            flags = DOUBLEBUF | OPENGL | FULLSCREEN
         pygame.display.set_caption("Heroes Lore 3: Stigmata of Gaia Recomp (PC Native)")
         self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
         self._apply_win32_icon()
@@ -349,15 +386,17 @@ class PCRunner:
         except Exception:
             return None
 
+        max_w = (float(self.rt.gl_bridge.layout.patch_w) + 40.0) if getattr(self.rt, "gl_bridge", None) else 520.0
+        max_h = (float(self.rt.gl_bridge.layout.patch_h) + 40.0) if getattr(self.rt, "gl_bridge", None) else 360.0
         frect_ok = (
             all(math.isfinite(v) for v in (fx0, fx1, fy0, fy1))
             and (fx1 - fx0) >= 2.0
             and (fy1 - fy0) >= 2.0
-            and fx0 > -40.0 and fx1 < 520.0
-            and fy0 > -40.0 and fy1 < 360.0
+            and fx0 > -40.0 and fx1 < max_w
+            and fy0 > -40.0 and fy1 < max_h
         )
         if not frect_ok:
-            if pw >= 4 and ph >= 4 and px > -40 and (px + pw) < 520 and py > -40 and (py + ph) < 360:
+            if pw >= 4 and ph >= 4 and px > -40 and (px + pw) < max_w and py > -40 and (py + ph) < max_h:
                 fx0, fx1, fy0, fy1 = float(px), float(px + pw), float(py), float(py + ph)
             else:
                 fx0, fx1, fy0, fy1 = 0.0, 0.0, 0.0, 0.0
@@ -651,13 +690,108 @@ class PCRunner:
 
         return cur_idx
 
-    def _scroll_box(self, box: dict, dir_name: str):
+    def _save_display_prefs(self):
+        if getattr(self, "headless_frames", 0) == 0:
+            save_display_config({
+                "aspect_mode": self.aspect_mode,
+                "target_fps": self.target_fps,
+            })
+
+    def _resize_window(self, new_w: int, new_h: int):
+        if (new_w, new_h) == (self.win_w, self.win_h):
+            return
+        try:
+            if sys.platform == "win32":
+                hwnd = pygame.display.get_wm_info().get("window")
+                if hwnd:
+                    user32 = ctypes.windll.user32
+                    class _RECT(ctypes.Structure):
+                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long), ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+                    rc = _RECT(0, 0, int(new_w), int(new_h))
+                    hwnd_p = ctypes.c_void_p(hwnd)
+                    style = user32.GetWindowLongW(hwnd_p, -16)
+                    ex_style = user32.GetWindowLongW(hwnd_p, -20)
+                    user32.AdjustWindowRectEx(ctypes.byref(rc), style, False, ex_style)
+                    # SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE (0x0016)
+                    user32.SetWindowPos(hwnd_p, 0, 0, 0, rc.right - rc.left, rc.bottom - rc.top, 0x0016)
+                    self.win_w, self.win_h = int(new_w), int(new_h)
+                    self._windowed_size = (self.win_w, self.win_h)
+                    if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+                        self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
+                    return
+            self.window = pygame.display.set_mode((new_w, new_h), DOUBLEBUF | OPENGL | RESIZABLE)
+            self._apply_win32_icon()
+            self.win_w, self.win_h = int(new_w), int(new_h)
+            self._windowed_size = (self.win_w, self.win_h)
+        except Exception:
+            pass
+
+    def set_aspect_mode(self, mode: str, resize_window: bool = False):
+        self.aspect_mode = normalize_aspect_mode(mode)
+        if resize_window and not self.fullscreen and getattr(self, "headless_frames", 0) == 0:
+            if self.aspect_mode == "16:9":
+                new_w = int(round(320.0 * (16.0 / 9.0) * self.scale))
+                new_h = 320 * self.scale
+            elif self.aspect_mode == "original":
+                new_w, new_h = 480 * self.scale, 320 * self.scale
+            else:
+                new_w, new_h = self.win_w, self.win_h
+            self._resize_window(new_w, new_h)
+        if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+            self.rt.gl_bridge.set_aspect_mode(self.aspect_mode)
+            self.game_w = float(self.rt.gl_bridge.game_w)
+            self.game_h = float(self.rt.gl_bridge.game_h)
+        self._save_display_prefs()
+        print(f"[HL3 PC] Aspect Mode: {self.aspect_mode.upper()} ({self.game_w:.0f}x{self.game_h:.0f})")
+
+    def set_target_fps(self, fps: int):
+        self.target_fps = normalize_fps(fps)
+        self._save_display_prefs()
+        print(f"[HL3 PC] Target FPS: {self.target_fps}")
+
+    def _ui_main_offset(self, st: dict | None = None) -> tuple[float, float]:
+        if not hasattr(self, "rt") or not self.rt or not getattr(self.rt, "gl_bridge", None):
+            return 0.0, 0.0
+        state = st if st is not None else self.get_engine_state()
+        if state.get("app_state", 0) in (0, 1, 256):
+            return 0.0, 0.0
+        lay = self.rt.gl_bridge.layout
+        return float(lay.ui_dx), float(lay.ui_dy)
+
+    def _main_pt(self, coord: tuple[float, float], st: dict | None = None, is_hud_popup: bool = False) -> tuple[float, float]:
+        if is_hud_popup:
+            return coord
+        dx, dy = self._ui_main_offset(st)
+        return coord[0] + dx, coord[1] + dy
+
+    def _hud_pt(self, coord: tuple[float, float]) -> tuple[float, float]:
+        if not hasattr(self, "rt") or not self.rt or not getattr(self.rt, "gl_bridge", None):
+            return coord
+        lay = self.rt.gl_bridge.layout
+        x, y = coord
+        if x < 150.0:
+            dx = 0.0
+        elif x <= 330.0:
+            dx = float(lay.hud_dx_center)
+        else:
+            dx = float(lay.hud_dx_right)
+        if y < 100.0:
+            dy = 0.0
+        elif y < 180.0:
+            dy = float(lay.hud_dy_bottom // 2)
+        else:
+            dy = float(lay.hud_dy_bottom)
+        return x + dx, y + dy
+
+    def _scroll_box(self, box: dict, dir_name: str, st: dict | None = None):
         self._ensure_focus_attrs()
         if self.scroll_cooldown > 0 or not self.touch_responder:
             return
         self.scroll_cooldown = 8
-        cx = box["cx"]
-        fy0, fy1 = box["frect"][2], box["frect"][3]
+        is_hud = bool(st and st.get("hud_popup_id"))
+        ox, oy = (0.0, 0.0) if is_hud else self._ui_main_offset(st)
+        cx = box["cx"] + ox
+        fy0, fy1 = box["frect"][2] + oy, box["frect"][3] + oy
         mid_y = (fy0 + fy1) * 0.5
         span = min(44.0, max(16.0, (fy1 - fy0) * 0.35))
         if dir_name == "down":
@@ -700,11 +834,11 @@ class PCRunner:
             if tab_ctrls:
                 self.skill_tab_idx = (self.skill_tab_idx + delta) % len(tab_ctrls)
                 tgt = tab_ctrls[self.skill_tab_idx]
-                self.tap_once("skill_tab", (tgt["cx"], tgt["cy"]), hold_frames=2)
+                self.tap_once("skill_tab", self._main_pt((tgt["cx"], tgt["cy"]), st), hold_frames=2)
             else:
                 coords = [(120.0, 25.0), (240.0, 25.0), (360.0, 25.0)]
                 self.skill_tab_idx = (self.skill_tab_idx + delta) % len(coords)
-                self.tap_once("skill_tab", coords[self.skill_tab_idx], hold_frames=2)
+                self.tap_once("skill_tab", self._main_pt(coords[self.skill_tab_idx], st), hold_frames=2)
             return
 
         page_cid_pairs = {
@@ -718,16 +852,18 @@ class PCRunner:
             want_cid = pair[0] if delta < 0 else pair[1]
             for c in controls:
                 if c["cid"] == want_cid:
-                    self.tap_once("sub_page", (c["cx"], c["cy"]), hold_frames=2)
+                    self.tap_once("sub_page", self._main_pt((c["cx"], c["cy"]), st), hold_frames=2)
                     return
 
-    def _draw_focus_rect(self, frect: tuple[float, float, float, float]):
+    def _draw_focus_rect(self, frect: tuple[float, float, float, float], offset: tuple[float, float] = (0.0, 0.0), bounds: tuple[float, float] = (480.0, 320.0)):
         fx0, fx1, fy0, fy1 = frect
+        ox, oy = offset
+        bw, bh = bounds
         pad = 2.0
-        x0 = max(2.0, fx0 - pad)
-        x1 = min(478.0, fx1 + pad)
-        y0 = max(2.0, fy0 - pad)
-        y1 = min(318.0, fy1 + pad)
+        x0 = max(2.0, fx0 + ox - pad)
+        x1 = min(bw - 2.0, fx1 + ox + pad)
+        y0 = max(2.0, fy0 + oy - pad)
+        y1 = min(bh - 2.0, fy1 + oy + pad)
         cy = (y0 + y1) * 0.5
         cx = (x0 + x1) * 0.5
 
@@ -781,13 +917,17 @@ class PCRunner:
                 return
 
         try:
-            vx, vy, vw, vh = self.rt.gl_bridge.viewport_rect if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge else (0, 0, self.win_w, self.win_h)
+            gb = self.rt.gl_bridge if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge else None
+            vx, vy, vw, vh = gb.viewport_rect if gb else (0, 0, self.win_w, self.win_h)
+            gw = float(gb.game_w) if gb else 480.0
+            gh = float(gb.game_h) if gb else 320.0
+            ox, oy = (0.0, 0.0) if st.get("hud_popup_id") else self._ui_main_offset(st)
             glPushAttrib(GL_ALL_ATTRIB_BITS)
             glViewport(vx, vy, vw, vh)
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
             glLoadIdentity()
-            glOrtho(0.0, 480.0, 320.0, 0.0, -1.0, 1.0)
+            glOrtho(0.0, gw, gh, 0.0, -1.0, 1.0)
             glMatrixMode(GL_MODELVIEW)
             glPushMatrix()
             glLoadIdentity()
@@ -797,34 +937,34 @@ class PCRunner:
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
             if is_pause_main:
-                y = PAUSE_MENU_ITEMS_Y[self.menu_index]
+                y = PAUSE_MENU_ITEMS_Y[self.menu_index] + oy
 
-                # Golden glowing selection frame around option (x: 82 to 398)
+                # Golden glowing selection frame around option (x: 82 to 398, centered by ox)
                 glColor4f(1.0, 0.85, 0.2, 0.9)
                 glLineWidth(2.5)
                 glBegin(GL_LINE_LOOP)
-                glVertex2f(82.0, y - 18.0)
-                glVertex2f(398.0, y - 18.0)
-                glVertex2f(398.0, y + 18.0)
-                glVertex2f(82.0, y + 18.0)
+                glVertex2f(82.0 + ox, y - 18.0)
+                glVertex2f(398.0 + ox, y - 18.0)
+                glVertex2f(398.0 + ox, y + 18.0)
+                glVertex2f(82.0 + ox, y + 18.0)
                 glEnd()
 
                 # Left pointer arrow ▶
                 glColor4f(1.0, 0.9, 0.3, 1.0)
                 glBegin(GL_TRIANGLES)
-                glVertex2f(66.0, y - 9.0)
-                glVertex2f(77.0, y)
-                glVertex2f(66.0, y + 9.0)
+                glVertex2f(66.0 + ox, y - 9.0)
+                glVertex2f(77.0 + ox, y)
+                glVertex2f(66.0 + ox, y + 9.0)
                 glEnd()
 
                 # Right pointer arrow ◀
                 glBegin(GL_TRIANGLES)
-                glVertex2f(414.0, y - 9.0)
-                glVertex2f(403.0, y)
-                glVertex2f(414.0, y + 9.0)
+                glVertex2f(414.0 + ox, y - 9.0)
+                glVertex2f(403.0 + ox, y)
+                glVertex2f(414.0 + ox, y + 9.0)
                 glEnd()
             elif focused is not None:
-                self._draw_focus_rect(focused["frect"])
+                self._draw_focus_rect(focused["frect"], offset=(ox, oy), bounds=(gw, gh))
 
             glPopMatrix()
             glMatrixMode(GL_PROJECTION)
@@ -844,7 +984,14 @@ class PCRunner:
         print("[HL3 PC] Initializing Mach-O ARMv6 runtime and OpenGL bridge...")
         self.rt = Runtime()
         log_boot("_init_runtime: Runtime created")
-        self.rt.gl_bridge = GLBridge(self.rt.m)
+        self.rt.gl_bridge = GLBridge(
+            self.rt.m,
+            win_w=self.win_w,
+            win_h=self.win_h,
+            aspect_mode=self.aspect_mode,
+        )
+        self.game_w = float(self.rt.gl_bridge.game_w)
+        self.game_h = float(self.rt.gl_bridge.game_h)
         log_boot("_init_runtime: GLBridge created")
         self.rt.present_hook = self._present
 
@@ -960,28 +1107,28 @@ class PCRunner:
                 _, focused, _ = self._sync_focus(st)
                 if focused:
                     coord = focused["next_coord"] if focused.get("kind") == "slider" else (focused["cx"], focused["cy"])
-                    self.tap_once("popup_confirm", coord, hold_frames=2)
+                    self.tap_once("popup_confirm", self._main_pt(coord, st), hold_frames=2)
                 else:
-                    self.tap_once("popup_confirm", POPUP_CONFIRM, hold_frames=2)
+                    self.tap_once("popup_confirm", self._main_pt(POPUP_CONFIRM, st), hold_frames=2)
             return
 
         # 2. Pause Menu / Submenus (app_state == 8)
         if app_state == 8:
             if form_id == 2:
                 y = PAUSE_MENU_ITEMS_Y[self.menu_index]
-                self.tap_once("pause_opt", (240.0, y), hold_frames=2)
+                self.tap_once("pause_opt", self._main_pt((240.0, y), st), hold_frames=2)
             else:
                 _, focused, _ = self._sync_focus(st)
                 if focused:
                     if focused.get("kind") == "slider":
-                        self.tap_once("sub_confirm", focused["next_coord"], hold_frames=2)
+                        self.tap_once("sub_confirm", self._main_pt(focused["next_coord"], st), hold_frames=2)
                     else:
                         if form_id == 10 and focused["cid"] in (1005, 1003, 1004):
                             tab_order = {1005: 0, 1003: 1, 1004: 2}
                             self.skill_tab_idx = tab_order[focused["cid"]]
-                        self.tap_once("sub_confirm", (focused["cx"], focused["cy"]), hold_frames=2)
+                        self.tap_once("sub_confirm", self._main_pt((focused["cx"], focused["cy"]), st), hold_frames=2)
                 else:
-                    self.tap_once("sub_confirm", POPUP_CONFIRM, hold_frames=2)
+                    self.tap_once("sub_confirm", self._main_pt(POPUP_CONFIRM, st), hold_frames=2)
             return
 
         # 3. Pre-game menus (app_state == 1)
@@ -1006,11 +1153,11 @@ class PCRunner:
         if app_state == 2:
             if sub_state in (4, 22):
                 # Dialogue / Cutscene: advance text
-                self.tap_once("dialogue_adv", DIALOGUE_ADVANCE, hold_frames=2)
+                self.tap_once("dialogue_adv", self._main_pt(DIALOGUE_ADVANCE, st), hold_frames=2)
                 return
             if sub_state == 7:
                 # System message: dismiss
-                self.tap_once("msg_dismiss", DIALOGUE_ADVANCE, hold_frames=2)
+                self.tap_once("msg_dismiss", self._main_pt(DIALOGUE_ADVANCE, st), hold_frames=2)
                 return
             if sub_state == 3:
                 # In field: if NPC talk prompt is active, talk!
@@ -1018,11 +1165,11 @@ class PCRunner:
                     if "dpad" in self.active_touches:
                         self.touch_up("dpad")
                     talk_pos = HUD_TALK_COMBAT if st["combat_mode"] else HUD_TALK_PEACEFUL
-                    self.tap_once("hud_talk", talk_pos, hold_frames=2)
+                    self.tap_once("hud_talk", self._hud_pt(talk_pos), hold_frames=2)
                 elif st["combat_mode"]:
-                    self.tap_once("hud_attack", HUD_ATTACK_PRIMARY, hold_frames=2)
+                    self.tap_once("hud_attack", self._hud_pt(HUD_ATTACK_PRIMARY), hold_frames=2)
                 else:
-                    self.tap_once("hud_interact", HUD_TALK_PEACEFUL, hold_frames=2)
+                    self.tap_once("hud_interact", self._hud_pt(HUD_TALK_PEACEFUL), hold_frames=2)
                 return
 
     def handle_cancel(self):
@@ -1042,9 +1189,9 @@ class PCRunner:
                 cancel_cids = (199, 207, 306, 4709, 10602, 13202, 13302)
                 cancel_ctrl = next((c for c in controls if c["cid"] in cancel_cids), None)
                 if cancel_ctrl:
-                    self.tap_once("popup_cancel", (cancel_ctrl["cx"], cancel_ctrl["cy"]), hold_frames=2)
+                    self.tap_once("popup_cancel", self._main_pt((cancel_ctrl["cx"], cancel_ctrl["cy"]), st), hold_frames=2)
                 else:
-                    self.tap_once("popup_cancel", POPUP_CANCEL, hold_frames=2)
+                    self.tap_once("popup_cancel", self._main_pt(POPUP_CANCEL, st), hold_frames=2)
             return
 
         # 2. Pause Menu / Submenus
@@ -1055,7 +1202,7 @@ class PCRunner:
                     ctrls, _ = self._collect_subtree_controls(ov["ptr"], keep_back=True)
                     close_btn = next((c for c in ctrls if c["cid"] in (4709, 199, 207)), ctrls[0] if ctrls else None)
                     if close_btn:
-                        self.tap_once("quest_detail_close", (close_btn["cx"], close_btn["cy"]), hold_frames=2)
+                        self.tap_once("quest_detail_close", self._main_pt((close_btn["cx"], close_btn["cy"]), st), hold_frames=2)
                         return
             if form_id == 8 and st.get("main_form"):
                 ov = self._find_active_overlay(st["main_form"], (837, 836))
@@ -1063,9 +1210,9 @@ class PCRunner:
                     ctrls, _ = self._collect_subtree_controls(ov["ptr"], keep_back=True)
                     cancel_btn = next((c for c in ctrls if c["cid"] in (199, 207, 306)), None)
                     if cancel_btn:
-                        self.tap_once("item_ov_cancel", (cancel_btn["cx"], cancel_btn["cy"]), hold_frames=2)
+                        self.tap_once("item_ov_cancel", self._main_pt((cancel_btn["cx"], cancel_btn["cy"]), st), hold_frames=2)
                         return
-            self.tap_once("pause_back", PAUSE_MENU_BACK, hold_frames=2)
+            self.tap_once("pause_back", self._main_pt(PAUSE_MENU_BACK, st), hold_frames=2)
             return
 
         # 3. Pre-game menus
@@ -1080,11 +1227,11 @@ class PCRunner:
                 self.handle_skip()
                 return
             if sub_state == 7:
-                self.tap_once("msg_dismiss", DIALOGUE_ADVANCE, hold_frames=2)
+                self.tap_once("msg_dismiss", self._main_pt(DIALOGUE_ADVANCE, st), hold_frames=2)
                 return
             if sub_state == 3:
                 # In field: open Pause Menu
-                self.tap_once("open_pause", HUD_PORTRAIT_MENU, hold_frames=2)
+                self.tap_once("open_pause", self._hud_pt(HUD_PORTRAIT_MENU), hold_frames=2)
                 return
 
     def handle_skip(self):
@@ -1092,10 +1239,10 @@ class PCRunner:
         st = self.get_engine_state()
         if st.get("active_popup_id") == 133:
             # Skip confirmation popup: Yes!
-            self.tap_once("skip_yes", POPUP_CONFIRM, hold_frames=2)
+            self.tap_once("skip_yes", self._main_pt(POPUP_CONFIRM, st), hold_frames=2)
             return
         if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
-            self.tap_once("cutscene_skip", CUTSCENE_SKIP, hold_frames=2)
+            self.tap_once("cutscene_skip", self._main_pt(CUTSCENE_SKIP, st), hold_frames=2)
 
     def handle_nav(self, dir_name: str):
         """Discrete directional navigation for menus and carousels."""
@@ -1141,20 +1288,21 @@ class PCRunner:
             return
 
         if focused and focused.get("kind") == "slider":
+            is_hud = bool(st.get("hud_popup_id"))
             if dir_name == "left":
-                self.tap_once("slider_prev", focused["prev_coord"], hold_frames=2)
+                self.tap_once("slider_prev", self._main_pt(focused["prev_coord"], st, is_hud), hold_frames=2)
                 return
             if dir_name == "right":
-                self.tap_once("slider_next", focused["next_coord"], hold_frames=2)
+                self.tap_once("slider_next", self._main_pt(focused["next_coord"], st, is_hud), hold_frames=2)
                 return
 
         if scroll_boxes and dir_name in ("up", "down"):
             if len(controls) <= 1:
-                self._scroll_box(scroll_boxes[0], dir_name)
+                self._scroll_box(scroll_boxes[0], dir_name, st)
                 return
             next_idx = self._move_focus_2d(controls, self.submenu_focus_idx, dir_name)
             if abs(controls[next_idx]["cy"] - focused["cy"]) < 14.0:
-                self._scroll_box(scroll_boxes[0], dir_name)
+                self._scroll_box(scroll_boxes[0], dir_name, st)
                 return
 
         if len(controls) > 1:
@@ -1188,6 +1336,16 @@ class PCRunner:
                 self.running = False
                 return
 
+            elif event.type == VIDEORESIZE:
+                self.win_w = max(320, int(event.w))
+                self.win_h = max(240, int(event.h))
+                if not self.fullscreen:
+                    self._windowed_size = (self.win_w, self.win_h)
+                if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+                    self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
+                    self.game_w = float(self.rt.gl_bridge.game_w)
+                    self.game_h = float(self.rt.gl_bridge.game_h)
+
             # Mouse / Direct 1:1 Touch
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
                 gx, gy = self.window_to_game_coord(event.pos[0], event.pos[1])
@@ -1202,11 +1360,32 @@ class PCRunner:
 
             # Discrete Keydown Events
             elif event.type == KEYDOWN:
-                if event.key == K_F11:
+                if event.key == K_F8:
+                    self.set_target_fps(60 if self.target_fps == 30 else 30)
+                elif event.key == K_F9:
+                    cur = self.aspect_mode if self.aspect_mode in UI_ASPECT_CYCLE else "original"
+                    nxt = UI_ASPECT_CYCLE[(UI_ASPECT_CYCLE.index(cur) + 1) % len(UI_ASPECT_CYCLE)]
+                    self.set_aspect_mode(nxt, resize_window=True)
+                elif event.key == K_F11:
                     self.fullscreen = not self.fullscreen
-                    flags = DOUBLEBUF | OPENGL | (FULLSCREEN if self.fullscreen else 0)
+                    if self.fullscreen:
+                        self._windowed_size = (self.win_w, self.win_h)
+                        try:
+                            desktop_sizes = pygame.display.get_desktop_sizes()
+                            if desktop_sizes:
+                                self.win_w, self.win_h = desktop_sizes[0]
+                        except Exception:
+                            pass
+                        flags = DOUBLEBUF | OPENGL | FULLSCREEN
+                    else:
+                        self.win_w, self.win_h = getattr(self, "_windowed_size", (480 * self.scale, 320 * self.scale))
+                        flags = DOUBLEBUF | OPENGL | RESIZABLE
                     self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
                     self._apply_win32_icon()
+                    if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+                        self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
+                        self.game_w = float(self.rt.gl_bridge.game_w)
+                        self.game_h = float(self.rt.gl_bridge.game_h)
                 elif event.key == K_F12:
                     self.capture_screenshot()
                 elif event.key in (K_EQUALS, K_PLUS, getattr(pygame, "K_KP_PLUS", K_PLUS)):
@@ -1223,7 +1402,7 @@ class PCRunner:
                 elif event.key in (K_m, K_TAB):
                     st = self.get_engine_state()
                     if st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id"):
-                        self.tap_once("hud_map", HUD_MAP, hold_frames=3)
+                        self.tap_once("hud_map", self._hud_pt(HUD_MAP), hold_frames=3)
                     elif st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
                     elif event.key == K_TAB and st.get("app_state") == 8 and not st.get("active_popup_id"):
@@ -1277,21 +1456,21 @@ class PCRunner:
                     is_field = st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id")
                     if is_field:
                         if event.key in (K_q, K_1):
-                            self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
+                            self.tap_once("potion1", self._hud_pt(HUD_POTION_1), hold_frames=3)
                         elif event.key in (K_k, K_2):
-                            self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
+                            self.tap_once("potion2", self._hud_pt(HUD_POTION_2), hold_frames=3)
                         elif event.key in (K_u, K_3):
-                            self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
+                            self.tap_once("skill1", self._hud_pt(HUD_SKILL_1), hold_frames=2)
                         elif event.key in (K_i, K_4):
-                            self.tap_once("skill2", HUD_SKILL_2, hold_frames=2)
+                            self.tap_once("skill2", self._hud_pt(HUD_SKILL_2), hold_frames=2)
                         elif event.key in (K_o, K_5):
-                            self.tap_once("skill3", HUD_SKILL_3, hold_frames=2)
+                            self.tap_once("skill3", self._hud_pt(HUD_SKILL_3), hold_frames=2)
                         elif event.key == K_j:
-                            self.tap_once("attack1", HUD_ATTACK_PRIMARY, hold_frames=2)
+                            self.tap_once("attack1", self._hud_pt(HUD_ATTACK_PRIMARY), hold_frames=2)
                         elif event.key in (K_l, K_h):
-                            self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
+                            self.tap_once("attack2", self._hud_pt(HUD_ATTACK_SECONDARY), hold_frames=2)
                         elif event.key in (K_p, K_c):
-                            self.tap_once("portrait_menu", HUD_PORTRAIT_MENU, hold_frames=3)
+                            self.tap_once("portrait_menu", self._hud_pt(HUD_PORTRAIT_MENU), hold_frames=3)
                     elif event.key in (K_p, K_c) and st.get("app_state") == 8:
                         self.handle_cancel()
 
@@ -1307,32 +1486,32 @@ class PCRunner:
                 elif btn == 2:  # X (Attack Primary / Skill 1 in field)
                     if is_field:
                         if st.get("combat_mode"):
-                            self.tap_once("pad_attack", HUD_ATTACK_PRIMARY, hold_frames=2)
+                            self.tap_once("pad_attack", self._hud_pt(HUD_ATTACK_PRIMARY), hold_frames=2)
                         else:
-                            self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
+                            self.tap_once("skill1", self._hud_pt(HUD_SKILL_1), hold_frames=2)
                 elif btn == 3:  # Y (Skip cutscene or Secondary Attack in field)
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
                     elif is_field:
-                        self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
+                        self.tap_once("attack2", self._hud_pt(HUD_ATTACK_SECONDARY), hold_frames=2)
                 elif btn == 4:  # LB (Potion 1 in field, Prev Tab/Page in submenus)
                     if is_field:
-                        self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
+                        self.tap_once("potion1", self._hud_pt(HUD_POTION_1), hold_frames=3)
                     elif st.get("app_state") == 8 and not st.get("active_popup_id"):
                         self.handle_page_tab(-1)
                 elif btn == 5:  # RB (Potion 2 in field, Next Tab/Page in submenus)
                     if is_field:
-                        self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
+                        self.tap_once("potion2", self._hud_pt(HUD_POTION_2), hold_frames=3)
                     elif st.get("app_state") == 8 and not st.get("active_popup_id"):
                         self.handle_page_tab(1)
                 elif btn == 6:  # Select (Minimap / Map in field)
                     if is_field:
-                        self.tap_once("hud_map", HUD_MAP, hold_frames=3)
+                        self.tap_once("hud_map", self._hud_pt(HUD_MAP), hold_frames=3)
                 elif btn == 7:  # Start (Pause Menu / Skip / Back)
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
                     elif is_field:
-                        self.tap_once("open_pause", HUD_PORTRAIT_MENU, hold_frames=3)
+                        self.tap_once("open_pause", self._hud_pt(HUD_PORTRAIT_MENU), hold_frames=3)
                     elif st.get("app_state") == 8:
                         self.handle_cancel()
 
@@ -1403,11 +1582,12 @@ class PCRunner:
                 ny = (dy / length) * mag
                 self.facing_x = dx / length
                 self.facing_y = dy / length
-                target_x = DPAD_CENTER[0] + nx * 30.0
-                target_y = DPAD_CENTER[1] + ny * 30.0
+                dpad_center = self._hud_pt(DPAD_CENTER)
+                target_x = dpad_center[0] + nx * 30.0
+                target_y = dpad_center[1] + ny * 30.0
 
                 if "dpad" not in self.active_touches:
-                    self.touch_down("dpad", DPAD_CENTER)
+                    self.touch_down("dpad", dpad_center)
                 self.touch_move("dpad", (target_x, target_y))
             else:
                 if "dpad" in self.active_touches:
@@ -1446,7 +1626,7 @@ class PCRunner:
 
     def capture_screenshot(self) -> Path:
         pixels = glReadPixels(0, 0, self.win_w, self.win_h, GL_RGBA, GL_UNSIGNED_BYTE)
-        img = Image.frombytes("RGBA", (self.win_w, self.win_h), pixels).transpose(Image.FLIP_TOP_BOTTOM)
+        img = Image.frombytes("RGBA", (self.win_w, self.win_h), pixels).transpose(Image.FLIP_TOP_BOTTOM).convert("RGB")
         out_dir = ROOT / "reference" / "analysis"
         out_dir.mkdir(parents=True, exist_ok=True)
         ts = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1455,16 +1635,26 @@ class PCRunner:
         print(f"[HL3 PC] Screenshot saved to: {out_path.relative_to(ROOT)}")
         return out_path
 
+    def step_frame(self):
+        self.poll_input()
+        if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+            st = self.get_engine_state()
+            self.rt.gl_bridge.set_world_active(st.get("app_state", 0) not in (0, 1, 256))
+            self.game_w = float(self.rt.gl_bridge.game_w)
+            self.game_h = float(self.rt.gl_bridge.game_h)
+            self.rt.gl_bridge.begin_frame()
+        self.rt.send(self.delegate, "onTimer:", 0)
+
     def run(self):
         self.running = True
         frame = 0
-        print("[HL3 PC] Main loop started (60 FPS). Press F12 for screenshot, Escape to exit or close window.")
+        print(
+            f"[HL3 PC] Main loop started ({self.target_fps} FPS, Aspect={self.aspect_mode.upper()}). "
+            "F8=FPS, F9=Aspect, F11=Fullscreen, F12=Screenshot, Esc=Back/Pause."
+        )
         while self.running:
-            self.poll_input()
-            if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
-                self.rt.gl_bridge.begin_frame()
-            self.rt.send(self.delegate, "onTimer:", 0)
-            self.clock.tick(60)
+            self.step_frame()
+            self.clock.tick(self.target_fps)
             frame += 1
             if self.headless_frames > 0 and frame >= self.headless_frames:
                 print(f"[HL3 PC] Reached target {self.headless_frames} frames in test mode.")
@@ -1474,6 +1664,7 @@ class PCRunner:
         print("[HL3 PC] Shutting down...")
         if hasattr(self.rt, "audio_mixer"):
             self.rt.audio_mixer.save_config()
+        self._save_display_prefs()
         pygame.quit()
 
 
@@ -1482,10 +1673,18 @@ def main():
         parser = argparse.ArgumentParser(description="Heroes Lore 3 PC Native Host Runner")
         parser.add_argument("--scale", type=int, default=2, help="Window scale factor (default: 2 -> 960x640)")
         parser.add_argument("--fullscreen", action="store_true", help="Launch in fullscreen mode")
+        parser.add_argument("--aspect", choices=("original", "3:2", "16:9", "16:10", "20:9", "4:3", "auto"), default=None, help="Aspect mode (original, 16:9, auto)")
+        parser.add_argument("--fps", type=int, choices=(30, 60), default=None, help="Target FPS cap (30 or 60)")
         parser.add_argument("--frames", type=int, default=0, help="Run for N frames then exit (automated testing)")
         args = parser.parse_args()
 
-        runner = PCRunner(scale=args.scale, fullscreen=args.fullscreen, headless_frames=args.frames)
+        runner = PCRunner(
+            scale=args.scale,
+            fullscreen=args.fullscreen,
+            headless_frames=args.frames,
+            aspect_mode=args.aspect,
+            target_fps=args.fps,
+        )
         runner.run()
     except BaseException as exc:
         import traceback

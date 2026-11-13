@@ -232,5 +232,25 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Roteiro vivo ponta a ponta percorrendo Campo -> Pausa -> 6 submenus -> `PREFERENCES`/`HELP`/`SAVE`/`MAIN MENU` -> Campo executado com saída 0 e capturas verificadas visualmente.
      - Suíte unitária ampliada para 26 testes em `tests/` (todos `OK` em 10.0s) e `dist/HeroesLore3_PC/HeroesLore3.exe --frames 30` validado com saída 0.
 
+---
+
+## 2026-11-13 - Sessão 12 (`S08`): FPS Configurável (`30`/`60`), True Widescreen (`Original`/`16:9`/`Auto`), `GameCtx` (`0x000d8270`) e Trampolim de Flush GL
+
+- **Relatório completo**: `research/sessions/2026-11-13-12.md`
+- **Descobertas verificáveis e correções críticas**:
+  1. **Benchmark de FPS (`30` padrão vs `60` opcional)**:
+     - Em campo livre, a emulação ARMv6 consumiu `28,33 ms/frame` em `480x320` e `23,03–32,72 ms/frame` em `16:9`. Definido `DEFAULT_FPS_TARGET = 30` para estabilidade contínua de pacing, com alternância ao vivo para `60 FPS` via `F8` / `--fps 60`, apoiada pelos shims nativos em `tools/hl3rt/fast_stubs.py` (`__divsi3`, `__modsi3`, `__udivsi3`, `__umodsi3`, `glGetError`, `_Unwind_SjLj_*`).
+  2. **Endereços Exatos de Viewport/Câmera no Mach-O (`0x00039d28` e `GameCtx` `0x000d8270`)**:
+     - Desmontagem de `0x00039d28` confirmou `ldr r0, [pc]; bx lr; .word 0x000d8270`: o getter devolve o próprio endereço estático de `GameCtx`, não um ponteiro indireto.
+     - Atualizar diretamente `0x000d8270 + 0x40/0x44` e `+0x5e60..0x5e7c` expande imediatamente os limites de câmera e culling do mapa sem faixas pretas laterais ou verticais em `16:9`, `20:9` e `4:3`.
+  3. **Centralização de `ui_main` via Projeção OpenGL e Trampolim `UI_FLUSH_RETURN_STUB` (`0x0000c688`)**:
+     - Desenhos diretos de `LEVEL 1` (`0x6ee44`) e barras HP/MP (`0x6f8a8`, `0x6f984`) usam posição crua do nó; mover o deslocamento para `GLBridge.set_ui_offset(ui_dx, ui_dy)` (`glOrtho` e `glScissor`) alinhou todas as barras/textos pixel a pixel.
+     - Como o renderizador acumula quads em lote e só esvazia via `0x0000c688(gfx)`, redirecionar brevemente via `UI_FLUSH_RETURN_STUB` (`0x7F100020`) antes de alternar `ui_offset` em `0x74e1c`/`0x74e54`/`0x74e8c`/`0x74f00`/`0x51f90`/`0x52140` eliminou o deslocamento de `ITEMS`/`QUESTS`/`SYSTEM` no menu de pausa e popups.
+  4. **Redimensionamento SDL2/Win32 Seguro**:
+     - `Window.from_display_module().size` no Windows gerava crash no Pygame 2.6.1; substituído por Win32 `AdjustWindowRectEx` + `SetWindowPos` no HWND da janela mantendo o contexto OpenGL intacto através de múltiplos resizes seguidos.
+  5. **Validação**:
+     - Capturas em `16:9`, `4:3`, `20:9` (campo, pause, submenu equipment, system, popup help e minimapa HUD) inspecionadas visualmente sem distorções.
+     - `37/37` testes unitários passando (`OK`) e `dist/HeroesLore3_PC/HeroesLore3.exe` validado em modo padrão (`Original 30 FPS`), `--aspect 16:9 --fps 30` e `--aspect auto --fps 60` com saída `0`.
+
 
 

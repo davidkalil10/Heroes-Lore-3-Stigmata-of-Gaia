@@ -3,55 +3,52 @@
 ## Estado Atual
 
 - **Fase**: `pc_playable_complete`
-- **Etapas concluídas**: `S00`, `S01`, `S02`, `S03`, `S04`, `S05`, `S06`, `S07`
-- **Etapa ativa (`current_step`)**: `S08` (`True Widescreen e expansão de viewport`)
-- **Objetivo alcançado nesta sessão**: **Corrigido definitivamente o ícone do Windows (título da janela e barra de tarefas sem a cobrinha do Pygame) usando `iTunesArtwork` 512x512 oficial em 7 resoluções (`assets/icon.ico`), `AppUserModelID` dedicado e `WM_SETICON`/`SetClassLongPtrW` nativos no SDL e no console; implementada navegação completa e 100% funcional por teclado e gamepad em TODOS os submenus in-game (`CHARACTER`, `EQUIPMENT`, `SKILLS`, `ITEMS`, `QUESTS`, `SYSTEM`, `PREFERENCES`, `HELP`) e diálogos Sim/Não (`SAVE`, `MAIN MENU`) via leitor dinâmico da árvore viva de controles `UIControl`. 26 testes unitários e build standalone (`dist/HeroesLore3_PC/HeroesLore3.exe`) validados com saída 0.**
+- **Etapas concluídas**: `S00`, `S01`, `S02`, `S03`, `S04`, `S05`, `S06`, `S07`, `S08`
+- **Etapa ativa (`current_step`)**: `S09` (`Extração de textos, fontes (.rff/.pvr) e base EN`)
+- **Objetivo alcançado nesta sessão**: **Etapa `S08` concluída e entregue na build standalone ([`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe)): seleção em tempo real de FPS (`30` padrão calibrado / `60` opcional via `F8` ou `--fps`), seleção de proporção de tela (`Original 3:2`, `16:9` ou `Auto` via `F9` ou `--aspect`), redimensionamento livre de janela (`RESIZABLE` + Win32 `SetWindowPos`) com True Widescreen real renderizando mais cenário sem esticar HUD, sprites ou menus, persistência em `config/display.json` e 37 testes unitários passando.**
 
 ## O que foi feito e validado nesta sessão
 
-1. **Correção Definitiva do Ícone Nativo no Windows 11**:
-   - Extraído `iTunesArtwork` (512x512 RGBA PNG) do `assets/game.ipa` original para [`assets/icon.png`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/assets/icon.png) e gerado [`assets/icon.ico`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/assets/icon.ico) com 7 resoluções embutidas `(16, 24, 32, 48, 64, 128, 256)`.
-   - Atualizados [`PCRunner._init_window`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), [`_resolve_icon_path`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) e [`_apply_win32_icon`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) em `tools/run_pc.py` para registrar `SetCurrentProcessExplicitAppUserModelID("DavidBraga.HeroesLore3.Recomp.PC")`, chamar `pygame.display.set_icon()` antes de `set_mode()` e aplicar `HICON` via `LoadImageW` + `SendMessageW(WM_SETICON)` + `SetClassLongPtrW(GCLP_HICON / GCLP_HICONSM)` na janela principal e console após `set_mode()` e `F11`.
-   - Verificado ao vivo: `WM_GETICON` e `GCLP` retornam handles válidos idênticos aos `HICON` carregados e o executável [`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe) possui recurso embarcado (`ExtractIconExW == 2`) + `icon.ico` na pasta `assets/`.
+1. **Taxa de Quadros (`30` vs `60` FPS) e Otimizações Auxiliares (`fast_stubs`)**:
+   - Medido o custo de emulação ARMv6 em campo livre (`28,33 ms/f` em `480x320` e `23,03–32,72 ms/f` em `16:9`); adotado **`30 FPS` como padrão estável** para evitar oscilação de ritmo, mantendo **`60 FPS` alternável ao vivo (`F8`)** ou via `--fps 60`, com persistência em [`config/display.json`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/config/display.json).
+   - Adicionado [`tools/hl3rt/fast_stubs.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/fast_stubs.py) com atalhos nativos verificados contra oráculo (`tests/test_fast_stubs.py`) para `__divsi3`, `__modsi3`, `__udivsi3`, `__umodsi3`, `glGetError` e cadeia SJLJ.
 
-2. **Navegação Completa por Teclado & Gamepad em Todos os Submenus e Popups**:
-   - Expostos `main_form`, `main_popup` e `hud_popup` em [`get_engine_state`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) para leitura em tempo real da árvore nativa de `UIControl`.
-   - Implementados [`_collect_subtree_controls`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), [`get_focusable_controls`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), [`_sync_focus`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), [`_move_focus_2d`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), [`_scroll_box`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), [`handle_page_tab`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) e cursor dourado dinâmico em [`_draw_focus_rect`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py):
-     - **Padrão de visibilidade**: lê somente nós ativos `(vis & 0x0003) == 0x0003`, ocultando botões desabilitados (`vis=0x0002`) e containers inativos (`vis=0x0001`), e isola overlays ativos em primeiro plano (`837`/`836` em `ITEMS`, `4708` em `QUESTS`).
-     - **`CHARACTER` (`form=5`) e `EQUIPMENT` (`form=6`)**: movimentação livre entre status, 3x3 equipado, 3x3 mochila, pílulas inferiores, paginação e botões `+`/`-` quando disponíveis.
-     - **`SKILLS` (`form=10`)**: alternância direta entre `PASSIVE`, `PRIMARY` e `SECONDARY` via `Tab` / `LB` / `RB` / `[` / `]` ou navegação pelas setas, além dos 6 slots de skill e 5 quickslots.
-     - **`ITEMS` (`form=8`)**: seleção na grade 8x2 com foco preservado por `cid` ao habilitar `USE (883)` e `DROP (823)` para consumíveis (testado ao vivo no slot `807`), paginação (`< 818` / `> 817`) e quickslots.
-     - **`QUESTS` (`form=46`)**: filtragem do botão de retorno `4709` em `(28,28)` na lista principal, abertura do detalhe `4708` no `Enter`/`A`, rolagem do texto com `Up`/`Down` e fechamento apenas do detalhe no primeiro `Esc`/`B`.
-     - **`SYSTEM` (`form=3`) / `PREFERENCES` (`form=112`) / `HELP` (`form=118`) / Popups `SAVE (4)` e `MAIN MENU (106)`**: ajuste de sliders (`ctype=13`) diretamente com `Esquerda`/`Direita` (`< 198` e `> 197`), rolagem + paginação `1/8..8/8` no `HELP` e alternância de foco Sim/Não nos popups de confirmação.
-   - Corrigida tecla `S` (`K_s`) para navegar para baixo no menu de pausa/submenus fora de cutscenes, adicionado suporte ao **analógico esquerdo** e repetição de D-Pad em menus/popups, e isolados os atalhos de poções/skills/ataque exclusivamente ao estado de campo aberto (`is_field`).
+2. **True Widescreen Sem Distorção (`Original 3:2` / `16:9` / `Auto`)**:
+   - Criado [`tools/hl3rt/display.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/display.py) calculando `ViewportLayout` sem esticar pixels em qualquer tamanho de janela (`Original` centraliza `480x320`; `16:9` expande o viewport horizontal para ~`569x320`; `Auto` adapta o mundo à proporção da janela/monitor — ex.: `711x320` em `20:9` e `480x360` em `4:3`).
+   - Descoberto que [`0x00039d28`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/widescreen.py) retorna diretamente o endereço estático `0x000d8270` (`GameCtx`); [`tools/hl3rt/widescreen.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/widescreen.py) sincroniza `+0x40/+0x44` e `+0x5e60..0x5e7c` além de aplicar imediatos ARM `MOV` múltiplos de 4 para expandir câmera e culling do mapa.
+   - Mantidas telas pré-jogo (`app_state in (0, 1, 256)`) centralizadas em `480x320` em [`GLBridge`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/gl_bridge.py) enquanto Gameplay/Campo expande de borda a borda e a HUD permanece ancorada às margens.
+   - Corrigidos os submenus (`LEVEL 1` em `0x6ee44`, barras HP/MP em `0x6f8a8`/`0x6f984`) e botões do Menu de Pausa centralizando `ui_main` via `GLBridge.set_ui_offset(ui_dx, ui_dy)` (`glOrtho`/`glScissor`) com drenagem prévia do batcher de sprites (`0x0000c688`) pelo trampolim `UI_FLUSH_RETURN_STUB` (`0x7F100020`).
+   - Corrigido o crash de redimensionamento SDL2 no Windows (`F9`) em [`PCRunner._resize_window`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) via Win32 `AdjustWindowRectEx` + `SetWindowPos`, preservando toques do mouse, teclado e gamepad em `_main_pt` e `_hud_pt`.
 
-3. **Validação Completa e Build Finalizada**:
-   - Playtest automatizado ponta a ponta percorrendo Campo -> Menu de Pausa -> todos os 6 submenus -> `PREFERENCES` -> `HELP` -> popups `SAVE` / `MAIN MENU` -> retorno ao Campo concluído com código 0 e screenshots inspecionados.
-   - Suíte [`tests/test_run_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_run_pc.py) ampliada com validação do `.ico`/`.png` e navegação em grade/popups/`K_s`/analógico (`python -m unittest discover -s tests -v`: **26/26 testes `OK`**).
-   - Executável standalone reconstruído via `tools/build_standalone_pc.py` e validado em execução limpa com `.\dist\HeroesLore3_PC\HeroesLore3.exe --frames 30` (saída `0`).
+3. **Testes e Distribuição Standalone Validados**:
+   - Capturas visuais em `16:9`, `4:3` e `20:9` (campo, pause, submenu Equipment, System, Help popup e minimapa HUD) verificadas visualmente sem cortes, faixas brancas nem esticamento.
+   - `python -m unittest discover -s tests -v`: **37/37 testes `OK`** (incluindo [`tests/test_viewport_aspect.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_viewport_aspect.py) e [`tests/test_fast_stubs.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_fast_stubs.py)).
+   - Recompilado [`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe) com README atualizado (`F8`/`F9`/`--aspect`/`--fps`) e validado executando diretamente `--frames 30`, `--aspect 16:9 --fps 30 --frames 30` e `--aspect auto --fps 60 --frames 30` (todos com saída `0`).
 
 ## O que ficou pendente
 
-- **`S08`** (`True Widescreen e expansão de viewport`) e etapas seguintes (`S09`..`S14`).
+- **`S09`** (`Extração de textos, fontes (.rff/.pvr) e base EN`) e etapas seguintes (`S10`..`S14`).
 
-## Próximo Passo Concreto (`S08`)
+## Próximo Passo Concreto (`S09`)
 
-1. Ler `docs/tasks/S08_VIEWPORT_EXPANSION.md`.
-2. Expandir a projeção ortográfica `glOrthof` (base 480x320) para proporções `16:9`, `16:10` e `20:9` mantendo a HUD ancorada nas bordas sem distorção.
+1. Ler `docs/tasks/S09_TEXT_EXTRACTION.md`.
+2. Catalogar todas as strings de `dat/InGame_txt`, `en.lproj/Localizable.strings`, `help_text.txt`, `dmg_strings.txt` e `store_strings.txt` e mapear os glifos das fontes `.rff`/`.pvr` como base para a tradução PT-BR em tempo real (`S10`).
 
 ## Comandos de Retomada e Execução
 
 Para rodar a versão standalone portátil no PC (sem precisar de Python):
 ```powershell
 .\dist\HeroesLore3_PC\HeroesLore3.exe
+# ou escolher proporcao / FPS inicial:
+.\dist\HeroesLore3_PC\HeroesLore3.exe --aspect 16:9 --fps 30
+.\dist\HeroesLore3_PC\HeroesLore3.exe --aspect auto --fps 60
 ```
 
-Para rodar diretamente via script Python:
-```powershell
-python tools/run_pc.py
-```
+Atalhos ao vivo novos de exibição:
+- **`F8`**: alterna entre `30 FPS` (padrão) e `60 FPS`.
+- **`F9`**: alterna entre `Original (3:2)`, `16:9` e `Auto` (preenche a janela/tela sem esticar; você também pode arrastar as bordas da janela livremente).
 
-Para validar a integridade do workspace e rodar todos os testes:
+Para validar o workspace e rodar todos os testes:
 ```powershell
 python tools/verify_workspace.py
 python tools/project_status.py show

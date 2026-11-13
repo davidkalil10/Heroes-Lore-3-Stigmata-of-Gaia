@@ -5,12 +5,12 @@ Este arquivo é gerado automaticamente a partir de `docs/STATUS.json` por `pytho
 - **Projeto**: Heroes Lore 3: Stigmata of Gaia Recomp
 - **Atualizado em**: `2026-11-13`
 - **Fase geral**: `pc_playable_complete`
-- **Etapa atual**: `S08`
-- **Próxima etapa recomendada**: `S08`
+- **Etapa atual**: `S09`
+- **Próxima etapa recomendada**: `S09`
 
 ## Resumo Executivo
 
-Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) com icone oficial 512x512 do iTunesArtwork (7 resolucoes no icon.ico + AppUserModelID + Win32 WM_SETICON/SetClassLongPtrW na janela SDL e console) e navegacao completa 100% funcional por teclado e gamepad em TODOS os menus, submenus (CHARACTER, EQUIPMENT, SKILLS, ITEMS, QUESTS, SYSTEM, PREFERENCES, HELP) e popups modais (SAVE, MAIN MENU) orientada pela arvore viva de controles (UIControl vis=0x0003, frect, sliders ctype=13, scroll ctype=10, analógico esquerdo e LB/RB/Tab). 26 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).
+S08 concluida: True Widescreen real (Original 3:2 / 16:9 / Auto, janela redimensionavel e atalho F9) sem esticar sprites/HUD/menus via expansao de viewport GLES1 + GameCtx (0x000d8270) + trampolim UI_FLUSH_RETURN_STUB (0x0000c688), FPS configuravel (30 padrao calibrado / 60 opcional via F8 ou --fps) com persistencia em config/display.json, otimizacao fast_stubs e build standalone (dist/HeroesLore3_PC/HeroesLore3.exe) validada em 37 testes unitarios. Proxima etapa: S09 (Extracao de textos e fontes).
 
 ## Etapas
 
@@ -24,7 +24,7 @@ Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) com icone ofi
 | `S05` | Validacao de gameplay completo no PC (Teclado + Gamepad) | `done` | `docs/tasks/S05_GAMEPLAY_VALIDATION.md`, `tools/run_pc.py`, `reference/analysis/title_before_touch.png`, `reference/analysis/title_after_touch.png` | Validacao interativa e automatizada com resposta comprovada a toques centrais e botoes no title screen e menus (82.6% de variacao de pixels apos toque no centro). Testes automatizados executam 120 frames sem crashes. |
 | `S06` | Subsistema de audio (OpenAL + AVAudioPlayer/MP3 + WAV) | `done` | `docs/tasks/S06_AUDIO_SUBSYSTEM.md`, `tools/hl3rt/hle_audio.py`, `config/audio.json`, `tests/test_audio_subsystem.py`, `research/sessions/2026-11-09-04.md` | Subsistema de audio concluido: 28 WAVs (OpenAL) e 20 MP3s (AVAudioPlayer) auditados e funcionais. Mixer expandido para 64 canais virtuais fora do callback SDL, suporte a AL_GAIN/AL_PITCH/AL_LOOPING, consulta precisa de AL_SOURCE_STATE via channel.get_busy(), AVAudioPlayer com duration/currentTime/isPlaying/fading, atalhos de volume (+/-/M) e persistencia em config/audio.json. |
 | `S07` | Performance de CPU / Blocos Quentes AOT + Oraculo Unicorn | `done` | `docs/tasks/S07_CPU_PERFORMANCE.md`, `tools/profile_phases.py`, `reference/analysis/cpu_profile_phases.json`, `tools/generate_aot_blocks.py`, `tools/hl3rt/aot_blocks.py`, `src/arm_hot_blocks.inc`, `tools/verify_aot_oracle.py`, `reference/analysis/aot_oracle_report.json`, `tests/test_aot_hot_blocks.py`, `research/sessions/2026-11-09-05.md` | Profiling por fase concluido, catalogando hotspots criticos (laco de renderizacao de sprites em 0xf6a0..0xf720 e thunks em 0x8bfe0). Gerados 28 blocos AOT com guarda estrita de opcodes em aot_blocks.py e src/arm_hot_blocks.inc, 100% verificados contra o oraculo Unicorn em estados normais e de borda. |
-| `S08` | True Widescreen e expansao de viewport | `pending` | `docs/tasks/S08_VIEWPORT_EXPANSION.md` | Expansao real de camera/viewport em 16:9, 16:10, 20:9 e 4:3 sem esticar HUD. |
+| `S08` | True Widescreen, expansao de viewport e FPS (30/60) | `done` | `docs/tasks/S08_VIEWPORT_EXPANSION.md`, `tools/hl3rt/display.py`, `tools/hl3rt/widescreen.py`, `tools/hl3rt/gl_bridge.py`, `tools/hl3rt/hle_gl.py`, `tools/hl3rt/fast_stubs.py`, `tools/run_pc.py`, `tools/build_standalone_pc.py`, `tests/test_viewport_aspect.py`, `tests/test_fast_stubs.py`, `research/sessions/2026-11-13-12.md` | FPS configuravel (30 padrao calibrado via benchmark em campo / 60 via F8 ou --fps) e proporcao selecionavel ao vivo (Original 3:2, 16:9, Auto via F9 ou --aspect) com expansao real de cenario via GameCtx (0x000d8270), ancora de HUD, centralizacao de menus/popups via GLBridge ui_offset + trampolim UI_FLUSH_RETURN_STUB, resize Win32 seguro e 37/37 testes passando. |
 | `S09` | Extracao de textos, fontes (.rff/.pvr) e base EN | `pending` | `docs/tasks/S09_TEXT_EXTRACTION.md` | Catalogacao das strings de dat/InGame_txt, Localizable.strings, help_text.txt, dmg_strings.txt e store_strings.txt. |
 | `S10` | Traducao PT-BR e troca de idioma em tempo real (EN / PT-BR) | `pending` | - | Traducao completa PT-BR com alternancia imediata em runtime sem reiniciar o app. |
 | `S11` | Menu nativo de opcoes, Cloud Save (Google Drive) e OTA Updater | `pending` | - | Modal nativo (F10/R3/botao), backup/restore atomico no Google Drive e atualizador GitHub Releases. |

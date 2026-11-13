@@ -366,6 +366,29 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Janela do jogo e barra de tarefas no Windows 11 exibem consistentemente o ícone oficial do Heroes Lore III, validado no executável standalone (`ExtractIconExW == 2`, `WM_GETICON` não-nulo).
   - Todos os 6 submenus, sliders de `PREFERENCES`, paginação/rolagem de `HELP` e `QUESTS`, seleção/uso de itens em `ITEMS`, abas/slots de `SKILLS`/`EQUIPMENT`/`CHARACTER` e diálogos Sim/Não (`SAVE`/`MAIN MENU`) são 100% operáveis por teclado e gamepad, validados em teste vivo ponta a ponta e em 26 testes unitários passando.
 
+---
+
+## ADR-019: FPS Configurável (`30`/`60`), True Widescreen Dinâmico (`Original`/`16:9`/`Auto`), Trampolim `UI_FLUSH_RETURN_STUB` e Resize Win32 Seguro
+
+- **Data**: 2026-11-13
+- **Status**: Aceito
+- **Contexto**:
+  - Após o marco estável `S07` (`b01e589`), era necessário implementar duas melhorias estruturais antes dos próximos alvos:
+    1. Seleção de taxa de quadros alvo (`30` ou `60` FPS), calibrada por medição real em cena de campo para evitar travamentos ou ritmo oscilante.
+    2. Seleção de proporção de tela (`Original 3:2`, `16:9` widescreen real e `Auto` acompanhando dinamicamente a janela/tela cheia em razões como `20:9` e `4:3`), renderizando mais área de cenário ao redor do personagem sem esticar pixels, sprites, HUD ou menus.
+  - **Descobertas Técnicas**:
+    1. *Benchmark em campo*: A emulação Unicorn ARMv6 em cena de campo consumiu `28,33 ms/frame` (máx. ~35 FPS) em `480x320` e `23,03–32,72 ms/frame` em `16:9` (`~569x320`). O padrão `30 FPS` mantém ritmo constante do código guest sem quedas; `60 FPS` permanece selecionável ao vivo via `F8` ou `--fps 60` (e acelerado pelos novos shims de divisão/error/sjlj em `tools/hl3rt/fast_stubs.py`).
+    2. *`GameCtx` estático em `0x000d8270`*: O getter `0x00039d28` retorna diretamente `0x000d8270` (`ldr r0, [pc]; bx lr`). Campos `+0x40/+0x44` e `+0x5e60..+0x5e7c` controlam largura/altura de câmera e culling; imediatos `MOV` `480`/`320` nas rotinas de setup são atualizados para múltiplos de 4 (`encode_arm_rot_imm`).
+    3. *Deslocamento de `ui_main`, `LEVEL 1`, barras HP/MP e Batcher `0x0000c688`*: Funções como `0x6ee44` e `0x6f8a8` leem `[node+8]`/`[node+0x18]` brutos ignorando offsets em registradores, e o motor acumula vértices num batcher antes de emitir `glOrthof` + `glDrawArrays` via `0x0000c688`. Deslocar `ui_main` via registradores entortava barras de HP/MP no submenu `EQUIPMENT`, enquanto trocar `GLBridge._ui_offset` no meio de `0x74e1c`..`0x52140` sem drenar o batcher deslocava pílulas de pause (`ITEMS`/`QUESTS`/`SYSTEM`).
+    4. *Crash do `Window.from_display_module().size` no Windows SDL2*: Alterar o tamanho da janela via objeto `Window` do Pygame 2.6.1 disparava Access Violation no `pygame.event.get()`.
+- **Decisão**:
+  1. Criar [`tools/hl3rt/display.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/display.py) com `DEFAULT_FPS_TARGET = 30`, `DEFAULT_ASPECT_MODE = "original"`, `UI_ASPECT_CYCLE = ("original", "16:9", "auto")`, cálculo zero-stretch `compute_viewport_layout()` e persistência em `config/display.json`.
+  2. Criar [`tools/hl3rt/widescreen.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/widescreen.py) sincronizando `ctx = 0x000d8270`, preservando telas de arte estáticas (`app_state in (0, 1, 256)`) centralizadas em `480x320`, traduzindo toques em `_on_ui_root_touch` e usando o stub de retorno `UI_FLUSH_RETURN_STUB` (`0x7F100020`) para invocar `0x0000c688(gfx)` antes de alterar `GLBridge.set_ui_offset(ui_dx, ui_dy)`.
+  3. Atualizar [`tools/hl3rt/gl_bridge.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/gl_bridge.py) (`ortho_f`, `scissor`, `set_ui_offset`, `set_world_active`) e [`tools/run_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) com `--aspect`, `--fps`, atalhos `F8`/`F9`/`F11`, janela `RESIZABLE`, `_resize_window()` via Win32 `AdjustWindowRectEx` + `SetWindowPos`, e ajuste de clique em `_ui_main_offset` / `_hud_pt`.
+- **Consequências**:
+  - `Original` (pillarbox/letterbox `3:2`), `16:9` (~`569x320` visíveis) e `Auto` (`480x360` em `4:3`, `711x320` em `20:9` ou janela livre) exibem cenário expandido nas bordas sem nenhuma distorção, com HUD ancorada nas margens e menus/submenus/popups centralizados com alinhamento perfeito de barras e botões.
+  - Alternância de FPS (`F8`) e proporção (`F9`) ocorre em tempo real sem perder texturas GL nem derrubar a janela no Windows.
+
 
 
 

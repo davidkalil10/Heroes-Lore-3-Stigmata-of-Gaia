@@ -316,6 +316,16 @@ def _gl_fb_ops(rt):
     return 0
 
 
-@func("_glDeleteTextures|_glDeleteBuffers|_glDeleteFramebuffersOES|_glDeleteRenderbuffersOES|_glFlush|_glFinish")
+@func("_glDeleteTextures")
+def _gl_delete_textures(rt):
+    m = rt.m
+    n, ptr = m.reg(0), m.reg(1)
+    if getattr(rt, "gl_bridge", None) and ptr and n > 0:
+        ids = [m.rd32(ptr + 4 * i) for i in range(n)]
+        rt.gl_bridge.delete_textures(ids)
+    return 0
+
+
+@func("_glDeleteBuffers|_glDeleteFramebuffersOES|_glDeleteRenderbuffersOES|_glFlush|_glFinish")
 def _gl_noops(rt):
     return 0
