@@ -41,6 +41,7 @@ class S08ViewportAndFPSUnitTests(unittest.TestCase):
         self.assertEqual(normalize_aspect_mode("3:2"), "original")
         self.assertEqual(normalize_aspect_mode("16:9"), "16:9")
         self.assertEqual(normalize_aspect_mode("auto"), "auto")
+        self.assertEqual(normalize_aspect_mode(None), "auto")
 
     def test_display_config_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -162,6 +163,34 @@ class S08ViewportAndFPSUnitTests(unittest.TestCase):
             runner._hud_pt(BTN_ATTACK),
             (BTN_ATTACK[0] + runner.rt.gl_bridge.layout.hud_dx_right, BTN_ATTACK[1]),
         )
+
+    def test_osd_banner_and_default_auto_aspect(self):
+        runner = PCRunner(scale=2, headless_frames=1)
+        self.assertEqual(runner.aspect_mode, "auto")
+        self.assertEqual(runner.target_fps, 30)
+
+        runner.set_target_fps(60, notify=True)
+        self.assertEqual(runner.target_fps, 60)
+        self.assertIn("60 FPS", runner._osd_title)
+        self.assertGreater(runner._osd_until, runner._osd_started)
+
+        surf = runner._build_osd_surface(
+            runner._osd_badge,
+            runner._osd_title,
+            runner._osd_subtitle,
+            runner._osd_accent,
+            1.5,
+        )
+        self.assertGreater(surf.get_width(), 180)
+        self.assertGreater(surf.get_height(), 40)
+
+        runner.set_aspect_mode("16:9", resize_window=False, notify=True)
+        self.assertEqual(runner.aspect_mode, "16:9")
+        self.assertIn("16:9", runner._osd_title)
+
+        runner.set_aspect_mode("auto", resize_window=False, notify=True)
+        self.assertEqual(runner.aspect_mode, "auto")
+        self.assertIn("AUTO", runner._osd_title)
 
 
 if __name__ == "__main__":

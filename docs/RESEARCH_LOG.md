@@ -246,11 +246,12 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   3. **Centralização de `ui_main` via Projeção OpenGL e Trampolim `UI_FLUSH_RETURN_STUB` (`0x0000c688`)**:
      - Desenhos diretos de `LEVEL 1` (`0x6ee44`) e barras HP/MP (`0x6f8a8`, `0x6f984`) usam posição crua do nó; mover o deslocamento para `GLBridge.set_ui_offset(ui_dx, ui_dy)` (`glOrtho` e `glScissor`) alinhou todas as barras/textos pixel a pixel.
      - Como o renderizador acumula quads em lote e só esvazia via `0x0000c688(gfx)`, redirecionar brevemente via `UI_FLUSH_RETURN_STUB` (`0x7F100020`) antes de alternar `ui_offset` em `0x74e1c`/`0x74e54`/`0x74e8c`/`0x74f00`/`0x51f90`/`0x52140` eliminou o deslocamento de `ITEMS`/`QUESTS`/`SYSTEM` no menu de pausa e popups.
-  4. **Redimensionamento SDL2/Win32 Seguro**:
-     - `Window.from_display_module().size` no Windows gerava crash no Pygame 2.6.1; substituído por Win32 `AdjustWindowRectEx` + `SetWindowPos` no HWND da janela mantendo o contexto OpenGL intacto através de múltiplos resizes seguidos.
+  4. **Redimensionamento, Maximização SDL2/Win32 e Banner OSD Estilizado**:
+     - Em Windows 11/Pygame 2.6.1, `pygame.display.get_surface().get_size()` permanece no tamanho inicial após maximizar via barra de título, enquanto `pygame.display.get_window_size()` retorna imediatamente a área cliente real (`1536x793`). Definido `DEFAULT_ASPECT_MODE = "auto"` (preenchendo Full Wide automaticamente ao maximizar/tela cheia sem barras pretas), leitura contínua de tamanho + eventos SDL2 (`WINDOWSIZECHANGED`/`WINDOWMAXIMIZED`) e verificação `IsZoomed` no `F9`.
+     - Implementado aviso estilizado OSD no topo da tela (`show_osd` / `_draw_osd`) renderizado em OpenGL com textura cacheada, borda dourada/safira e fade-in/fade-out ao vivo nos atalhos `F8` (FPS), `F9` (Proporção) e `F11` (Tela Cheia).
   5. **Validação**:
-     - Capturas em `16:9`, `4:3`, `20:9` (campo, pause, submenu equipment, system, popup help e minimapa HUD) inspecionadas visualmente sem distorções.
-     - `37/37` testes unitários passando (`OK`) e `dist/HeroesLore3_PC/HeroesLore3.exe` validado em modo padrão (`Original 30 FPS`), `--aspect 16:9 --fps 30` e `--aspect auto --fps 60` com saída `0`.
+     - Capturas em `16:9`, `4:3`, `20:9` e janela maximizada (`1536x793`) inspecionadas visualmente com cenário de borda a borda e OSD estilizado legível.
+     - `38/38` testes unitários passando (`OK`) e `dist/HeroesLore3_PC/HeroesLore3.exe` validado em modo padrão (`Auto 30 FPS`), `--aspect 16:9 --fps 30` e `--aspect original --fps 60` com saída `0`.
 
 
 

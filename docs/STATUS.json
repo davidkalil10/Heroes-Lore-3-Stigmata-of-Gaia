@@ -5,7 +5,7 @@
   "overall_phase": "pc_playable_complete",
   "current_step": "S09",
   "next_recommended_step": "S09",
-  "summary": "S08 concluida: True Widescreen real (Original 3:2 / 16:9 / Auto, janela redimensionavel e atalho F9) sem esticar sprites/HUD/menus via expansao de viewport GLES1 + GameCtx (0x000d8270) + trampolim UI_FLUSH_RETURN_STUB (0x0000c688), FPS configuravel (30 padrao calibrado / 60 opcional via F8 ou --fps) com persistencia em config/display.json, otimizacao fast_stubs e build standalone (dist/HeroesLore3_PC/HeroesLore3.exe) validada em 37 testes unitarios. Proxima etapa: S09 (Extracao de textos e fontes).",
+  "summary": "S08 concluida: True Widescreen real com Auto como padrao (expande instantaneamente em Full Wide ao maximizar, redimensionar ou em tela cheia, alternando Auto / 16:9 / Original via F9 sem esticar sprites, HUD ou menus), FPS configuravel (30 padrao calibrado / 60 via F8) com aviso estilizado RPG na tela (OSD), trampolim UI_FLUSH_RETURN_STUB (0x0000c688) e build standalone (dist/HeroesLore3_PC/HeroesLore3.exe) validada em 38 testes unitarios. Proxima etapa: S09 (Extracao de textos e fontes).",
   "steps": [
     {
       "id": "S00",
@@ -164,7 +164,7 @@
         "tests/test_fast_stubs.py",
         "research/sessions/2026-11-13-12.md"
       ],
-      "notes": "FPS configuravel (30 padrao calibrado via benchmark em campo / 60 via F8 ou --fps) e proporcao selecionavel ao vivo (Original 3:2, 16:9, Auto via F9 ou --aspect) com expansao real de cenario via GameCtx (0x000d8270), ancora de HUD, centralizacao de menus/popups via GLBridge ui_offset + trampolim UI_FLUSH_RETURN_STUB, resize Win32 seguro e 37/37 testes passando."
+      "notes": "FPS configuravel (30 padrao calibrado / 60 via F8 ou --fps) e proporcao selecionavel ao vivo (Auto Full Wide padrao, 16:9, Original 3:2 via F9 ou --aspect) com deteccao nativa de maximizacao/redimensionamento SDL2+Win32, aviso visual estilizado (OSD) na troca de FPS/Proporcao/Tela Cheia, expansao de cenario via GameCtx (0x000d8270), ancora de HUD, centralizacao de menus via GLBridge ui_offset + trampolim UI_FLUSH_RETURN_STUB e 38/38 testes passando."
     },
     {
       "id": "S09",

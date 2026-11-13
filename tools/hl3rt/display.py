@@ -17,9 +17,9 @@ ASPECT_PRESET_RATIOS: dict[str, float] = {
     "4:3": 4.0 / 3.0,
 }
 
-UI_ASPECT_CYCLE = ("original", "16:9", "auto")
+UI_ASPECT_CYCLE = ("auto", "16:9", "original")
 VALID_FPS_TARGETS = (30, 60)
-DEFAULT_ASPECT_MODE = "original"
+DEFAULT_ASPECT_MODE = "auto"
 DEFAULT_FPS_TARGET = 30
 
 BASE_W = 480

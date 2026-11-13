@@ -67,8 +67,8 @@ CONTROLES
    * Status do Personagem: Tecla P
    * Atalhos de Modo de Tela: F1 (Alternar Título/Seleção/Jogo), F2 (Forçar Jogo), F3 (Forçar Título)
    * Volume: Teclas + / = (Aumentar), - (Diminuir), M (Mudo)
-   * F8: Alternar FPS alvo (30 FPS padrão / 60 FPS)
-   * F9: Alternar Aspect Ratio (Original 3:2 / 16:9 Widescreen Real / Auto)
+   * F8: Alternar FPS alvo (30 FPS padrão / 60 FPS) com aviso na tela
+   * F9: Alternar Aspect Ratio (Auto Full Wide padrão / 16:9 / Original 3:2) com aviso na tela
    * F11: Alternar Tela Cheia / Janela
    * F12: Capturar Screenshot
 

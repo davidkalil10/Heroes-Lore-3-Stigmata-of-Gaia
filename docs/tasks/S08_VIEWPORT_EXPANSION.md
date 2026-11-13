@@ -21,9 +21,10 @@
    - Controles como `LEVEL 1` (`0x6ee44`) e barras de HP/MP (`0x6f8a8`, `0x6f984`) leem coordenadas cruas dos nós ignorando deslocamentos em registradores.
    - Solução: centralizar `ui_main` diretamente na projeção/scissor OpenGL via `GLBridge.set_ui_offset(ui_dx, ui_dy)` mantendo dimmer/fundo expandidos e subtraindo `(ui_dx, ui_dy)` em `_on_ui_root_touch`.
    - Ao cruzar transições entre `ui_main`, dimmer e `main_popup`, um trampolim leve em `UI_FLUSH_RETURN_STUB` (`0x7F100020`) força o flush do batcher `0x0000c688(gfx)` antes de alterar `glOrtho`, eliminando deslocamento parcial de botões no pause e popups.
-3. **Benchmark de FPS (`30` vs `60`) e Resize SDL/Win32**:
+3. **Benchmark de FPS (`30` vs `60`), Maximização Full Wide e Banner OSD**:
    - Em jogabilidade de campo, a emulação Unicorn/ARMv6 consome ~28,3–32,7 ms/frame (`30 FPS` como padrão estável sem oscilações, com `60 FPS` opcional via `F8` / `--fps 60`).
-   - Redimensionamento ao vivo (`F9`) usa Win32 `AdjustWindowRectEx` + `SetWindowPos` no HWND SDL, evitando crash do `Window.from_display_module().size` no Windows e preservando o contexto OpenGL.
+   - Adotado `DEFAULT_ASPECT_MODE = "auto"` para expandir imediatamente em Full Wide (zero barras pretas) ao maximizar, redimensionar ou ativar tela cheia, com sincronização contínua via `pygame.display.get_window_size()` + eventos SDL2 (`WINDOWSIZECHANGED`/`WINDOWMAXIMIZED`), proteção `IsZoomed` no `F9` e Win32 `AdjustWindowRectEx` + `SetWindowPos` em modo janela.
+   - Implementado aviso estilizado OSD no topo (`_draw_osd` em OpenGL com textura cacheada e gradiente safira/dourado) ao alterar FPS (`F8`), proporção (`F9`) ou tela cheia (`F11`).
 
 ---
 

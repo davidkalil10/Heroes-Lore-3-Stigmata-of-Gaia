@@ -5,7 +5,7 @@
 - **Fase**: `pc_playable_complete`
 - **Etapas concluídas**: `S00`, `S01`, `S02`, `S03`, `S04`, `S05`, `S06`, `S07`, `S08`
 - **Etapa ativa (`current_step`)**: `S09` (`Extração de textos, fontes (.rff/.pvr) e base EN`)
-- **Objetivo alcançado nesta sessão**: **Etapa `S08` concluída e entregue na build standalone ([`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe)): seleção em tempo real de FPS (`30` padrão calibrado / `60` opcional via `F8` ou `--fps`), seleção de proporção de tela (`Original 3:2`, `16:9` ou `Auto` via `F9` ou `--aspect`), redimensionamento livre de janela (`RESIZABLE` + Win32 `SetWindowPos`) com True Widescreen real renderizando mais cenário sem esticar HUD, sprites ou menus, persistência em `config/display.json` e 37 testes unitários passando.**
+- **Objetivo alcançado nesta sessão**: **Etapa `S08` concluída e entregue na build standalone ([`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe)): proporção padrão `Auto (Full Wide)` expandindo automaticamente de borda a borda ao maximizar, redimensionar ou ativar tela cheia (alternável entre `Auto`, `16:9` e `Original 3:2` via `F9` ou `--aspect`), seleção de FPS (`30` padrão calibrado / `60` via `F8` ou `--fps`), aviso estilizado na tela (banner OSD no topo ao trocar FPS, proporção ou tela cheia), persistência em `config/display.json` e 38 testes unitários passando.**
 
 ## O que foi feito e validado nesta sessão
 
@@ -21,9 +21,9 @@
    - Corrigido o crash de redimensionamento SDL2 no Windows (`F9`) em [`PCRunner._resize_window`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py) via Win32 `AdjustWindowRectEx` + `SetWindowPos`, preservando toques do mouse, teclado e gamepad em `_main_pt` e `_hud_pt`.
 
 3. **Testes e Distribuição Standalone Validados**:
-   - Capturas visuais em `16:9`, `4:3` e `20:9` (campo, pause, submenu Equipment, System, Help popup e minimapa HUD) verificadas visualmente sem cortes, faixas brancas nem esticamento.
-   - `python -m unittest discover -s tests -v`: **37/37 testes `OK`** (incluindo [`tests/test_viewport_aspect.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_viewport_aspect.py) e [`tests/test_fast_stubs.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_fast_stubs.py)).
-   - Recompilado [`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe) com README atualizado (`F8`/`F9`/`--aspect`/`--fps`) e validado executando diretamente `--frames 30`, `--aspect 16:9 --fps 30 --frames 30` e `--aspect auto --fps 60 --frames 30` (todos com saída `0`).
+   - Capturas visuais em `16:9`, `4:3`, `20:9` e janela maximizada (`1536x793`) verificadas visualmente sem barras pretas em campo, com banner estilizado OSD (`_draw_osd` em [`tools/run_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py)) exibido ao vivo nas trocas de `F8` (FPS), `F9` (Proporção) e `F11` (Tela Cheia).
+   - `python -m unittest discover -s tests -v`: **38/38 testes `OK`** (incluindo [`tests/test_viewport_aspect.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_viewport_aspect.py) e [`tests/test_fast_stubs.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_fast_stubs.py)).
+   - Recompilado [`dist/HeroesLore3_PC/HeroesLore3.exe`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/dist/HeroesLore3_PC/HeroesLore3.exe) com README atualizado (`F8`/`F9`/`--aspect`/`--fps`) e validado executando diretamente `--frames 30`, `--aspect 16:9 --fps 30 --frames 30` e `--aspect original --fps 60 --frames 30` (todos com saída `0`).
 
 ## O que ficou pendente
 

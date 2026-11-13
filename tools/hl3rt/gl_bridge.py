@@ -18,6 +18,7 @@ from OpenGL.raw.GL.VERSION import GL_1_1 as _gl11
 
 from .display import (
     ASPECT_PRESET_RATIOS as ASPECT_RATIOS,
+    DEFAULT_ASPECT_MODE,
     ViewportLayout,
     _fit_aspect_rect,
     compute_viewport_layout,
@@ -27,7 +28,7 @@ from .widescreen import WidescreenController
 
 
 class GLBridge:
-    def __init__(self, m, win_w: int = 960, win_h: int = 640, aspect_mode: str = "original"):
+    def __init__(self, m, win_w: int = 960, win_h: int = 640, aspect_mode: str = DEFAULT_ASPECT_MODE):
         self.m = m
         self.enabled = True
         self.win_w = win_w

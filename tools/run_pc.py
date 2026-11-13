@@ -19,8 +19,8 @@ Controls:
   * Quick Skills: U / 1, I / 2 (RB), O / 3
   * Mouse: Left Click & Drag anywhere for 1:1 direct touch input!
   * Volume Controls: + / = Increase Volume, - Decrease Volume, M Toggle Mute
-  * F8: Toggle Target FPS (30 / 60)
-  * F9: Cycle Aspect Ratio (Original 3:2 / 16:9 / Auto True Widescreen)
+  * F8: Toggle Target FPS (30 / 60) with stylized OSD notification
+  * F9: Cycle Aspect Ratio (Auto Full Wide / 16:9 / Original 3:2) with OSD notification
   * F11: Toggle Fullscreen
   * F12: Capture Screenshot
 """
@@ -60,6 +60,8 @@ from hl3rt.runtime import Runtime
 from hl3rt.gl_bridge import GLBridge
 from hl3rt.hle_uikit import Touch
 from hl3rt.display import (
+    DEFAULT_ASPECT_MODE,
+    DEFAULT_FPS_TARGET,
     UI_ASPECT_CYCLE,
     compute_viewport_layout,
     load_display_config,
@@ -154,9 +156,9 @@ class PCRunner:
         self.scale = max(1, scale)
         cfg = load_display_config() if headless_frames == 0 else {}
         if aspect_mode is None:
-            aspect_mode = cfg.get("aspect_mode", "original")
+            aspect_mode = cfg.get("aspect_mode", DEFAULT_ASPECT_MODE)
         if target_fps is None:
-            target_fps = cfg.get("target_fps", 30)
+            target_fps = cfg.get("target_fps", DEFAULT_FPS_TARGET)
         self.aspect_mode = normalize_aspect_mode(aspect_mode)
         self.target_fps = normalize_fps(target_fps)
         if self.aspect_mode == "16:9" and headless_frames == 0:
@@ -185,6 +187,7 @@ class PCRunner:
         self.submenu_focus_cid = 0
         self.skill_tab_idx = 0
         self.pending_tap_ups: dict[str, int] = {}
+        self._ensure_osd_attrs()
 
         log_boot("Calling _init_window")
         self._init_window()
@@ -726,27 +729,118 @@ class PCRunner:
         except Exception:
             pass
 
-    def set_aspect_mode(self, mode: str, resize_window: bool = False):
+    def _ensure_osd_attrs(self):
+        if not hasattr(self, "_osd_until"):
+            self._osd_badge = ""
+            self._osd_title = ""
+            self._osd_subtitle = ""
+            self._osd_accent = (245, 204, 82)
+            self._osd_started = 0.0
+            self._osd_until = 0.0
+            self._osd_tex = 0
+            self._osd_tex_key = None
+            self._osd_tex_size = (0, 0)
+
+    def _is_window_maximized(self) -> bool:
+        if self.fullscreen or sys.platform != "win32":
+            return False
+        try:
+            hwnd = pygame.display.get_wm_info().get("window")
+            if hwnd:
+                return bool(ctypes.windll.user32.IsZoomed(ctypes.c_void_p(hwnd)))
+        except Exception:
+            pass
+        return False
+
+    def _apply_client_size(self, new_w: int, new_h: int):
+        new_w = max(320, int(new_w))
+        new_h = max(240, int(new_h))
+        if (new_w, new_h) == (self.win_w, self.win_h):
+            return
+        self.win_w, self.win_h = new_w, new_h
+        if not self.fullscreen and not self._is_window_maximized():
+            self._windowed_size = (new_w, new_h)
+        if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+            self.rt.gl_bridge.update_viewport(new_w, new_h)
+            self.game_w = float(self.rt.gl_bridge.game_w)
+            self.game_h = float(self.rt.gl_bridge.game_h)
+
+    def _sync_window_size(self):
+        if self.fullscreen or getattr(self, "headless_frames", 0) > 0:
+            return
+        try:
+            if pygame.display.get_surface() is None:
+                return
+            w, h = pygame.display.get_window_size()
+            if w >= 320 and h >= 240 and (w, h) != (self.win_w, self.win_h):
+                self._apply_client_size(w, h)
+        except Exception:
+            pass
+
+    def show_osd(
+        self,
+        badge: str,
+        title: str,
+        subtitle: str = "",
+        accent: tuple[int, int, int] = (245, 204, 82),
+        duration: float = 2.4,
+    ):
+        self._ensure_osd_attrs()
+        now = time.monotonic()
+        self._osd_badge = str(badge)
+        self._osd_title = str(title)
+        self._osd_subtitle = str(subtitle)
+        self._osd_accent = accent
+        self._osd_started = now
+        self._osd_until = now + max(0.2, float(duration))
+
+    def set_aspect_mode(self, mode: str, resize_window: bool = False, notify: bool = False):
         self.aspect_mode = normalize_aspect_mode(mode)
-        if resize_window and not self.fullscreen and getattr(self, "headless_frames", 0) == 0:
+        if (
+            resize_window
+            and not self.fullscreen
+            and not self._is_window_maximized()
+            and getattr(self, "headless_frames", 0) == 0
+        ):
             if self.aspect_mode == "16:9":
                 new_w = int(round(320.0 * (16.0 / 9.0) * self.scale))
                 new_h = 320 * self.scale
+                self._resize_window(new_w, new_h)
             elif self.aspect_mode == "original":
-                new_w, new_h = 480 * self.scale, 320 * self.scale
-            else:
-                new_w, new_h = self.win_w, self.win_h
-            self._resize_window(new_w, new_h)
+                self._resize_window(480 * self.scale, 320 * self.scale)
         if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
             self.rt.gl_bridge.set_aspect_mode(self.aspect_mode)
             self.game_w = float(self.rt.gl_bridge.game_w)
             self.game_h = float(self.rt.gl_bridge.game_h)
         self._save_display_prefs()
+        if notify:
+            labels = {
+                "auto": ("AUTO", "PROPORÇÃO: AUTO (FULL WIDE)", "Preenche toda a tela sem esticar  •  [F9] alternar", (104, 228, 168)),
+                "16:9": ("16:9", "PROPORÇÃO: 16:9 WIDESCREEN", "Visão horizontal expandida  •  [F9] alternar", (110, 222, 255)),
+                "original": ("3:2", "PROPORÇÃO: ORIGINAL (3:2)", "Enquadramento clássico 480x320  •  [F9] alternar", (245, 204, 82)),
+            }
+            badge, title, sub, col = labels.get(self.aspect_mode, labels["auto"])
+            self.show_osd(badge, title, sub, accent=col)
         print(f"[HL3 PC] Aspect Mode: {self.aspect_mode.upper()} ({self.game_w:.0f}x{self.game_h:.0f})")
 
-    def set_target_fps(self, fps: int):
+    def set_target_fps(self, fps: int, notify: bool = False):
         self.target_fps = normalize_fps(fps)
         self._save_display_prefs()
+        if notify:
+            if self.target_fps == 60:
+                self.show_osd(
+                    "60 FPS",
+                    "TAXA DE QUADROS: 60 FPS",
+                    "Modo Alta Fluidez  •  [F8] alternar",
+                    accent=(110, 222, 255),
+                )
+            else:
+                self.show_osd(
+                    "30 FPS",
+                    "TAXA DE QUADROS: 30 FPS",
+                    "Modo Padrão Calibrado  •  [F8] alternar",
+                    accent=(245, 204, 82),
+                )
         print(f"[HL3 PC] Target FPS: {self.target_fps}")
 
     def _ui_main_offset(self, st: dict | None = None) -> tuple[float, float]:
@@ -975,8 +1069,167 @@ class PCRunner:
         except Exception:
             pass
 
+    def _build_osd_surface(
+        self,
+        badge: str,
+        title: str,
+        subtitle: str,
+        accent: tuple[int, int, int],
+        ui_scale: float,
+    ) -> pygame.Surface:
+        if not pygame.font.get_init():
+            pygame.font.init()
+        try:
+            f_badge = pygame.font.SysFont("segoeui,dejavusans,arial", max(12, int(round(13 * ui_scale))), bold=True)
+            f_title = pygame.font.SysFont("segoeui,dejavusans,arial", max(14, int(round(16 * ui_scale))), bold=True)
+            f_sub = pygame.font.SysFont("segoeui,dejavusans,arial", max(11, int(round(11.5 * ui_scale))), bold=False)
+        except Exception:
+            f_badge = pygame.font.Font(None, max(16, int(round(18 * ui_scale))))
+            f_title = pygame.font.Font(None, max(18, int(round(20 * ui_scale))))
+            f_sub = pygame.font.Font(None, max(14, int(round(15 * ui_scale))))
+
+        pad_x = int(round(14 * ui_scale))
+        pad_y = int(round(9 * ui_scale))
+        gap_x = int(round(11 * ui_scale))
+
+        b_surf = f_badge.render(badge, True, (255, 252, 238))
+        b_sh = f_badge.render(badge, True, (10, 14, 28))
+        t_surf = f_title.render(title, True, (250, 248, 240))
+        t_sh = f_title.render(title, True, (8, 12, 24))
+        s_surf = f_sub.render(subtitle, True, (186, 212, 246)) if subtitle else None
+
+        badge_pad_x = int(round(9 * ui_scale))
+        badge_pad_y = int(round(6 * ui_scale))
+        badge_w = max(int(round(52 * ui_scale)), b_surf.get_width() + badge_pad_x * 2)
+        badge_h = max(int(round(24 * ui_scale)), b_surf.get_height() + badge_pad_y * 2)
+
+        text_w = max(t_surf.get_width(), s_surf.get_width() if s_surf else 0)
+        text_h = t_surf.get_height() + (int(round(2 * ui_scale)) + s_surf.get_height() if s_surf else 0)
+
+        inner_h = max(badge_h, text_h)
+        w = pad_x * 2 + badge_w + gap_x + text_w + int(round(4 * ui_scale))
+        h = pad_y * 2 + inner_h
+        shadow_off = max(2, int(round(3 * ui_scale)))
+
+        surf = pygame.Surface((w + shadow_off, h + shadow_off), pygame.SRCALPHA)
+        pygame.draw.rect(surf, (0, 0, 0, 145), (shadow_off, shadow_off, w, h), border_radius=max(6, int(round(8 * ui_scale))))
+
+        rad = max(6, int(round(8 * ui_scale)))
+        panel = pygame.Surface((w, h), pygame.SRCALPHA)
+        for row in range(h):
+            frac = row / max(1, h - 1)
+            r = int(12 + 12 * (1.0 - frac))
+            g = int(22 + 20 * (1.0 - frac))
+            b = int(46 + 34 * (1.0 - frac))
+            pygame.draw.line(panel, (r, g, b, 236), (0, row), (w - 1, row))
+        mask = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(mask, (255, 255, 255, 255), (0, 0, w, h), border_radius=rad)
+        panel.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        surf.blit(panel, (0, 0))
+
+        # Inner highlight & royal RPG border
+        pygame.draw.rect(surf, (130, 185, 245, 110), (2, 2, w - 4, h - 4), width=1, border_radius=max(4, rad - 2))
+        pygame.draw.rect(surf, (*accent, 245), (0, 0, w, h), width=max(1, int(round(2 * ui_scale))), border_radius=rad)
+
+        # Left pill badge
+        bx = pad_x
+        by = (h - badge_h) // 2
+        b_rad = max(5, int(round(6 * ui_scale)))
+        pygame.draw.rect(surf, (accent[0] // 5 + 10, accent[1] // 5 + 14, accent[2] // 5 + 24, 245), (bx, by, badge_w, badge_h), border_radius=b_rad)
+        pygame.draw.rect(surf, (*accent, 255), (bx, by, badge_w, badge_h), width=max(1, int(round(1.5 * ui_scale))), border_radius=b_rad)
+        b_tx = bx + (badge_w - b_surf.get_width()) // 2
+        b_ty = by + (badge_h - b_surf.get_height()) // 2
+        surf.blit(b_sh, (b_tx + 1, b_ty + 1))
+        surf.blit(b_surf, (b_tx, b_ty))
+
+        # Title + subtitle
+        tx = bx + badge_w + gap_x
+        ty = (h - text_h) // 2
+        surf.blit(t_sh, (tx + 1, ty + 1))
+        surf.blit(t_surf, (tx, ty))
+        if s_surf is not None:
+            surf.blit(s_surf, (tx, ty + t_surf.get_height() + int(round(2 * ui_scale))))
+
+        return surf
+
+    def _draw_osd(self):
+        self._ensure_osd_attrs()
+        now = time.monotonic()
+        if not self._osd_title or now >= self._osd_until:
+            return
+        elapsed = max(0.0, now - self._osd_started)
+        remaining = max(0.0, self._osd_until - now)
+        t_in = min(1.0, elapsed / 0.14) if elapsed < 0.14 else 1.0
+        t_out = min(1.0, remaining / 0.42) if remaining < 0.42 else 1.0
+        alpha = max(0.0, min(1.0, t_in * t_out))
+        if alpha <= 0.01:
+            return
+
+        ui_scale = max(1.0, min(2.4, float(self.win_h) / 420.0))
+        tex_key = (self._osd_badge, self._osd_title, self._osd_subtitle, self._osd_accent, round(ui_scale, 2))
+        try:
+            if self._osd_tex_key != tex_key or self._osd_tex == 0:
+                surf = self._build_osd_surface(
+                    self._osd_badge,
+                    self._osd_title,
+                    self._osd_subtitle,
+                    self._osd_accent,
+                    ui_scale,
+                )
+                tw, th = surf.get_size()
+                raw = pygame.image.tostring(surf, "RGBA", False)
+                if self._osd_tex == 0:
+                    self._osd_tex = int(glGenTextures(1))
+                glBindTexture(GL_TEXTURE_2D, self._osd_tex)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, raw)
+                self._osd_tex_key = tex_key
+                self._osd_tex_size = (tw, th)
+
+            tw, th = self._osd_tex_size
+            x0 = (float(self.win_w) - float(tw)) * 0.5
+            y0 = 14.0 * ui_scale - (1.0 - t_in) * 10.0 * ui_scale
+            x1, y1 = x0 + float(tw), y0 + float(th)
+
+            glPushAttrib(GL_ALL_ATTRIB_BITS)
+            glDisable(GL_SCISSOR_TEST)
+            glViewport(0, 0, int(self.win_w), int(self.win_h))
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0.0, float(self.win_w), float(self.win_h), 0.0, -1.0, 1.0)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            glEnable(GL_TEXTURE_2D)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glBindTexture(GL_TEXTURE_2D, self._osd_tex)
+            glColor4f(1.0, 1.0, 1.0, float(alpha))
+            glBegin(GL_QUADS)
+            glTexCoord2f(0.0, 0.0); glVertex2f(x0, y0)
+            glTexCoord2f(1.0, 0.0); glVertex2f(x1, y0)
+            glTexCoord2f(1.0, 1.0); glVertex2f(x1, y1)
+            glTexCoord2f(0.0, 1.0); glVertex2f(x0, y1)
+            glEnd()
+
+            glPopMatrix()
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopAttrib()
+            glEnable(GL_TEXTURE_2D)
+            glColor4f(1.0, 1.0, 1.0, 1.0)
+        except Exception:
+            pass
+
     def _present(self):
         self._draw_menu_cursor()
+        self._draw_osd()
         pygame.display.flip()
 
     def _init_runtime(self):
@@ -1337,14 +1590,15 @@ class PCRunner:
                 return
 
             elif event.type == VIDEORESIZE:
-                self.win_w = max(320, int(event.w))
-                self.win_h = max(240, int(event.h))
-                if not self.fullscreen:
-                    self._windowed_size = (self.win_w, self.win_h)
-                if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
-                    self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
-                    self.game_w = float(self.rt.gl_bridge.game_w)
-                    self.game_h = float(self.rt.gl_bridge.game_h)
+                self._apply_client_size(event.w, event.h)
+
+            elif event.type in (
+                getattr(pygame, "WINDOWRESIZED", -1),
+                getattr(pygame, "WINDOWSIZECHANGED", -1),
+                getattr(pygame, "WINDOWMAXIMIZED", -1),
+                getattr(pygame, "WINDOWRESTORED", -1),
+            ):
+                self._sync_window_size()
 
             # Mouse / Direct 1:1 Touch
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
@@ -1361,15 +1615,16 @@ class PCRunner:
             # Discrete Keydown Events
             elif event.type == KEYDOWN:
                 if event.key == K_F8:
-                    self.set_target_fps(60 if self.target_fps == 30 else 30)
+                    self.set_target_fps(60 if self.target_fps == 30 else 30, notify=True)
                 elif event.key == K_F9:
-                    cur = self.aspect_mode if self.aspect_mode in UI_ASPECT_CYCLE else "original"
+                    cur = self.aspect_mode if self.aspect_mode in UI_ASPECT_CYCLE else DEFAULT_ASPECT_MODE
                     nxt = UI_ASPECT_CYCLE[(UI_ASPECT_CYCLE.index(cur) + 1) % len(UI_ASPECT_CYCLE)]
-                    self.set_aspect_mode(nxt, resize_window=True)
+                    self.set_aspect_mode(nxt, resize_window=True, notify=True)
                 elif event.key == K_F11:
                     self.fullscreen = not self.fullscreen
                     if self.fullscreen:
-                        self._windowed_size = (self.win_w, self.win_h)
+                        if not self._is_window_maximized():
+                            self._windowed_size = (self.win_w, self.win_h)
                         try:
                             desktop_sizes = pygame.display.get_desktop_sizes()
                             if desktop_sizes:
@@ -1382,10 +1637,18 @@ class PCRunner:
                         flags = DOUBLEBUF | OPENGL | RESIZABLE
                     self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
                     self._apply_win32_icon()
+                    self._osd_tex = 0
+                    self._osd_tex_key = None
                     if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
                         self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
                         self.game_w = float(self.rt.gl_bridge.game_w)
                         self.game_h = float(self.rt.gl_bridge.game_h)
+                    self.show_osd(
+                        "TELA",
+                        "TELA CHEIA ATIVADA" if self.fullscreen else "MODO JANELA ATIVADO",
+                        f"Proporção {self.aspect_mode.upper()}  •  [F11] alternar",
+                        accent=(104, 228, 168) if self.fullscreen else (245, 204, 82),
+                    )
                 elif event.key == K_F12:
                     self.capture_screenshot()
                 elif event.key in (K_EQUALS, K_PLUS, getattr(pygame, "K_KP_PLUS", K_PLUS)):
@@ -1637,6 +1900,7 @@ class PCRunner:
 
     def step_frame(self):
         self.poll_input()
+        self._sync_window_size()
         if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
             st = self.get_engine_state()
             self.rt.gl_bridge.set_world_active(st.get("app_state", 0) not in (0, 1, 256))
