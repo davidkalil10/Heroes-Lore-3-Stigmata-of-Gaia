@@ -212,4 +212,25 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   4. **Distribuição Standalone Recompilada**:
      - `dist/HeroesLore3_PC/HeroesLore3.exe` reempacotado com CFG desativado e validado rodando com mais de 102.000 cores.
 
+---
+
+## 2026-11-13 - Sessão 11: Ícone Win32 HD (`iTunesArtwork` 512x512 + `WM_SETICON`/`AppUserModelID`) e Mapeamento Completo da Árvore `UIControl` dos 6 Submenus
+
+- **Descobertas verificáveis e artefatos adicionados**:
+  1. **Ícone Win32 Multi-Resolução e Substituição da "Cobrinha"**:
+     - Extraído `iTunesArtwork` (PNG 512x512) de `assets/game.ipa` para `assets/icon.png` e convertido para `assets/icon.ico` com 7 resoluções (`16, 24, 32, 48, 64, 128, 256`).
+     - Confirmado via `PCRunner` e `dist/HeroesLore3_PC/HeroesLore3.exe` que `SetCurrentProcessExplicitAppUserModelID("DavidBraga.HeroesLore3.Recomp.PC")` + `WM_SETICON` / `SetClassLongPtrW` (`LoadImageW`) vinculam `HICON` não-nulos na janela SDL/OpenGL e console, além de `ExtractIconExW == 2` no `.exe` embutido.
+  2. **Estrutura Real da Árvore `UIControl` nos Submenus e Overlays (`app_state == 8`)**:
+     - Flag de visibilidade/habilitação: `(vis & 0x0003) == 0x0003` indica nó visível e clicável; containers com `(vis & 0x0003) != 0x0003` ocultam subárvores inativas (`ITEMS`: `836`/`837` vs `835`; `QUESTS`: `4708` detalhe) e controles `vis=0x0002` representam botões desabilitados (`DROP 823`, `USE 883`, seta `<` na pág. 1).
+     - `CHARACTER (form=5)`: cards `533..540` (`ctype=4`) sempre ativos e botões `+`/`-` (`501..508`) em `vis=0x0003` quando há pontos livres.
+     - `EQUIPMENT (form=6)`: grade equipada 3x3 (`619..627`), grade mochila 3x3 (`628..636`), 8 pílulas de status inferiores (`533..540`) e paginação (`640`/`641` quando ativa).
+     - `SKILLS (form=10)`: abas `1005` (PASSIVE), `1003` (PRIMARY), `1004` (SECONDARY), 6 slots (`1006..1011`), 5 quickslots (`1016..1020`) e `+`/`-` (`1040..1051`).
+     - `ITEMS (form=8)`: grade 8x2 (`801..816`), setas `< 818` / `> 817`, 5 quickslots (`825..829`), e botões contextuais `DROP 823` / `USE 883` que passam para `vis=0x0003` ao selecionar item consumível (ex.: slot `807`).
+     - `QUESTS (form=46)`: canto superior esquerdo `4709` em `(28,28)` (filtrado fora do foco quando há missões/scroll), `MAIN QUEST 4601`, lista `4614` (`4602..4610`) e painel de detalhe `4708` (`ctype=10` rolável + botão fechar `4709`).
+     - `SYSTEM (form=3)` / `PREFERENCES (form=112)` / `HELP (form=118)` / popups `4` (`SAVE`) e `106` (`MAIN MENU`): sliders `ctype=13` (`11205..11207`) com filhos `< 198` e `> 197`; `HELP` com `< 11809` / `> 11810` e `ctype=10` rolável; popups `4` (`401`/`199`) e `106` (`10601`/`10602`) com alternância Sim/Não por setas.
+  3. **Validação**:
+     - Roteiro vivo ponta a ponta percorrendo Campo -> Pausa -> 6 submenus -> `PREFERENCES`/`HELP`/`SAVE`/`MAIN MENU` -> Campo executado com saída 0 e capturas verificadas visualmente.
+     - Suíte unitária ampliada para 26 testes em `tests/` (todos `OK` em 10.0s) e `dist/HeroesLore3_PC/HeroesLore3.exe --frames 30` validado com saída 0.
+
+
 

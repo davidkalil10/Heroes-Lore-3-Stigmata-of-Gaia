@@ -343,6 +343,30 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - O mapa abre e fecha instantaneamente pelo teclado (`M`, `Tab`) ou controle (`Select`).
   - As duas poções (superior e inferior) são consumidas perfeitamente pelo teclado (`Q`/`1` e `K`/`2`) e controle (`LB`/`RB`).
 
+---
+
+## ADR-018: Aplicação Explícita de Ícone Win32 (`AppUserModelID` + `WM_SETICON` / `SetClassLongPtrW`) e Navegador em Árvore Viva de `UIControl` para Todos os Submenus e Popups
+
+- **Data**: 2026-11-13
+- **Status**: Aceito
+- **Contexto**:
+  - Dois problemas finais impediam a experiência PC nativa completa na build anterior:
+    1. A barra de tarefas e o título da janela no Windows 11 ainda exibiam o ícone padrão amarelo do Pygame ("cobrinha") em certas execuções porque `pygame.display.set_icon()` via `Surface` após `set_mode()` nem sempre substitui o ícone de classe `HICON` / agrupamento da taskbar do Windows sem `AppUserModelID` próprio nem recurso `.ico` multi-resolução HD.
+    2. Embora o Menu de Pausa principal (`form_id == 2`) já fosse navegável, ao entrar nos 6 submenus (`CHARACTER`, `EQUIPMENT`, `SKILLS`, `ITEMS`, `QUESTS`, `SYSTEM`) e em suas telas filhas (`PREFERENCES`, `HELP`, popups `SAVE` / `MAIN MENU`), não havia cursor nem movimentação de foco entre slots, abas, botões dinâmicos (`USE`/`DROP`), sliders e diálogos Sim/Não; além disso, `K_s` estava restrito a `app_state == 1` fora de cutscenes e faltava leitura do analógico esquerdo em menus.
+- **Decisão**:
+  1. **Ícone HD e Integração Win32**:
+     - Extrair `iTunesArtwork` (512x512 RGBA) do `game.ipa` original para `assets/icon.png` e gerar `assets/icon.ico` multi-tamanho `(16, 24, 32, 48, 64, 128, 256)`.
+     - Em `tools/run_pc.py` (`_init_window` / `_apply_win32_icon`), registrar `SetCurrentProcessExplicitAppUserModelID("DavidBraga.HeroesLore3.Recomp.PC")`, chamar `pygame.display.set_icon()` antes de `set_mode()`, e após `set_mode()` (e `F11`) aplicar `LoadImageW` (`IMAGE_ICON`) via `WM_SETICON` e `SetClassLongPtrW` (`GCLP_HICON` / `GCLP_HICONSM`) na janela SDL e na janela de console.
+  2. **Navegador Orientado à Árvore Viva de Controles (`UIControl`)**:
+     - Incluir `main_form`, `main_popup` e `hud_popup` no retorno de `get_engine_state()`.
+     - Percorrer dinamicamente containers visíveis/ativos (`(vis & 0x0003) == 0x0003`), priorizando overlays em primeiro plano (`837`/`836` em `ITEMS`, `4708` em `QUESTS`), coletando controles interativos ativos (`ctype in (2, 4, 13)` com `(vis & 0x0003) == 0x0003` e `frect` válido) e áreas roláveis (`ctype == 10`), filtrando botões redundantes de retorno no canto superior esquerdo (`cx < 55, cy < 55`, incluindo `cid=4709` de `QUESTS`) quando existem controles reais ou `scroll_boxes`.
+     - Implementar foco estável ancorado por `cid` (`_sync_focus`) — preservando o foco no slot quando botões como `USE (883)` / `DROP (823)` se habilitam dinamicamente —, foco inicial padrão no botão de confirmação em popups (`Yes`), cursor visual dourado em `_draw_focus_rect()`, navegação 2D ponderada (`_move_focus_2d`), controle direto de sliders (`ctype == 13` via `Left`/`Right` nos filhos `< 198` e `> 197`), rolagem vertical por toque (`_scroll_box` em `ctype == 10`) e troca de abas/páginas via `LB`/`RB`, `Tab`, `PageUp`/`PageDown` e `[`/`]`.
+     - Restringir atalhos de poções/skills/ataque ao estado de campo aberto (`is_field`) e adicionar suporte ao analógico esquerdo e repetição de D-Pad em menus/popups.
+- **Consequências**:
+  - Janela do jogo e barra de tarefas no Windows 11 exibem consistentemente o ícone oficial do Heroes Lore III, validado no executável standalone (`ExtractIconExW == 2`, `WM_GETICON` não-nulo).
+  - Todos os 6 submenus, sliders de `PREFERENCES`, paginação/rolagem de `HELP` e `QUESTS`, seleção/uso de itens em `ITEMS`, abas/slots de `SKILLS`/`EQUIPMENT`/`CHARACTER` e diálogos Sim/Não (`SAVE`/`MAIN MENU`) são 100% operáveis por teclado e gamepad, validados em teste vivo ponta a ponta e em 26 testes unitários passando.
+
+
 
 
 

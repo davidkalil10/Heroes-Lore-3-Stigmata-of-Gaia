@@ -74,6 +74,103 @@ class S04PCPlayableTests(unittest.TestCase):
         runner.pending_tap_ups.clear()
         self.assertNotIn("test_tap", runner.active_touches)
 
+    def test_win32_icon_assets_and_resolution(self):
+        from pathlib import Path
+        from PIL import Image
+
+        root = Path(__file__).resolve().parents[1]
+        png_path = root / "assets" / "icon.png"
+        ico_path = root / "assets" / "icon.ico"
+        self.assertTrue(png_path.exists())
+        self.assertTrue(ico_path.exists())
+        with Image.open(png_path) as im:
+            self.assertEqual(im.size, (512, 512))
+        with Image.open(ico_path) as im:
+            sizes = im.info.get("sizes", set())
+            for req in ((16, 16), (32, 32), (48, 48), (256, 256)):
+                self.assertIn(req, sizes)
+
+        runner = PCRunner(scale=1, headless_frames=1)
+        self.assertIsNotNone(runner._resolve_icon_path("icon.ico"))
+        self.assertIsNotNone(runner._resolve_icon_path("icon.png"))
+
+    def test_submenu_control_tree_navigation_logic(self):
+        import pygame
+
+        r = PCRunner.__new__(PCRunner)
+        r.menu_index = 0
+        r.nav_cooldown = 0
+        r.carousel_cooldown = 0
+        r.scroll_cooldown = 0
+        r.submenu_focus_ctx = None
+        r.submenu_focus_idx = 0
+        r.submenu_focus_cid = 0
+        r.skill_tab_idx = 0
+        r.active_touches = {}
+        r.pending_tap_ups = {}
+        r.touch_responder = 0
+        r.joysticks = []
+
+        grid = [
+            {"cid": 801, "cx": 100.0, "cy": 86.0, "frect": (84, 116, 70, 102), "kind": "button"},
+            {"cid": 802, "cx": 140.0, "cy": 86.0, "frect": (124, 156, 70, 102), "kind": "button"},
+            {"cid": 809, "cx": 100.0, "cy": 141.0, "frect": (84, 116, 125, 157), "kind": "button"},
+            {"cid": 810, "cx": 140.0, "cy": 141.0, "frect": (124, 156, 125, 157), "kind": "button"},
+        ]
+        # Grid movement + wraparound
+        self.assertEqual(r._move_focus_2d(grid, 0, "right"), 1)
+        self.assertEqual(r._move_focus_2d(grid, 1, "right"), 0)
+        self.assertEqual(r._move_focus_2d(grid, 0, "down"), 2)
+        self.assertEqual(r._move_focus_2d(grid, 2, "up"), 0)
+
+        # Popup default focus + 2-button toggle + dynamic control preservation
+        popup_ctrls = [
+            {"cid": 199, "cx": 395.0, "cy": 100.0, "frect": (370, 420, 75, 125), "kind": "button"},
+            {"cid": 401, "cx": 395.0, "cy": 220.0, "frect": (370, 420, 195, 245), "kind": "button"},
+        ]
+        r.get_focusable_controls = lambda st=None: (("popup", 4, 0), list(popup_ctrls), [])
+        ctrls, focused, _ = r._sync_focus({"app_state": 8, "main_popup_id": 4})
+        self.assertEqual(focused["cid"], 401)
+        # Left/Right on 2-button popup toggles Yes <-> No
+        self.assertEqual(r._move_focus_2d(ctrls, r.submenu_focus_idx, "left"), 0)
+
+        # Preserving focused CID when additional buttons become enabled dynamically
+        r.get_focusable_controls = lambda st=None: (("submenu", 8, 0), list(grid[:1] + [grid[1]]), [])
+        _, f1, _ = r._sync_focus({"app_state": 8, "form_id": 8})
+        r.submenu_focus_idx = 1
+        r.submenu_focus_cid = 802
+        r.get_focusable_controls = lambda st=None: (
+            ("submenu", 8, 0),
+            [{"cid": 883, "cx": 210.0, "cy": 252.0, "frect": (190, 230, 232, 272), "kind": "button"}] + list(grid),
+            [],
+        )
+        _, f2, _ = r._sync_focus({"app_state": 8, "form_id": 8})
+        self.assertEqual(f2["cid"], 802)
+
+        # K_s moves menu_index down inside Pause Menu (app_state == 8, form_id == 2)
+        r.get_engine_state = lambda: {
+            "app_state": 8, "sub_state": 3, "form_id": 2,
+            "main_popup_id": 0, "hud_popup_id": 0, "active_popup_id": 0,
+            "can_talk": 0, "combat_mode": 0, "main_form": 0, "main_popup": 0, "hud_popup": 0,
+        }
+        pygame.init()
+        pygame.event.clear()
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_s, mod=0, unicode=""))
+        r.poll_input()
+        self.assertEqual(r.menu_index, 1)
+
+        # Gamepad Left Stick navigation works in menus (app_state == 8)
+        class _FakeJoy:
+            def get_numhats(self): return 0
+            def get_numaxes(self): return 2
+            def get_axis(self, idx): return 0.9 if idx == 1 else 0.0
+
+        r.nav_cooldown = 0
+        r.joysticks = [_FakeJoy()]
+        r.poll_input()
+        self.assertEqual(r.menu_index, 2)
+        self.assertGreater(r.nav_cooldown, 0)
+
     def test_run_frames_and_screenshot(self):
         runner = PCRunner(scale=1, headless_frames=30)
         runner.run()

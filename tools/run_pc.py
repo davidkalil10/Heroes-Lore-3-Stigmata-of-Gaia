@@ -13,8 +13,9 @@ Controls:
   * Skip Cutscene: S / Tab / Gamepad Y / Gamepad Start
   * Character Select: Left (Kei) / Right (Rits), Enter Confirm, Esc Back
   * Class Select: Left / Right arrows, Enter Confirm, Esc Back
-  * Pause Menu: Up / Down navigate, Enter select option, Esc resume game
-  * Quick Potions: Q / K / Gamepad LB
+  * Pause & Submenus: Arrows / WASD / D-Pad / Left Stick move focus, Enter / A confirm,
+                      LB / RB or [ / ] or Tab switch pages/tabs, Esc / B back
+  * Quick Potions: Q / K / Gamepad LB / RB (during field gameplay)
   * Quick Skills: U / 1, I / 2 (RB), O / 3
   * Mouse: Left Click & Drag anywhere for 1:1 direct touch input!
   * Volume Controls: + / = Increase Volume, - Decrease Volume, M Toggle Mute
@@ -25,7 +26,9 @@ Controls:
 from __future__ import annotations
 
 import argparse
+import ctypes
 import datetime as dt
+import math
 import struct
 import sys
 import time
@@ -145,6 +148,11 @@ class PCRunner:
         self.menu_index = 0
         self.nav_cooldown = 0
         self.carousel_cooldown = 0
+        self.scroll_cooldown = 0
+        self.submenu_focus_ctx: tuple | None = None
+        self.submenu_focus_idx = 0
+        self.submenu_focus_cid = 0
+        self.skill_tab_idx = 0
         self.pending_tap_ups: dict[str, int] = {}
 
         log_boot("Calling _init_window")
@@ -155,31 +163,121 @@ class PCRunner:
         self._init_joysticks()
         log_boot("PCRunner init complete")
 
+    def _resolve_icon_path(self, filename: str) -> Path | None:
+        candidates = [ROOT / "assets" / filename]
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidates.append(Path(meipass) / "assets" / filename)
+        if filename == "icon.png":
+            candidates.append(ROOT / "reference" / "extracted_ipa" / "Payload" / "Heroes Lore.app" / "Icon.png")
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return None
+
+    def _apply_win32_icon(self):
+        if sys.platform != "win32":
+            return
+        try:
+            wm_info = pygame.display.get_wm_info()
+            hwnd = wm_info.get("window")
+            if not hwnd:
+                return
+            ico_path = self._resolve_icon_path("icon.ico")
+            if not ico_path:
+                return
+
+            user32 = ctypes.windll.user32
+            ptr_type = ctypes.c_void_p
+
+            user32.LoadImageW.argtypes = [
+                ptr_type, ctypes.c_wchar_p, ctypes.c_uint,
+                ctypes.c_int, ctypes.c_int, ctypes.c_uint,
+            ]
+            user32.LoadImageW.restype = ptr_type
+            user32.SendMessageW.argtypes = [ptr_type, ctypes.c_uint, ctypes.c_size_t, ctypes.c_ssize_t]
+            user32.SendMessageW.restype = ctypes.c_ssize_t
+
+            IMAGE_ICON = 1
+            LR_LOADFROMFILE = 0x0010
+            LR_DEFAULTSIZE = 0x0040
+            WM_SETICON = 0x0080
+            ICON_SMALL = 0
+            ICON_BIG = 1
+            GCLP_HICON = -14
+            GCLP_HICONSM = -34
+
+            sm_cx = user32.GetSystemMetrics(49) or 16  # SM_CXSMICON
+            sm_cy = user32.GetSystemMetrics(50) or 16  # SM_CYSMICON
+            bg_cx = user32.GetSystemMetrics(11) or 32  # SM_CXICON
+            bg_cy = user32.GetSystemMetrics(12) or 32  # SM_CYICON
+
+            hicon_big = user32.LoadImageW(None, str(ico_path), IMAGE_ICON, bg_cx, bg_cy, LR_LOADFROMFILE)
+            hicon_sm = user32.LoadImageW(None, str(ico_path), IMAGE_ICON, sm_cx, sm_cy, LR_LOADFROMFILE)
+            if not hicon_big:
+                hicon_big = user32.LoadImageW(None, str(ico_path), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            if not hicon_sm:
+                hicon_sm = hicon_big
+
+            self._win32_hicons = (hicon_big, hicon_sm)
+            hwnd_ptr = ptr_type(hwnd)
+            if hicon_big:
+                user32.SendMessageW(hwnd_ptr, WM_SETICON, ICON_BIG, hicon_big)
+            if hicon_sm:
+                user32.SendMessageW(hwnd_ptr, WM_SETICON, ICON_SMALL, hicon_sm)
+
+            set_cls_ptr = getattr(user32, "SetClassLongPtrW", None) or user32.SetClassLongW
+            set_cls_ptr.argtypes = [ptr_type, ctypes.c_int, ctypes.c_ssize_t]
+            set_cls_ptr.restype = ctypes.c_ssize_t
+            if hicon_big:
+                set_cls_ptr(hwnd_ptr, GCLP_HICON, hicon_big)
+            if hicon_sm:
+                set_cls_ptr(hwnd_ptr, GCLP_HICONSM, hicon_sm)
+
+            # Also set console icon when launched with a console window
+            kernel32 = ctypes.windll.kernel32
+            kernel32.GetConsoleWindow.restype = ptr_type
+            con_hwnd = kernel32.GetConsoleWindow()
+            if con_hwnd:
+                if hicon_big:
+                    user32.SendMessageW(con_hwnd, WM_SETICON, ICON_BIG, hicon_big)
+                if hicon_sm:
+                    user32.SendMessageW(con_hwnd, WM_SETICON, ICON_SMALL, hicon_sm)
+        except Exception as e:
+            print(f"[HL3 PC] Could not apply Win32 window icon: {e}")
+
     def _init_window(self):
+        if sys.platform == "win32":
+            try:
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                    "DavidBraga.HeroesLore3.Recomp.PC"
+                )
+            except Exception:
+                pass
         pygame.init()
+        # Set Pygame icon BEFORE set_mode() so SDL2 never creates the window with pygame_icon.bmp
+        icon_path = self._resolve_icon_path("icon.png")
+        if icon_path is not None:
+            try:
+                icon_surf = pygame.image.load(str(icon_path))
+                icon_32 = pygame.transform.smoothscale(icon_surf, (32, 32))
+                pygame.display.set_icon(icon_32)
+            except Exception as e:
+                print(f"[HL3 PC] Could not preload window icon: {e}")
+
         flags = DOUBLEBUF | OPENGL
         if self.fullscreen:
             flags |= FULLSCREEN
         pygame.display.set_caption("Heroes Lore 3: Stigmata of Gaia Recomp (PC Native)")
         self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
-
-        # Set official game window icon after video mode initialization
-        icon_path = ROOT / "assets" / "icon.png"
-        if not icon_path.exists():
-            icon_path = ROOT / "reference" / "extracted_ipa" / "Payload" / "Heroes Lore.app" / "Icon.png"
-        if icon_path.exists():
-            try:
-                icon_surf = pygame.image.load(str(icon_path)).convert_alpha()
-                icon_32 = pygame.transform.smoothscale(icon_surf, (32, 32))
-                pygame.display.set_icon(icon_32)
-            except Exception as e:
-                print(f"[HL3 PC] Could not set window icon: {e}")
+        self._apply_win32_icon()
 
     def get_engine_state(self) -> dict:
         if not hasattr(self, "rt") or not self.rt or not hasattr(self.rt, "m"):
             return {
                 "app_state": 0, "sub_state": 0, "form_id": 0, "main_popup_id": 0,
-                "hud_popup_id": 0, "active_popup_id": 0, "can_talk": 0, "combat_mode": 0
+                "hud_popup_id": 0, "active_popup_id": 0, "can_talk": 0, "combat_mode": 0,
+                "main_form": 0, "main_popup": 0, "hud_popup": 0,
             }
         m = self.rt.m
         try:
@@ -187,7 +285,8 @@ class PCRunner:
             if not app:
                 return {
                     "app_state": 0, "sub_state": 0, "form_id": 0, "main_popup_id": 0,
-                    "hud_popup_id": 0, "active_popup_id": 0, "can_talk": 0, "combat_mode": 0
+                    "hud_popup_id": 0, "active_popup_id": 0, "can_talk": 0, "combat_mode": 0,
+                    "main_form": 0, "main_popup": 0, "hud_popup": 0,
                 }
             app_state = m.rd32(app + 0x78)
             ui_main = m.rd32(app + 0x40)
@@ -216,18 +315,471 @@ class PCRunner:
                 "active_popup_id": active_popup_id,
                 "can_talk": can_talk,
                 "combat_mode": combat_mode,
+                "main_form": main_form,
+                "main_popup": main_popup,
+                "hud_popup": hud_popup,
             }
         except Exception:
             return {
                 "app_state": 0, "sub_state": 0, "form_id": 0, "main_popup_id": 0,
-                "hud_popup_id": 0, "active_popup_id": 0, "can_talk": 0, "combat_mode": 0
+                "hud_popup_id": 0, "active_popup_id": 0, "can_talk": 0, "combat_mode": 0,
+                "main_form": 0, "main_popup": 0, "hud_popup": 0,
             }
+
+    def _ensure_focus_attrs(self):
+        if not hasattr(self, "submenu_focus_ctx"):
+            self.submenu_focus_ctx = None
+            self.submenu_focus_idx = 0
+            self.submenu_focus_cid = 0
+            self.skill_tab_idx = 0
+            self.scroll_cooldown = 0
+
+    def _read_ui_node(self, ptr: int) -> dict | None:
+        if not ptr or not hasattr(self, "rt") or not self.rt or not hasattr(self.rt, "m"):
+            return None
+        m = self.rt.m
+        try:
+            ctype = m.rd16(ptr + 0x04)
+            px, py, pw, ph = struct.unpack("<4h", m.rdbytes(ptr + 0x08, 8))
+            cid = m.rd16(ptr + 0x14)
+            vis = m.rd16(ptr + 0x16)
+            fx0, fx1, fy0, fy1 = struct.unpack("<4f", m.rdbytes(ptr + 0x18, 16))
+            next_sibling = m.rd32(ptr + 0x30)
+            first_child = m.rd32(ptr + 0x38)
+        except Exception:
+            return None
+
+        frect_ok = (
+            all(math.isfinite(v) for v in (fx0, fx1, fy0, fy1))
+            and (fx1 - fx0) >= 2.0
+            and (fy1 - fy0) >= 2.0
+            and fx0 > -40.0 and fx1 < 520.0
+            and fy0 > -40.0 and fy1 < 360.0
+        )
+        if not frect_ok:
+            if pw >= 4 and ph >= 4 and px > -40 and (px + pw) < 520 and py > -40 and (py + ph) < 360:
+                fx0, fx1, fy0, fy1 = float(px), float(px + pw), float(py), float(py + ph)
+            else:
+                fx0, fx1, fy0, fy1 = 0.0, 0.0, 0.0, 0.0
+
+        cx = (fx0 + fx1) * 0.5
+        cy = (fy0 + fy1) * 0.5
+        return {
+            "ptr": ptr,
+            "ctype": ctype,
+            "cid": cid,
+            "vis": vis,
+            "pos": (px, py, pw, ph),
+            "frect": (fx0, fx1, fy0, fy1),
+            "cx": cx,
+            "cy": cy,
+            "next_sibling": next_sibling,
+            "first_child": first_child,
+            "kind": "slider" if ctype == 13 else "button",
+        }
+
+    def _find_active_overlay(self, root_ptr: int, target_cids: tuple[int, ...]) -> dict | None:
+        if not root_ptr or not target_cids:
+            return None
+        found: dict[int, dict] = {}
+        queue = [root_ptr]
+        visited: set[int] = set()
+        while queue and len(visited) < 160:
+            ptr = queue.pop(0)
+            if not ptr or ptr in visited:
+                continue
+            visited.add(ptr)
+            node = self._read_ui_node(ptr)
+            if not node:
+                continue
+            if node["cid"] in target_cids and (node["vis"] & 0x0003) == 0x0003:
+                found[node["cid"]] = node
+            ch = node["first_child"]
+            steps = 0
+            while ch and ch not in visited and steps < 64:
+                queue.append(ch)
+                chn = self._read_ui_node(ch)
+                ch = chn["next_sibling"] if chn else 0
+                steps += 1
+        for tcid in target_cids:
+            if tcid in found:
+                return found[tcid]
+        return None
+
+    def _find_slider_arrows(self, slider_node: dict) -> tuple[tuple[float, float], tuple[float, float]]:
+        fx0, fx1, fy0, fy1 = slider_node["frect"]
+        cy = slider_node["cy"]
+        prev_coord = (fx0 + 18.0, cy)
+        next_coord = (fx1 - 18.0, cy)
+        queue = [slider_node["first_child"]]
+        visited: set[int] = set()
+        while queue and len(visited) < 24:
+            ptr = queue.pop(0)
+            if not ptr or ptr in visited:
+                continue
+            visited.add(ptr)
+            ch = self._read_ui_node(ptr)
+            if not ch:
+                continue
+            if ch["cid"] == 198 and ch["frect"][1] > ch["frect"][0]:
+                prev_coord = (ch["cx"], ch["cy"])
+            elif ch["cid"] == 197 and ch["frect"][1] > ch["frect"][0]:
+                next_coord = (ch["cx"], ch["cy"])
+            if ch["first_child"]:
+                queue.append(ch["first_child"])
+            if ch["next_sibling"]:
+                queue.append(ch["next_sibling"])
+        return prev_coord, next_coord
+
+    def _collect_subtree_controls(self, root_ptr: int, keep_back: bool = False) -> tuple[list[dict], list[dict]]:
+        controls: list[dict] = []
+        scroll_boxes: list[dict] = []
+        if not root_ptr:
+            return controls, scroll_boxes
+
+        visited: set[int] = set()
+
+        def walk(ptr: int, is_root: bool = False):
+            if not ptr or ptr in visited or len(visited) > 256:
+                return
+            visited.add(ptr)
+            node = self._read_ui_node(ptr)
+            if not node:
+                return
+
+            ctype = node["ctype"]
+            vis = node["vis"]
+            fx0, fx1, fy0, fy1 = node["frect"]
+            valid_rect = (fx1 - fx0) >= 4.0 and (fy1 - fy0) >= 4.0 and 0.0 <= node["cx"] <= 480.0 and 0.0 <= node["cy"] <= 320.0
+
+            if ctype in (1, 14, 15):
+                if (vis & 0x0003) != 0x0003 and not is_root:
+                    return
+                ch = node["first_child"]
+                steps = 0
+                while ch and steps < 64:
+                    walk(ch, False)
+                    chn = self._read_ui_node(ch)
+                    ch = chn["next_sibling"] if chn else 0
+                    steps += 1
+                return
+
+            if ctype == 13:
+                if (vis & 0x0003) == 0x0003 and valid_rect:
+                    p_coord, n_coord = self._find_slider_arrows(node)
+                    node["prev_coord"] = p_coord
+                    node["next_coord"] = n_coord
+                    controls.append(node)
+                return
+
+            if ctype in (2, 4):
+                if (vis & 0x0003) == 0x0003 and valid_rect:
+                    controls.append(node)
+                ch = node["first_child"]
+                steps = 0
+                while ch and steps < 32:
+                    walk(ch, False)
+                    chn = self._read_ui_node(ch)
+                    ch = chn["next_sibling"] if chn else 0
+                    steps += 1
+                return
+
+            if ctype == 10:
+                if (vis & 0x0003) == 0x0003 and valid_rect and (fy1 - fy0) >= 36.0:
+                    scroll_boxes.append(node)
+
+        root_node = self._read_ui_node(root_ptr)
+        if not root_node:
+            return controls, scroll_boxes
+        if root_node["ctype"] in (1, 14, 15):
+            ch = root_node["first_child"]
+            steps = 0
+            while ch and steps < 64:
+                walk(ch, False)
+                chn = self._read_ui_node(ch)
+                ch = chn["next_sibling"] if chn else 0
+                steps += 1
+        else:
+            walk(root_ptr, True)
+
+        # Deduplicate overlapping identical controls if any
+        seen_keys: set[tuple[int, int, int]] = set()
+        deduped: list[dict] = []
+        for c in controls:
+            k = (c["cid"], int(round(c["cx"])), int(round(c["cy"])))
+            if k not in seen_keys:
+                seen_keys.add(k)
+                deduped.append(c)
+
+        # Filter out redundant top-left corner Back button when real targets or scroll views exist
+        def _is_corner_back(c: dict) -> bool:
+            return c["cid"] in (199, 207, 306, 4709) and c["cx"] < 55.0 and c["cy"] < 55.0
+
+        if not keep_back:
+            non_back = [c for c in deduped if not _is_corner_back(c)]
+            if non_back or scroll_boxes:
+                deduped = non_back
+
+        return deduped, scroll_boxes
+
+    def get_focusable_controls(self, st: dict | None = None) -> tuple[tuple | None, list[dict], list[dict]]:
+        if st is None:
+            st = self.get_engine_state()
+        main_popup_id = st.get("main_popup_id", 0)
+        hud_popup_id = st.get("hud_popup_id", 0)
+        app_state = st.get("app_state", 0)
+        form_id = st.get("form_id", 0)
+
+        if main_popup_id and st.get("main_popup"):
+            ctrls, scrolls = self._collect_subtree_controls(st["main_popup"])
+            return ("popup", int(main_popup_id), 0), ctrls, scrolls
+
+        if hud_popup_id and hud_popup_id != 130 and st.get("hud_popup"):
+            ctrls, scrolls = self._collect_subtree_controls(st["hud_popup"])
+            return ("hud_popup", int(hud_popup_id), 0), ctrls, scrolls
+
+        if app_state == 8 and form_id != 2 and st.get("main_form"):
+            root_ptr = st["main_form"]
+            overlay_cid = 0
+            overlay_candidates = {8: (837, 836), 46: (4708,)}.get(form_id, ())
+            if overlay_candidates:
+                ov = self._find_active_overlay(root_ptr, overlay_candidates)
+                if ov:
+                    root_ptr = ov["ptr"]
+                    overlay_cid = ov["cid"]
+            ctrls, scrolls = self._collect_subtree_controls(root_ptr)
+            return ("submenu", int(form_id), int(overlay_cid)), ctrls, scrolls
+
+        if app_state == 1 and form_id not in (0, 100, 41, 42, 43) and st.get("main_form"):
+            ctrls, scrolls = self._collect_subtree_controls(st["main_form"])
+            return ("pregame", int(form_id), 0), ctrls, scrolls
+
+        return None, [], []
+
+    def _sync_focus(self, st: dict) -> tuple[list[dict], dict | None, list[dict]]:
+        self._ensure_focus_attrs()
+        ctx, controls, scroll_boxes = self.get_focusable_controls(st)
+        if ctx is None:
+            self.submenu_focus_ctx = None
+            self.submenu_focus_idx = 0
+            self.submenu_focus_cid = 0
+            return [], None, []
+
+        if not controls:
+            self.submenu_focus_ctx = ctx
+            self.submenu_focus_idx = 0
+            self.submenu_focus_cid = 0
+            return [], None, scroll_boxes
+
+        if ctx != self.submenu_focus_ctx:
+            idx = 0
+            if ctx[0] in ("popup", "hud_popup") and len(controls) >= 2:
+                # Default popup focus to the Confirm / Yes checkmark (usually bottom/right, excluding Cancel IDs)
+                cancel_cids = {199, 207, 306, 4709, 10602, 13202, 13302}
+                best_i = 0
+                best_score = -1e9
+                for i, c in enumerate(controls):
+                    score = c["cy"] + (0.0 if c["cid"] not in cancel_cids else -1000.0)
+                    if score > best_score:
+                        best_score = score
+                        best_i = i
+                idx = best_i
+            self.submenu_focus_ctx = ctx
+            self.submenu_focus_idx = idx
+            self.submenu_focus_cid = controls[idx]["cid"]
+        else:
+            # Keep focus anchored to the same control ID if new controls appear (e.g. ITEMS USE/DROP enabled)
+            matched = -1
+            if self.submenu_focus_cid:
+                for i, c in enumerate(controls):
+                    if c["cid"] == self.submenu_focus_cid:
+                        matched = i
+                        break
+            if matched >= 0:
+                self.submenu_focus_idx = matched
+            else:
+                self.submenu_focus_idx = max(0, min(self.submenu_focus_idx, len(controls) - 1))
+                self.submenu_focus_cid = controls[self.submenu_focus_idx]["cid"]
+
+        return controls, controls[self.submenu_focus_idx], scroll_boxes
+
+    def _move_focus_2d(self, controls: list[dict], cur_idx: int, dir_name: str) -> int:
+        if len(controls) <= 1:
+            return 0
+        cur = controls[cur_idx]
+        cx, cy = cur["cx"], cur["cy"]
+
+        best_idx = -1
+        best_score = float("inf")
+        for i, cand in enumerate(controls):
+            if i == cur_idx:
+                continue
+            dx = cand["cx"] - cx
+            dy = cand["cy"] - cy
+            if dir_name == "right" and dx > 4.0:
+                score = dx + abs(dy) * 2.5
+            elif dir_name == "left" and dx < -4.0:
+                score = -dx + abs(dy) * 2.5
+            elif dir_name == "down" and dy > 4.0:
+                score = dy + abs(dx) * 2.5
+            elif dir_name == "up" and dy < -4.0:
+                score = -dy + abs(dx) * 2.5
+            else:
+                continue
+            if score < best_score:
+                best_score = score
+                best_idx = i
+
+        if best_idx >= 0:
+            return best_idx
+
+        # Wraparound handling when hitting an edge
+        if dir_name in ("right", "left"):
+            same_row = [i for i, c in enumerate(controls) if abs(c["cy"] - cy) <= 28.0]
+            if len(same_row) > 1:
+                if dir_name == "right":
+                    return min(same_row, key=lambda i: controls[i]["cx"])
+                return max(same_row, key=lambda i: controls[i]["cx"])
+            if len(controls) == 2:
+                return 1 - cur_idx
+            return cur_idx
+
+        if dir_name in ("down", "up"):
+            if dir_name == "down":
+                return min(range(len(controls)), key=lambda i: (controls[i]["cy"], abs(controls[i]["cx"] - cx)))
+            return max(range(len(controls)), key=lambda i: (controls[i]["cy"], -abs(controls[i]["cx"] - cx)))
+
+        return cur_idx
+
+    def _scroll_box(self, box: dict, dir_name: str):
+        self._ensure_focus_attrs()
+        if self.scroll_cooldown > 0 or not self.touch_responder:
+            return
+        self.scroll_cooldown = 8
+        cx = box["cx"]
+        fy0, fy1 = box["frect"][2], box["frect"][3]
+        mid_y = (fy0 + fy1) * 0.5
+        span = min(44.0, max(16.0, (fy1 - fy0) * 0.35))
+        if dir_name == "down":
+            # Drag finger upward to scroll content downward
+            start_y, end_y = mid_y + span * 0.5, mid_y - span * 0.5
+        else:
+            start_y, end_y = mid_y - span * 0.5, mid_y + span * 0.5
+
+        t = Touch(cx, start_y, 0)
+        t_obj = self.rt.objc.new_obj("UITouch", t)
+        evt_obj = self.rt.objc.new_obj("UIEvent", {"touches": [t_obj]})
+        set_obj = self.rt.objc.new_obj("NSSet", [t_obj])
+        self.rt.send(self.touch_responder, "touchesBegan:withEvent:", set_obj, evt_obj)
+        for step in range(1, 5):
+            t.prev_x, t.prev_y = t.x, t.y
+            t.y = start_y + (end_y - start_y) * (step / 4.0)
+            t.phase = 1
+            self.rt.send(self.touch_responder, "touchesMoved:withEvent:", set_obj, evt_obj)
+        t.phase = 3
+        self.rt.send(self.touch_responder, "touchesEnded:withEvent:", set_obj, evt_obj)
+
+    def handle_page_tab(self, delta: int):
+        """Switch tabs or pages in submenus via LB/RB or Tab/[ /]."""
+        self._ensure_focus_attrs()
+        st = self.get_engine_state()
+        if st.get("active_popup_id"):
+            return
+        app_state = st.get("app_state", 0)
+        form_id = st.get("form_id", 0)
+        if app_state != 8:
+            return
+
+        if form_id == 2:
+            self.menu_index = (self.menu_index + delta) % len(PAUSE_MENU_ITEMS_Y)
+            return
+
+        if form_id == 10:  # SKILLS tabs: PASSIVE (1005), PRIMARY (1003), SECONDARY (1004)
+            controls, _, _ = self._sync_focus(st)
+            tab_ctrls = sorted([c for c in controls if c["cid"] in (1005, 1003, 1004)], key=lambda c: c["cx"])
+            if tab_ctrls:
+                self.skill_tab_idx = (self.skill_tab_idx + delta) % len(tab_ctrls)
+                tgt = tab_ctrls[self.skill_tab_idx]
+                self.tap_once("skill_tab", (tgt["cx"], tgt["cy"]), hold_frames=2)
+            else:
+                coords = [(120.0, 25.0), (240.0, 25.0), (360.0, 25.0)]
+                self.skill_tab_idx = (self.skill_tab_idx + delta) % len(coords)
+                self.tap_once("skill_tab", coords[self.skill_tab_idx], hold_frames=2)
+            return
+
+        page_cid_pairs = {
+            8: (818, 817),       # ITEMS < / >
+            118: (11809, 11810), # HELP < / >
+            6: (640, 641),       # EQUIPMENT page < / >
+        }
+        pair = page_cid_pairs.get(form_id)
+        if pair:
+            controls, _, _ = self._sync_focus(st)
+            want_cid = pair[0] if delta < 0 else pair[1]
+            for c in controls:
+                if c["cid"] == want_cid:
+                    self.tap_once("sub_page", (c["cx"], c["cy"]), hold_frames=2)
+                    return
+
+    def _draw_focus_rect(self, frect: tuple[float, float, float, float]):
+        fx0, fx1, fy0, fy1 = frect
+        pad = 2.0
+        x0 = max(2.0, fx0 - pad)
+        x1 = min(478.0, fx1 + pad)
+        y0 = max(2.0, fy0 - pad)
+        y1 = min(318.0, fy1 + pad)
+        cy = (y0 + y1) * 0.5
+        cx = (x0 + x1) * 0.5
+
+        pulse = 0.8 + 0.2 * math.sin(pygame.time.get_ticks() * 0.008)
+
+        # Dark backing border for high contrast against light/bright UI panels
+        glColor4f(0.05, 0.05, 0.1, 0.7)
+        glLineWidth(4.0)
+        glBegin(GL_LINE_LOOP)
+        glVertex2f(x0, y0)
+        glVertex2f(x1, y0)
+        glVertex2f(x1, y1)
+        glVertex2f(x0, y1)
+        glEnd()
+
+        # Crisp golden selection frame
+        glColor4f(1.0, 0.88 * pulse, 0.18, 0.96)
+        glLineWidth(2.2)
+        glBegin(GL_LINE_LOOP)
+        glVertex2f(x0, y0)
+        glVertex2f(x1, y0)
+        glVertex2f(x1, y1)
+        glVertex2f(x0, y1)
+        glEnd()
+
+        # Indicator triangle (left side if space allows, otherwise top)
+        glColor4f(1.0, 0.92, 0.28, 1.0)
+        glBegin(GL_TRIANGLES)
+        if x0 >= 14.0:
+            glVertex2f(x0 - 10.0, cy - 5.5)
+            glVertex2f(x0 - 2.5, cy)
+            glVertex2f(x0 - 10.0, cy + 5.5)
+        else:
+            ty = max(10.0, y0)
+            glVertex2f(cx - 5.5, ty - 9.0)
+            glVertex2f(cx + 5.5, ty - 9.0)
+            glVertex2f(cx, ty - 2.0)
+        glEnd()
 
     def _draw_menu_cursor(self):
         st = self.get_engine_state()
-        # Strictly draw the cursor overlay ONLY in the main Pause Menu (app_state == 8 and form_id == 2)
-        if st.get("app_state") != 8 or st.get("form_id") != 2:
-            return
+        app_state = st.get("app_state", 0)
+        form_id = st.get("form_id", 0)
+        active_popup = st.get("active_popup_id", 0)
+
+        is_pause_main = (app_state == 8 and form_id == 2 and not active_popup)
+        focused = None
+        if not is_pause_main:
+            _, focused, _ = self._sync_focus(st)
+            if not focused:
+                return
+
         try:
             vx, vy, vw, vh = self.rt.gl_bridge.viewport_rect if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge else (0, 0, self.win_w, self.win_h)
             glPushAttrib(GL_ALL_ATTRIB_BITS)
@@ -244,32 +796,35 @@ class PCRunner:
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-            y = PAUSE_MENU_ITEMS_Y[self.menu_index]
+            if is_pause_main:
+                y = PAUSE_MENU_ITEMS_Y[self.menu_index]
 
-            # Golden glowing selection frame around option (x: 82 to 398)
-            glColor4f(1.0, 0.85, 0.2, 0.9)
-            glLineWidth(2.5)
-            glBegin(GL_LINE_LOOP)
-            glVertex2f(82.0, y - 18.0)
-            glVertex2f(398.0, y - 18.0)
-            glVertex2f(398.0, y + 18.0)
-            glVertex2f(82.0, y + 18.0)
-            glEnd()
+                # Golden glowing selection frame around option (x: 82 to 398)
+                glColor4f(1.0, 0.85, 0.2, 0.9)
+                glLineWidth(2.5)
+                glBegin(GL_LINE_LOOP)
+                glVertex2f(82.0, y - 18.0)
+                glVertex2f(398.0, y - 18.0)
+                glVertex2f(398.0, y + 18.0)
+                glVertex2f(82.0, y + 18.0)
+                glEnd()
 
-            # Left pointer arrow ▶
-            glColor4f(1.0, 0.9, 0.3, 1.0)
-            glBegin(GL_TRIANGLES)
-            glVertex2f(66.0, y - 9.0)
-            glVertex2f(77.0, y)
-            glVertex2f(66.0, y + 9.0)
-            glEnd()
+                # Left pointer arrow ▶
+                glColor4f(1.0, 0.9, 0.3, 1.0)
+                glBegin(GL_TRIANGLES)
+                glVertex2f(66.0, y - 9.0)
+                glVertex2f(77.0, y)
+                glVertex2f(66.0, y + 9.0)
+                glEnd()
 
-            # Right pointer arrow ◀
-            glBegin(GL_TRIANGLES)
-            glVertex2f(414.0, y - 9.0)
-            glVertex2f(403.0, y)
-            glVertex2f(414.0, y + 9.0)
-            glEnd()
+                # Right pointer arrow ◀
+                glBegin(GL_TRIANGLES)
+                glVertex2f(414.0, y - 9.0)
+                glVertex2f(403.0, y)
+                glVertex2f(414.0, y + 9.0)
+                glEnd()
+            elif focused is not None:
+                self._draw_focus_rect(focused["frect"])
 
             glPopMatrix()
             glMatrixMode(GL_PROJECTION)
@@ -402,7 +957,12 @@ class PCRunner:
             if st["hud_popup_id"] == 130:
                 self.tap_once("tut_confirm", TUTORIAL_NEXT, hold_frames=2)
             else:
-                self.tap_once("popup_confirm", POPUP_CONFIRM, hold_frames=2)
+                _, focused, _ = self._sync_focus(st)
+                if focused:
+                    coord = focused["next_coord"] if focused.get("kind") == "slider" else (focused["cx"], focused["cy"])
+                    self.tap_once("popup_confirm", coord, hold_frames=2)
+                else:
+                    self.tap_once("popup_confirm", POPUP_CONFIRM, hold_frames=2)
             return
 
         # 2. Pause Menu / Submenus (app_state == 8)
@@ -411,7 +971,17 @@ class PCRunner:
                 y = PAUSE_MENU_ITEMS_Y[self.menu_index]
                 self.tap_once("pause_opt", (240.0, y), hold_frames=2)
             else:
-                self.tap_once("sub_confirm", POPUP_CONFIRM, hold_frames=2)
+                _, focused, _ = self._sync_focus(st)
+                if focused:
+                    if focused.get("kind") == "slider":
+                        self.tap_once("sub_confirm", focused["next_coord"], hold_frames=2)
+                    else:
+                        if form_id == 10 and focused["cid"] in (1005, 1003, 1004):
+                            tab_order = {1005: 0, 1003: 1, 1004: 2}
+                            self.skill_tab_idx = tab_order[focused["cid"]]
+                        self.tap_once("sub_confirm", (focused["cx"], focused["cy"]), hold_frames=2)
+                else:
+                    self.tap_once("sub_confirm", POPUP_CONFIRM, hold_frames=2)
             return
 
         # 3. Pre-game menus (app_state == 1)
@@ -425,7 +995,11 @@ class PCRunner:
             elif form_id == 43:  # Character summary
                 self.tap_once("summary_confirm", SUMMARY_CONFIRM, hold_frames=2)
             else:
-                self.tap_once("menu_confirm", POPUP_CONFIRM, hold_frames=2)
+                _, focused, _ = self._sync_focus(st)
+                if focused:
+                    self.tap_once("menu_confirm", (focused["cx"], focused["cy"]), hold_frames=2)
+                else:
+                    self.tap_once("menu_confirm", POPUP_CONFIRM, hold_frames=2)
             return
 
         # 4. Gameplay & Cutscenes (app_state == 2)
@@ -464,11 +1038,33 @@ class PCRunner:
             if st["hud_popup_id"] == 130:
                 self.tap_once("tut_close", TUTORIAL_CLOSE, hold_frames=2)
             else:
-                self.tap_once("popup_cancel", POPUP_CANCEL, hold_frames=2)
+                controls, _, _ = self._sync_focus(st)
+                cancel_cids = (199, 207, 306, 4709, 10602, 13202, 13302)
+                cancel_ctrl = next((c for c in controls if c["cid"] in cancel_cids), None)
+                if cancel_ctrl:
+                    self.tap_once("popup_cancel", (cancel_ctrl["cx"], cancel_ctrl["cy"]), hold_frames=2)
+                else:
+                    self.tap_once("popup_cancel", POPUP_CANCEL, hold_frames=2)
             return
 
         # 2. Pause Menu / Submenus
         if app_state == 8:
+            if form_id == 46 and st.get("main_form"):
+                ov = self._find_active_overlay(st["main_form"], (4708,))
+                if ov:
+                    ctrls, _ = self._collect_subtree_controls(ov["ptr"], keep_back=True)
+                    close_btn = next((c for c in ctrls if c["cid"] in (4709, 199, 207)), ctrls[0] if ctrls else None)
+                    if close_btn:
+                        self.tap_once("quest_detail_close", (close_btn["cx"], close_btn["cy"]), hold_frames=2)
+                        return
+            if form_id == 8 and st.get("main_form"):
+                ov = self._find_active_overlay(st["main_form"], (837, 836))
+                if ov:
+                    ctrls, _ = self._collect_subtree_controls(ov["ptr"], keep_back=True)
+                    cancel_btn = next((c for c in ctrls if c["cid"] in (199, 207, 306)), None)
+                    if cancel_btn:
+                        self.tap_once("item_ov_cancel", (cancel_btn["cx"], cancel_btn["cy"]), hold_frames=2)
+                        return
             self.tap_once("pause_back", PAUSE_MENU_BACK, hold_frames=2)
             return
 
@@ -532,19 +1128,49 @@ class PCRunner:
             return
 
         # Pause Menu: move selection index without auto-clicking
-        if app_state == 8 and form_id == 2:
+        if app_state == 8 and form_id == 2 and not st.get("active_popup_id"):
             if dir_name in ("up", "left"):
                 self.menu_index = (self.menu_index - 1) % len(PAUSE_MENU_ITEMS_Y)
             elif dir_name in ("down", "right"):
                 self.menu_index = (self.menu_index + 1) % len(PAUSE_MENU_ITEMS_Y)
             return
 
+        # Live UI control-tree navigation (Popups, Pause Submenus, unknown Pregame screens)
+        controls, focused, scroll_boxes = self._sync_focus(st)
+        if not controls and not scroll_boxes:
+            return
+
+        if focused and focused.get("kind") == "slider":
+            if dir_name == "left":
+                self.tap_once("slider_prev", focused["prev_coord"], hold_frames=2)
+                return
+            if dir_name == "right":
+                self.tap_once("slider_next", focused["next_coord"], hold_frames=2)
+                return
+
+        if scroll_boxes and dir_name in ("up", "down"):
+            if len(controls) <= 1:
+                self._scroll_box(scroll_boxes[0], dir_name)
+                return
+            next_idx = self._move_focus_2d(controls, self.submenu_focus_idx, dir_name)
+            if abs(controls[next_idx]["cy"] - focused["cy"]) < 14.0:
+                self._scroll_box(scroll_boxes[0], dir_name)
+                return
+
+        if len(controls) > 1:
+            next_idx = self._move_focus_2d(controls, self.submenu_focus_idx, dir_name)
+            self.submenu_focus_idx = next_idx
+            self.submenu_focus_cid = controls[next_idx]["cid"]
+
     # ------------------------------------------------------------- Input poll
     def poll_input(self):
+        self._ensure_focus_attrs()
         if self.carousel_cooldown > 0:
             self.carousel_cooldown -= 1
         if self.nav_cooldown > 0:
             self.nav_cooldown -= 1
+        if self.scroll_cooldown > 0:
+            self.scroll_cooldown -= 1
 
         # Release timed taps
         tags_to_release = []
@@ -580,6 +1206,7 @@ class PCRunner:
                     self.fullscreen = not self.fullscreen
                     flags = DOUBLEBUF | OPENGL | (FULLSCREEN if self.fullscreen else 0)
                     self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
+                    self._apply_win32_icon()
                 elif event.key == K_F12:
                     self.capture_screenshot()
                 elif event.key in (K_EQUALS, K_PLUS, getattr(pygame, "K_KP_PLUS", K_PLUS)):
@@ -592,17 +1219,25 @@ class PCRunner:
                         cur = self.rt.audio_mixer.master_volume
                         self.rt.audio_mixer.set_master_volume(cur - 0.1)
                         print(f"[HL3 Audio] Volume: {int(self.rt.audio_mixer.master_volume * 100)}%")
-                # Map / Minimap: M or Tab (in field gameplay)
+                # Map / Minimap (field), Skip (cutscene), Tab switch (submenu), or Audio Mute (M)
                 elif event.key in (K_m, K_TAB):
                     st = self.get_engine_state()
                     if st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id"):
                         self.tap_once("hud_map", HUD_MAP, hold_frames=3)
                     elif st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
+                    elif event.key == K_TAB and st.get("app_state") == 8 and not st.get("active_popup_id"):
+                        self.handle_page_tab(1)
                     elif event.key == K_m:
                         if hasattr(self.rt, "audio_mixer"):
                             self.rt.audio_mixer.toggle_mute()
                             print(f"[HL3 Audio] Muted: {self.rt.audio_mixer.muted}")
+
+                # Page / Tab cycling in Submenus
+                elif event.key in (K_PAGEUP, K_LEFTBRACKET):
+                    self.handle_page_tab(-1)
+                elif event.key in (K_PAGEDOWN, K_RIGHTBRACKET):
+                    self.handle_page_tab(1)
 
                 # Audio mute toggle (N or Ctrl+M)
                 elif event.key == K_n:
@@ -618,80 +1253,86 @@ class PCRunner:
                 elif event.key in (K_ESCAPE, K_BACKSPACE):
                     self.handle_cancel()
 
-                # Skip cutscene: S
+                # Skip cutscene (when in cutscene) or Down navigation in menus
                 elif event.key == K_s:
                     st = self.get_engine_state()
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
-                    elif st.get("app_state") == 1:
+                    elif st.get("app_state") != 2 or st.get("active_popup_id"):
                         self.handle_nav("down")
 
                 # Menu navigation arrows
                 elif event.key in (K_UP, K_w):
                     self.handle_nav("up")
-                elif event.key in (K_DOWN, K_s):
+                elif event.key == K_DOWN:
                     self.handle_nav("down")
                 elif event.key in (K_LEFT, K_a):
                     self.handle_nav("left")
                 elif event.key in (K_RIGHT, K_d):
                     self.handle_nav("right")
 
-                # Quick Potions during gameplay
-                elif event.key in (K_q, K_1):
-                    # Upper Potion Slot (Potion 1)
-                    self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
-                elif event.key in (K_k, K_2):
-                    # Lower Potion Slot (Potion 2)
-                    self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
-
-                # Combat & Skills during gameplay
-                elif event.key in (K_u, K_3):
-                    self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
-                elif event.key in (K_i, K_4):
-                    self.tap_once("skill2", HUD_SKILL_2, hold_frames=2)
-                elif event.key in (K_o, K_5):
-                    self.tap_once("skill3", HUD_SKILL_3, hold_frames=2)
-                elif event.key == K_j:
-                    self.tap_once("attack1", HUD_ATTACK_PRIMARY, hold_frames=2)
-                elif event.key in (K_l, K_h):
-                    self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
-                elif event.key in (K_p, K_c):
-                    self.tap_once("portrait_menu", HUD_PORTRAIT_MENU, hold_frames=3)
+                # Quick Potions & Combat Skills (only during active field gameplay)
+                elif event.key in (K_q, K_1, K_k, K_2, K_u, K_3, K_i, K_4, K_o, K_5, K_j, K_l, K_h, K_p, K_c):
+                    st = self.get_engine_state()
+                    is_field = st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id")
+                    if is_field:
+                        if event.key in (K_q, K_1):
+                            self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
+                        elif event.key in (K_k, K_2):
+                            self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
+                        elif event.key in (K_u, K_3):
+                            self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
+                        elif event.key in (K_i, K_4):
+                            self.tap_once("skill2", HUD_SKILL_2, hold_frames=2)
+                        elif event.key in (K_o, K_5):
+                            self.tap_once("skill3", HUD_SKILL_3, hold_frames=2)
+                        elif event.key == K_j:
+                            self.tap_once("attack1", HUD_ATTACK_PRIMARY, hold_frames=2)
+                        elif event.key in (K_l, K_h):
+                            self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
+                        elif event.key in (K_p, K_c):
+                            self.tap_once("portrait_menu", HUD_PORTRAIT_MENU, hold_frames=3)
+                    elif event.key in (K_p, K_c) and st.get("app_state") == 8:
+                        self.handle_cancel()
 
             # Gamepad Button Events
             elif event.type == JOYBUTTONDOWN:
                 btn = event.button
+                st = self.get_engine_state()
+                is_field = st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id")
                 if btn == 0:  # A (Confirm / Talk)
                     self.handle_confirm()
                 elif btn == 1:  # B (Cancel / Back)
                     self.handle_cancel()
-                elif btn == 2:  # X (Attack Primary / Skill 1)
-                    st = self.get_engine_state()
-                    if st.get("combat_mode"):
-                        self.tap_once("pad_attack", HUD_ATTACK_PRIMARY, hold_frames=2)
-                    else:
-                        self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
-                elif btn == 3:  # Y (Secondary Attack / Skip / Skill 2)
-                    st = self.get_engine_state()
+                elif btn == 2:  # X (Attack Primary / Skill 1 in field)
+                    if is_field:
+                        if st.get("combat_mode"):
+                            self.tap_once("pad_attack", HUD_ATTACK_PRIMARY, hold_frames=2)
+                        else:
+                            self.tap_once("skill1", HUD_SKILL_1, hold_frames=2)
+                elif btn == 3:  # Y (Skip cutscene or Secondary Attack in field)
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
-                    else:
+                    elif is_field:
                         self.tap_once("attack2", HUD_ATTACK_SECONDARY, hold_frames=2)
-                elif btn == 4:  # LB (Upper Potion 1)
-                    self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
-                elif btn == 5:  # RB (Lower Potion 2)
-                    self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
-                elif btn == 6:  # Select (Minimap / Map)
-                    self.tap_once("hud_map", HUD_MAP, hold_frames=3)
-                elif btn == 7:  # Start (Pause Menu / Skip)
-                    st = self.get_engine_state()
+                elif btn == 4:  # LB (Potion 1 in field, Prev Tab/Page in submenus)
+                    if is_field:
+                        self.tap_once("potion1", HUD_POTION_1, hold_frames=3)
+                    elif st.get("app_state") == 8 and not st.get("active_popup_id"):
+                        self.handle_page_tab(-1)
+                elif btn == 5:  # RB (Potion 2 in field, Next Tab/Page in submenus)
+                    if is_field:
+                        self.tap_once("potion2", HUD_POTION_2, hold_frames=3)
+                    elif st.get("app_state") == 8 and not st.get("active_popup_id"):
+                        self.handle_page_tab(1)
+                elif btn == 6:  # Select (Minimap / Map in field)
+                    if is_field:
+                        self.tap_once("hud_map", HUD_MAP, hold_frames=3)
+                elif btn == 7:  # Start (Pause Menu / Skip / Back)
                     if st.get("sub_state") in (4, 22) or st.get("form_id") == 44:
                         self.handle_skip()
-                    elif st.get("app_state") == 2:
+                    elif is_field:
                         self.tap_once("open_pause", HUD_PORTRAIT_MENU, hold_frames=3)
-                    elif st.get("app_state") == 8:
-                        self.handle_cancel()
-                        self.tap_once("open_pause", HUD_PORTRAIT_MENU, hold_frames=2)
                     elif st.get("app_state") == 8:
                         self.handle_cancel()
 
@@ -774,6 +1415,34 @@ class PCRunner:
         else:
             if "dpad" in self.active_touches:
                 self.touch_up("dpad")
+
+            # Gamepad Left Stick & held D-Pad discrete navigation in menus / popups
+            if (st["app_state"] != 2 or st["active_popup_id"]) and self.nav_cooldown == 0:
+                nav_dir = None
+                for js in self.joysticks:
+                    if js.get_numhats() > 0:
+                        hx, hy = js.get_hat(0)
+                        if hy > 0:
+                            nav_dir = "up"
+                        elif hy < 0:
+                            nav_dir = "down"
+                        elif hx < 0:
+                            nav_dir = "left"
+                        elif hx > 0:
+                            nav_dir = "right"
+                    if not nav_dir and js.get_numaxes() >= 2:
+                        ax = float(js.get_axis(0))
+                        ay = float(js.get_axis(1))
+                        menu_deadzone = 0.55
+                        if abs(ax) > menu_deadzone or abs(ay) > menu_deadzone:
+                            if abs(ay) >= abs(ax):
+                                nav_dir = "up" if ay < 0 else "down"
+                            else:
+                                nav_dir = "left" if ax < 0 else "right"
+                    if nav_dir:
+                        self.handle_nav(nav_dir)
+                        self.nav_cooldown = 12
+                        break
 
     def capture_screenshot(self) -> Path:
         pixels = glReadPixels(0, 0, self.win_w, self.win_h, GL_RGBA, GL_UNSIGNED_BYTE)

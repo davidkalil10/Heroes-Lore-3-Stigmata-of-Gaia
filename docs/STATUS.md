@@ -3,14 +3,14 @@
 Este arquivo é gerado automaticamente a partir de `docs/STATUS.json` por `python tools/project_status.py render`.
 
 - **Projeto**: Heroes Lore 3: Stigmata of Gaia Recomp
-- **Atualizado em**: `2026-11-10`
+- **Atualizado em**: `2026-11-13`
 - **Fase geral**: `pc_playable_complete`
 - **Etapa atual**: `S08`
 - **Próxima etapa recomendada**: `S08`
 
 ## Resumo Executivo
 
-Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) 100% funcional com icone oficial embutido (assets/icon.ico e assets/icon.png). Implementado controlador unificado de entrada orientado ao estado real de memoria do motor guest (AppManager, UI_Mgr, GameCtx, sub_state, can_talk e hierarquia UIForm/UIControl). Resolvidas todas as navegacoes de tela: selecao de classe (< 73,71 e > 400,71), confirmacao em todas as telas (415,295 e 356,295), cancelamento/voltar (28,28) sem molduras espurias no resumo, pulo de cutscenes (SKIP 408,28 e confirmacao Yes 395,220), fechamento de popups tutoriais (X 385,74), conversa com NPCs no campo no alvo exato do botao de fala (id=7025 a 450,258 em paz e id=7026 a 397,239 em combate) via E/Enter/Space/Gamepad A, e navegacao completa no menu de pausa (id=2) e submenus sem auto-clique. 24 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).
+Build PC nativa e standalone (dist/HeroesLore3_PC/HeroesLore3.exe) com icone oficial 512x512 do iTunesArtwork (7 resolucoes no icon.ico + AppUserModelID + Win32 WM_SETICON/SetClassLongPtrW na janela SDL e console) e navegacao completa 100% funcional por teclado e gamepad em TODOS os menus, submenus (CHARACTER, EQUIPMENT, SKILLS, ITEMS, QUESTS, SYSTEM, PREFERENCES, HELP) e popups modais (SAVE, MAIN MENU) orientada pela arvore viva de controles (UIControl vis=0x0003, frect, sliders ctype=13, scroll ctype=10, analógico esquerdo e LB/RB/Tab). 26 testes unitarios passando. Proxima etapa: S08 (True Widescreen e expansao de viewport).
 
 ## Etapas
 
