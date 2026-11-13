@@ -253,5 +253,22 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Capturas em `16:9`, `4:3`, `20:9` e janela maximizada (`1536x793`) inspecionadas visualmente com cenário de borda a borda e OSD estilizado legível.
      - `38/38` testes unitários passando (`OK`) e `dist/HeroesLore3_PC/HeroesLore3.exe` validado em modo padrão (`Auto 30 FPS`), `--aspect 16:9 --fps 30` e `--aspect original --fps 60` com saída `0`.
 
+---
+
+## 2026-11-13 - Sessão 13: Menu Nativo de Opções (`FPS`/`Proporção`/`Idioma`), Acesso Duplo (`form=113`/`form=3`) e Cloud Save Google Drive Isolado
+
+- **Relatório completo**: `research/sessions/2026-11-13-13.md`
+- **Descobertas verificáveis e entregas**:
+  1. **Compactação de `Help & About` (`form_id=113`) e Botão em `System` (`form_id=3`)**:
+     - Compactados os 6 botões `11301..11306` em `form_id=113` (`cy=[33, 69, 105, 141, 177, 213]`) liberando espaço limpo para o 7º botão virtual `cid=99113` (`[93..393, 234..264]`) acima de `VERSION 1.0.1`.
+     - Adicionado o 5º botão virtual `cid=99003` (`[90..390, 256..286]`) em `System` (`form_id=3`).
+     - Reconstruída [`assets/ui_button_ribbon.png`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/assets/ui_button_ribbon.png) (`608x66`) diretamente com os ornamentos azuis extraídos de `user_interface_with_alpha.pvr` (`344,208..393,238`) e rampa de cor amostrada dos botões originais, com encaixe idêntico aos botões nativos.
+  2. **Modal Responsivo OpenGL e Idioma ao Vivo (`EN` / `PT-BR`)**:
+     - Criados [`tools/hl3rt/options_menu.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/options_menu.py) e [`tools/hl3rt/i18n.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/i18n.py) com layout adaptável retrato/paisagem validado em `960x640`, `1138x640` (`16:9`) e janelas verticais estreitas, sem vazamento de toque ao motor ARMv6.
+  3. **Cloud Save Google Drive Isolado para Heroes Lore 3**:
+     - Criado [`tools/hl3rt/cloud_save.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/cloud_save.py) usando OAuth Device Flow + Drive v3 isolado em `"Heroes Lore III - Stigmata of Gaia"` / `"heroes_lore_3_save.json"`, verificação SHA-256, staging atômico + rollback em `data/save-backups/<stamp>` e reinício limpo para a tela título (`_reload_runtime_to_title()` -> `app_state=1, form_id=100`).
+     - Empacotamento `tools/build_standalone_pc.py` configurado para excluir `config/cloud_auth.json` e suíte ampliada validada (`48/48` testes `OK` e `dist/HeroesLore3_PC/HeroesLore3.exe --frames 15` validado com saída `0`).
+
+
 
 

@@ -5,7 +5,7 @@
   "overall_phase": "pc_playable_complete",
   "current_step": "S09",
   "next_recommended_step": "S09",
-  "summary": "S08 concluida: True Widescreen real com Auto como padrao (expande instantaneamente em Full Wide ao maximizar, redimensionar ou em tela cheia, alternando Auto / 16:9 / Original via F9 sem esticar sprites, HUD ou menus), FPS configuravel (30 padrao calibrado / 60 via F8) com aviso estilizado RPG na tela (OSD), trampolim UI_FLUSH_RETURN_STUB (0x0000c688) e build standalone (dist/HeroesLore3_PC/HeroesLore3.exe) validada em 38 testes unitarios. Proxima etapa: S09 (Extracao de textos e fontes).",
+  "summary": "S08 concluida e base de S11 entregue: Menu Personalizado 'Port Options & Cloud' acessivel em dois pontos ('Help & About' form=113 no Titulo e 'System' form=3 em jogo) com alteracao ao vivo de FPS (30/60), Proporcao (Auto/16:9/Original 3:2), Idioma (EN padrao / PT-BR) e Cloud Save Google Drive isolado (OAuth Device Flow, upload, restore atomico com retorno ao Titulo e layout responsivo). Proxima etapa: S09 (Extracao de textos e fontes).",
   "steps": [
     {
       "id": "S00",
@@ -189,11 +189,20 @@
     {
       "id": "S11",
       "title": "Menu nativo de opcoes, Cloud Save (Google Drive) e OTA Updater",
-      "status": "pending",
-      "owner": null,
+      "status": "in_progress",
+      "owner": "agent",
       "completed_at": null,
-      "evidence": [],
-      "notes": "Modal nativo (F10/R3/botao), backup/restore atomico no Google Drive e atualizador GitHub Releases."
+      "evidence": [
+        "tools/hl3rt/options_menu.py",
+        "tools/hl3rt/cloud_save.py",
+        "tools/hl3rt/i18n.py",
+        "tools/hl3rt/display.py",
+        "assets/ui_button_ribbon.png",
+        "tests/test_cloud_save.py",
+        "tests/test_options_menu.py",
+        "research/sessions/2026-11-13-13.md"
+      ],
+      "notes": "Implementados e validados: acesso duplo em Help & About (form=113) e System (form=3), modal responsivo (FPS/Proporcao/Idioma EN-PTBR), Cloud Save Google Drive isolado (Heroes Lore III - Stigmata of Gaia / heroes_lore_3_save.json) e 48/48 testes passando. Pendente em S11: OTA Updater via GitHub Releases."
     },
     {
       "id": "S12",

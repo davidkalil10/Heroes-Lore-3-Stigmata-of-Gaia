@@ -43,3 +43,6 @@ data/internal/*
 !data/internal/.gitkeep
 data/external/*
 !data/external/.gitkeep
+data/save-backups/
+data/restore-*/
+config/cloud_auth.json

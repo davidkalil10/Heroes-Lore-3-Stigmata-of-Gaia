@@ -389,6 +389,33 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - `Original` (pillarbox/letterbox `3:2`), `16:9` (~`569x320` visíveis) e `Auto` (`480x360` em `4:3`, `711x320` em `20:9` ou janela livre) exibem cenário expandido nas bordas sem nenhuma distorção, com HUD ancorada nas margens e menus/submenus/popups centralizados com alinhamento perfeito de barras e botões.
   - Alternância de FPS (`F8`) e proporção (`F9`) ocorre em tempo real sem perder texturas GL nem derrubar a janela no Windows.
 
+---
+
+## ADR-020: Menu Personalizado de Opções & Cloud Save (Google Drive), Acesso Duplo Nativo e Layout Responsivo Multi-Tela
+
+- **Data**: 2026-11-13
+- **Status**: Aceito
+- **Contexto**:
+  - Após a consolidação do marco `S08`, o usuário solicitou um menu personalizado integrado ao visual do jogo para controlar configurações do port e gerenciamento completo de Cloud Save via Google Drive:
+    1. Acesso duplo: item no menu de título em **Help & About** (`form_id == 113`) e item no menu de pausa in-game em **System** (`form_id == 3`).
+    2. Alterar **FPS** (`30` / `60`), **Proporção de Tela** (`Auto` / `16:9` / `Original 3:2`) e **Idioma** (`English (US)` / `Português (BR)`, já preparado para `S09`/`S10`).
+    3. Tela de **Cloud Save (Google Drive)** usando o mesmo protocolo dos ports HL / HL2 / HLZero / HL5 (conexão OAuth Device Flow, envio de backup, restauração segura com retorno ao título e desconexão), com **isolamento estrito para Heroes Lore 3** (sem conflito de pasta/arquivo/IDs com os outros jogos) e **layout adaptável** que não encolha fontes/botões de forma ilegível entre PC widescreen, janelas estreitas e telas mobile retrato/paisagem.
+- **Decisão**:
+  1. **Acesso Duplo com Chrome Nativo**:
+     - Em [`tools/run_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py), compactar verticalmente os 6 botões nativos (`11301..11306`) em `form_id == 113` via `_patch_help_about_layout()` para inserir o botão virtual `cid=99113` (`[93..393, 234..264]`) acima de `VERSION 1.0.1`, e adicionar o 5º botão virtual `cid=99003` (`[90..390, 256..286]`) em `System` (`form_id == 3`).
+     - Renderizar ambos com a textura [`assets/ui_button_ribbon.png`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/assets/ui_button_ribbon.png) construída a partir dos sprites originais de `user_interface_with_alpha.pvr` e gradiente nativo, integrados à navegação 2D por teclado/gamepad e ao toque direto por mouse.
+  2. **Modal Responsivo em OpenGL (`PortOptionsModal`)**:
+     - Criar [`tools/hl3rt/options_menu.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/options_menu.py) com `compute_modal_layout(win_w, win_h)`, alternando automaticamente entre layout paisagem (cartões lado a lado + linha de 4 ações) e layout retrato/compacto (blocos empilhados + grade `2x2`), mantendo escalas mínimas legíveis de fonte/botão e consumindo toda entrada enquanto aberto para impedir vazamento ao motor ARMv6.
+  3. **Internacionalização Bilíngue (`EN` padrão / `PT-BR` ao vivo)**:
+     - Criar [`tools/hl3rt/i18n.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/i18n.py) e persistir `"language"` (padrão `"en"`) em [`tools/hl3rt/display.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/display.py), refletindo imediatamente em rótulos de UI, OSD e modal sem reiniciar.
+  4. **Google Drive Cloud Save Isolado (`CloudSaveManager`)**:
+     - Criar [`tools/hl3rt/cloud_save.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/cloud_save.py) usando OAuth 2.0 Device Flow (RFC 8628) e API Google Drive v3 com pasta dedicada `"Heroes Lore III - Stigmata of Gaia"` e pacote único `"heroes_lore_3_save.json"` verificando `SHA-256`, sanitização de caminhos e restauração atômica via staging + backup de rollback em `data/save-backups/<stamp>` seguida de `_reload_runtime_to_title()`.
+     - Garantir no [`.gitignore`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/.gitignore) e no empacotador [`tools/build_standalone_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/build_standalone_pc.py) que `config/cloud_auth.json` e backups locais temporários jamais sejam embutidos na distribuição nem enviados ao Git.
+- **Consequências**:
+  - Os jogadores alternam `FPS`, `Proporção`, `Idioma` e gerenciam backups em nuvem diretamente pelo menu nativo tanto no título quanto em jogo, com UI nítida e adaptada a qualquer tamanho de tela.
+  - Todo o fluxo tem cobertura automatizada (`tests/test_cloud_save.py`, `tests/test_options_menu.py` — 48/48 testes passando na suíte completa) e distribuição standalone atualizada em `dist/HeroesLore3_PC/HeroesLore3.exe`.
+
+
 
 
 

@@ -19,8 +19,10 @@ ASPECT_PRESET_RATIOS: dict[str, float] = {
 
 UI_ASPECT_CYCLE = ("auto", "16:9", "original")
 VALID_FPS_TARGETS = (30, 60)
+VALID_LANGUAGES = ("en", "pt-BR")
 DEFAULT_ASPECT_MODE = "auto"
 DEFAULT_FPS_TARGET = 30
+DEFAULT_LANGUAGE = "en"
 
 BASE_W = 480
 BASE_H = 320
@@ -61,6 +63,17 @@ def normalize_fps(fps: int | str | None) -> int:
     except (TypeError, ValueError):
         return DEFAULT_FPS_TARGET
     return 60 if val >= 45 else 30
+
+
+def normalize_language(lang: str | None) -> str:
+    if not lang:
+        return DEFAULT_LANGUAGE
+    key = str(lang).strip().lower().replace("_", "-")
+    if key.startswith("pt") or "portugu" in key:
+        return "pt-BR"
+    if key.startswith("en") or "english" in key:
+        return "en"
+    return DEFAULT_LANGUAGE
 
 
 def ceil_mult4(val: float, minimum: int, maximum: int = MAX_PATCH_DIM) -> int:
@@ -195,6 +208,7 @@ def load_display_config(path: Path | None = None) -> dict:
     out = {
         "aspect_mode": DEFAULT_ASPECT_MODE,
         "target_fps": DEFAULT_FPS_TARGET,
+        "language": DEFAULT_LANGUAGE,
     }
     try:
         if cfg_path.exists():
@@ -204,6 +218,8 @@ def load_display_config(path: Path | None = None) -> dict:
                     out["aspect_mode"] = normalize_aspect_mode(data["aspect_mode"])
                 if "target_fps" in data:
                     out["target_fps"] = normalize_fps(data["target_fps"])
+                if "language" in data:
+                    out["language"] = normalize_language(data["language"])
     except Exception:
         pass
     return out
@@ -214,6 +230,7 @@ def save_display_config(cfg: dict, path: Path | None = None) -> Path:
     payload = {
         "aspect_mode": normalize_aspect_mode(cfg.get("aspect_mode")),
         "target_fps": normalize_fps(cfg.get("target_fps")),
+        "language": normalize_language(cfg.get("language")),
     }
     try:
         cfg_path.parent.mkdir(parents=True, exist_ok=True)

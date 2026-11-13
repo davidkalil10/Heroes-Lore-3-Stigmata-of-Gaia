@@ -89,14 +89,32 @@ CONTROLES
      com resposta 1:1 e precisão de toque em todos os botões e menus!
 
 ------------------------------------------------------------------------
+OPÇÕES DO PORT & CLOUD SAVE (GOOGLE DRIVE)
+------------------------------------------------------------------------
+Acesse o menu personalizado **PORT OPTIONS & CLOUD** em dois locais:
+  * No Título -> "Help & About" -> "PORT OPTIONS & CLOUD"
+  * Durante o Jogo -> Pausa (Esc / Start) -> "System" -> "PORT OPTIONS & CLOUD"
+
+Dentro desse menu você pode configurar ao vivo:
+  * Taxa de Quadros (FPS): 30 FPS (padrão) ou 60 FPS
+  * Proporção de Tela: Auto (Full Wide), 16:9 Widescreen ou Original (3:2)
+  * Idioma da interface do port: English (US) ou Português (BR)
+  * Cloud Save (Google Drive):
+      - Conectar Conta Google (OAuth Device Flow - abre navegador e código)
+      - Enviar Backup Atual para o Google Drive ("Heroes Lore III - Stigmata of Gaia")
+      - Restaurar Save da Nuvem (cria backup de segurança local automático)
+      - Desconectar Conta
+
+------------------------------------------------------------------------
 SAVES E CONFIGURAÇÕES
 ------------------------------------------------------------------------
 Os arquivos de progresso e saves são salvos localmente na pasta:
   data/internal/Documents/
 
-Ajustes de volume e exibição (FPS / proporção) são persistidos automaticamente em:
+Ajustes de áudio, exibição e autenticação da nuvem ficam em:
   config/audio.json
   config/display.json
+  config/cloud_auth.json (criado somente após conectar sua conta Google)
 
 Bom jogo!
 ========================================================================
@@ -174,13 +192,20 @@ def build():
         "OpenGL.arrays.numbers",
         "--hidden-import",
         "PIL.Image",
+        "--hidden-import",
+        "urllib.request",
+        "--hidden-import",
+        "webbrowser",
         "--add-data",
         f"{ROOT / 'tools'};tools",
         "--add-data",
         f"{ROOT / 'project.json'};.",
-        "--add-data",
-        f"{ROOT / 'config'};config",
     ]
+
+    for cfg_name in ("audio.json", "display.json"):
+        cfg_file = ROOT / "config" / cfg_name
+        if cfg_file.exists():
+            cmd.extend(["--add-data", f"{cfg_file};config"])
 
     if (ROOT / "assets").exists():
         cmd.extend(["--add-data", f"{ROOT / 'assets'};assets"])

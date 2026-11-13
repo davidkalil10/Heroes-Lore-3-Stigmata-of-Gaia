@@ -59,14 +59,19 @@ sys.path.insert(0, str(ROOT / "tools"))
 from hl3rt.runtime import Runtime
 from hl3rt.gl_bridge import GLBridge
 from hl3rt.hle_uikit import Touch
+from hl3rt.cloud_save import CloudSaveManager
+from hl3rt.i18n import set_active_language, t
+from hl3rt.options_menu import ModalPage, PortOptionsModal
 from hl3rt.display import (
     DEFAULT_ASPECT_MODE,
     DEFAULT_FPS_TARGET,
+    DEFAULT_LANGUAGE,
     UI_ASPECT_CYCLE,
     compute_viewport_layout,
     load_display_config,
     normalize_aspect_mode,
     normalize_fps,
+    normalize_language,
     save_display_config,
 )
 
@@ -161,6 +166,7 @@ class PCRunner:
             target_fps = cfg.get("target_fps", DEFAULT_FPS_TARGET)
         self.aspect_mode = normalize_aspect_mode(aspect_mode)
         self.target_fps = normalize_fps(target_fps)
+        self.language = set_active_language(cfg.get("language", DEFAULT_LANGUAGE) if headless_frames == 0 else DEFAULT_LANGUAGE)
         if self.aspect_mode == "16:9" and headless_frames == 0:
             self.win_w = int(round(320.0 * (16.0 / 9.0) * self.scale))
             self.win_h = 320 * self.scale
@@ -187,7 +193,11 @@ class PCRunner:
         self.submenu_focus_cid = 0
         self.skill_tab_idx = 0
         self.pending_tap_ups: dict[str, int] = {}
+        self._modal_consumed_click = False
+        self._injected_btn_tex = 0
+        self._injected_btn_tex_key = None
         self._ensure_osd_attrs()
+        self._ensure_port_modal()
 
         log_boot("Calling _init_window")
         self._init_window()
@@ -590,10 +600,16 @@ class PCRunner:
                     root_ptr = ov["ptr"]
                     overlay_cid = ov["cid"]
             ctrls, scrolls = self._collect_subtree_controls(root_ptr)
+            if form_id == 3 and overlay_cid == 0:
+                ctrls.append(self._make_virtual_port_btn(99003, (90.0, 390.0, 256.0, 286.0)))
             return ("submenu", int(form_id), int(overlay_cid)), ctrls, scrolls
 
         if app_state == 1 and form_id not in (0, 100, 41, 42, 43) and st.get("main_form"):
+            if form_id == 113:
+                self._patch_help_about_layout(st["main_form"])
             ctrls, scrolls = self._collect_subtree_controls(st["main_form"])
+            if form_id == 113:
+                ctrls.append(self._make_virtual_port_btn(99113, (93.0, 393.0, 234.0, 264.0)))
             return ("pregame", int(form_id), 0), ctrls, scrolls
 
         return None, [], []
@@ -698,7 +714,88 @@ class PCRunner:
             save_display_config({
                 "aspect_mode": self.aspect_mode,
                 "target_fps": self.target_fps,
+                "language": getattr(self, "language", DEFAULT_LANGUAGE),
             })
+
+    def _ensure_port_modal(self):
+        if hasattr(self, "port_modal") and self.port_modal is not None:
+            return
+        if not hasattr(self, "language"):
+            self.language = DEFAULT_LANGUAGE
+        self._modal_consumed_click = False
+        self._injected_btn_tex = 0
+        self._injected_btn_tex_key = None
+        if getattr(self, "headless_frames", 0) > 0:
+            self.cloud = None
+            self.port_modal = None
+            return
+        self.cloud = CloudSaveManager()
+        self.port_modal = PortOptionsModal(
+            cloud=self.cloud,
+            get_fps=lambda: self.target_fps,
+            set_fps=lambda fps: self.set_target_fps(fps, notify=False),
+            get_aspect=lambda: self.aspect_mode,
+            set_aspect=lambda mode: self.set_aspect_mode(mode, resize_window=True, notify=False),
+            get_lang=lambda: self.language,
+            set_lang=lambda lang: self.set_language(lang, notify=False),
+            on_restore_applied=self._reload_runtime_to_title,
+        )
+
+    @staticmethod
+    def _make_virtual_port_btn(cid: int, frect: tuple[float, float, float, float]) -> dict:
+        fx0, fx1, fy0, fy1 = frect
+        cx = (fx0 + fx1) * 0.5
+        cy = (fy0 + fy1) * 0.5
+        return {
+            "ptr": 0,
+            "ctype": 2,
+            "cid": int(cid),
+            "vis": 3,
+            "pos": (int(round(cx)), int(round(cy)), -1, -1),
+            "frect": (float(fx0), float(fx1), float(fy0), float(fy1)),
+            "cx": float(cx),
+            "cy": float(cy),
+            "next_sibling": 0,
+            "first_child": 0,
+            "kind": "button",
+        }
+
+    def _patch_help_about_layout(self, main_form_ptr: int):
+        if not main_form_ptr or not hasattr(self, "rt") or not self.rt or not hasattr(self.rt, "m"):
+            return
+        targets = {
+            11301: 33,
+            11302: 69,
+            11303: 105,
+            11304: 141,
+            11305: 177,
+            11306: 213,
+        }
+        ctrls, _ = self._collect_subtree_controls(main_form_ptr)
+        m = self.rt.m
+        for c in ctrls:
+            t_cy = targets.get(c["cid"])
+            if t_cy is None or not c["ptr"]:
+                continue
+            if c["pos"][1] != t_cy or abs(c["cy"] - float(t_cy)) > 0.5:
+                try:
+                    m.wrbytes(c["ptr"] + 0x0a, struct.pack("<h", int(t_cy)))
+                    fy0, fy1 = float(t_cy) - 15.0, float(t_cy) + 15.0
+                    m.wrbytes(c["ptr"] + 0x18, struct.pack("<4f", 93.0, 393.0, fy0, fy1))
+                except Exception:
+                    pass
+
+    def _get_injected_port_btn_spec(self, st: dict | None = None) -> tuple[int, tuple[float, float, float, float], tuple[float, float]] | None:
+        state = st if st is not None else self.get_engine_state()
+        if state.get("active_popup_id"):
+            return None
+        app_state = state.get("app_state", 0)
+        form_id = state.get("form_id", 0)
+        if app_state == 1 and form_id == 113:
+            return 99113, (93.0, 393.0, 234.0, 264.0), (0.0, 0.0)
+        if app_state == 8 and form_id == 3:
+            return 99003, (90.0, 390.0, 256.0, 286.0), self._ui_main_offset(state)
+        return None
 
     def _resize_window(self, new_w: int, new_h: int):
         if (new_w, new_h) == (self.win_w, self.win_h):
@@ -814,34 +911,107 @@ class PCRunner:
             self.game_h = float(self.rt.gl_bridge.game_h)
         self._save_display_prefs()
         if notify:
-            labels = {
-                "auto": ("AUTO", "PROPORÇÃO: AUTO (FULL WIDE)", "Preenche toda a tela sem esticar  •  [F9] alternar", (104, 228, 168)),
-                "16:9": ("16:9", "PROPORÇÃO: 16:9 WIDESCREEN", "Visão horizontal expandida  •  [F9] alternar", (110, 222, 255)),
-                "original": ("3:2", "PROPORÇÃO: ORIGINAL (3:2)", "Enquadramento clássico 480x320  •  [F9] alternar", (245, 204, 82)),
+            lang = getattr(self, "language", DEFAULT_LANGUAGE)
+            accents = {
+                "auto": (104, 228, 168),
+                "16:9": (110, 222, 255),
+                "original": (245, 204, 82),
             }
-            badge, title, sub, col = labels.get(self.aspect_mode, labels["auto"])
-            self.show_osd(badge, title, sub, accent=col)
+            mode_key = self.aspect_mode if self.aspect_mode in accents else DEFAULT_ASPECT_MODE
+            self.show_osd(
+                t(f"osd.aspect.{mode_key}.badge", lang),
+                t(f"osd.aspect.{mode_key}.title", lang),
+                t(f"osd.aspect.{mode_key}.sub", lang),
+                accent=accents[mode_key],
+            )
         print(f"[HL3 PC] Aspect Mode: {self.aspect_mode.upper()} ({self.game_w:.0f}x{self.game_h:.0f})")
 
     def set_target_fps(self, fps: int, notify: bool = False):
         self.target_fps = normalize_fps(fps)
         self._save_display_prefs()
         if notify:
+            lang = getattr(self, "language", DEFAULT_LANGUAGE)
             if self.target_fps == 60:
                 self.show_osd(
                     "60 FPS",
-                    "TAXA DE QUADROS: 60 FPS",
-                    "Modo Alta Fluidez  •  [F8] alternar",
+                    t("osd.fps.60.title", lang),
+                    t("osd.fps.60.sub", lang),
                     accent=(110, 222, 255),
                 )
             else:
                 self.show_osd(
                     "30 FPS",
-                    "TAXA DE QUADROS: 30 FPS",
-                    "Modo Padrão Calibrado  •  [F8] alternar",
+                    t("osd.fps.30.title", lang),
+                    t("osd.fps.30.sub", lang),
                     accent=(245, 204, 82),
                 )
         print(f"[HL3 PC] Target FPS: {self.target_fps}")
+
+    def set_language(self, lang: str, notify: bool = False):
+        self.language = set_active_language(normalize_language(lang))
+        self._save_display_prefs()
+        self._injected_btn_tex_key = None
+        if getattr(self, "port_modal", None) is not None:
+            self.port_modal.invalidate_cache()
+        if notify:
+            self.show_osd(
+                t("osd.lang.badge", self.language),
+                t("osd.lang.title", self.language),
+                t("osd.lang.sub", self.language),
+                accent=(245, 204, 82),
+            )
+        print(f"[HL3 PC] Language: {self.language}")
+
+    def _reload_runtime_to_title(self):
+        """Cleanly reset guest Mach-O/ObjC/OpenGL runtime after restoring saves so it boots to Title."""
+        print("[HL3 PC] Reloading runtime to Title Screen after Cloud Restore...")
+        old_rt = getattr(self, "rt", None)
+        if old_rt is not None:
+            if hasattr(old_rt, "audio_mixer") and old_rt.audio_mixer:
+                try:
+                    old_rt.audio_mixer.save_config()
+                    old_rt.audio_mixer.stop_bgm()
+                    for sid in list(old_rt.audio_mixer.sources.keys()):
+                        old_rt.audio_mixer.stop_source(sid)
+                except Exception:
+                    pass
+            if hasattr(old_rt, "gl_bridge") and old_rt.gl_bridge:
+                try:
+                    tex_ids = list(old_rt.gl_bridge.textures.values())
+                    if tex_ids:
+                        glDeleteTextures(tex_ids)
+                except Exception:
+                    pass
+            if hasattr(old_rt, "libc") and hasattr(old_rt.libc, "open_files"):
+                for f in list(old_rt.libc.open_files.values()):
+                    try:
+                        f.close()
+                    except Exception:
+                        pass
+
+        self.active_touches.clear()
+        self.pending_tap_ups.clear()
+        self.menu_index = 0
+        self.submenu_focus_ctx = None
+        self.submenu_focus_idx = 0
+        self.submenu_focus_cid = 0
+        self.touch_responder = 0
+        self.delegate = 0
+
+        self._init_runtime()
+        if hasattr(self, "rt") and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
+            self.rt.gl_bridge.set_aspect_mode(self.aspect_mode)
+            self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
+            self.game_w = float(self.rt.gl_bridge.game_w)
+            self.game_h = float(self.rt.gl_bridge.game_h)
+        lang = getattr(self, "language", DEFAULT_LANGUAGE)
+        self.show_osd(
+            t("osd.restore.badge", lang),
+            t("osd.restore.title", lang),
+            t("osd.restore.sub", lang),
+            accent=(104, 228, 168),
+            duration=3.0,
+        )
 
     def _ui_main_offset(self, st: dict | None = None) -> tuple[float, float]:
         if not hasattr(self, "rt") or not self.rt or not getattr(self.rt, "gl_bridge", None):
@@ -997,7 +1167,106 @@ class PCRunner:
             glVertex2f(cx, ty - 2.0)
         glEnd()
 
+    def _build_injected_button_surface(self, label: str) -> pygame.Surface:
+        ribbon_path = self._resolve_icon_path("ui_button_ribbon.png")
+        if ribbon_path is not None:
+            surf = pygame.image.load(str(ribbon_path)).convert_alpha()
+        else:
+            surf = pygame.Surface((608, 66), pygame.SRCALPHA)
+            pygame.draw.rect(surf, (205, 220, 240, 245), (10, 6, 588, 54), border_radius=14)
+            pygame.draw.rect(surf, (24, 52, 118, 255), (10, 6, 588, 54), width=3, border_radius=14)
+
+        w, h = surf.get_size()
+        if not pygame.font.get_init():
+            pygame.font.init()
+        txt = label.upper()
+        sz = max(18, int(round(h * 0.38)))
+        while sz > 12:
+            try:
+                font = pygame.font.SysFont("segoeui,dejavusans,arial", sz, bold=True)
+            except Exception:
+                font = pygame.font.Font(None, sz + 3)
+            if font.size(txt)[0] <= w - 165:
+                break
+            sz -= 1
+
+        hi = font.render(txt, True, (248, 252, 255))
+        fg = font.render(txt, True, (18, 22, 32))
+        tx = (w - fg.get_width()) // 2
+        ty = (h - fg.get_height()) // 2
+        surf.blit(hi, (tx, ty + 1))
+        surf.blit(fg, (tx, ty))
+        return surf
+
+    def _draw_injected_port_buttons(self, st: dict | None = None):
+        spec = self._get_injected_port_btn_spec(st)
+        if spec is None:
+            return
+        _, (fx0, fx1, fy0, fy1), (ox, oy) = spec
+        lang = getattr(self, "language", DEFAULT_LANGUAGE)
+        label = t("game.btn.port_options", lang)
+        tex_key = ("ui_ribbon", lang, label)
+        try:
+            if getattr(self, "_injected_btn_tex", 0) == 0 or getattr(self, "_injected_btn_tex_key", None) != tex_key:
+                surf = self._build_injected_button_surface(label)
+                tw, th = surf.get_size()
+                raw = pygame.image.tostring(surf, "RGBA", False)
+                if not getattr(self, "_injected_btn_tex", 0):
+                    self._injected_btn_tex = int(glGenTextures(1))
+                glBindTexture(GL_TEXTURE_2D, self._injected_btn_tex)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, raw)
+                self._injected_btn_tex_key = tex_key
+
+            gb = self.rt.gl_bridge if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge else None
+            vx, vy, vw, vh = gb.viewport_rect if gb else (0, 0, self.win_w, self.win_h)
+            gw = float(gb.game_w) if gb else 480.0
+            gh = float(gb.game_h) if gb else 320.0
+
+            x0 = fx0 - 4.0 + ox
+            x1 = fx1 + 4.0 + ox
+            y0 = fy0 - 1.5 + oy
+            y1 = fy1 + 1.5 + oy
+
+            glPushAttrib(GL_ALL_ATTRIB_BITS)
+            glDisable(GL_SCISSOR_TEST)
+            glViewport(vx, vy, vw, vh)
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            glOrtho(0.0, gw, gh, 0.0, -1.0, 1.0)
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+
+            glEnable(GL_TEXTURE_2D)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glBindTexture(GL_TEXTURE_2D, self._injected_btn_tex)
+            glColor4f(1.0, 1.0, 1.0, 1.0)
+            glBegin(GL_QUADS)
+            glTexCoord2f(0.0, 0.0); glVertex2f(x0, y0)
+            glTexCoord2f(1.0, 0.0); glVertex2f(x1, y0)
+            glTexCoord2f(1.0, 1.0); glVertex2f(x1, y1)
+            glTexCoord2f(0.0, 1.0); glVertex2f(x0, y1)
+            glEnd()
+
+            glPopMatrix()
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopAttrib()
+            glEnable(GL_TEXTURE_2D)
+            glColor4f(1.0, 1.0, 1.0, 1.0)
+        except Exception:
+            pass
+
     def _draw_menu_cursor(self):
+        if getattr(self, "port_modal", None) is not None and self.port_modal.is_open:
+            return
         st = self.get_engine_state()
         app_state = st.get("app_state", 0)
         form_id = st.get("form_id", 0)
@@ -1228,8 +1497,12 @@ class PCRunner:
             pass
 
     def _present(self):
+        self._draw_injected_port_buttons()
         self._draw_menu_cursor()
         self._draw_osd()
+        pm = getattr(self, "port_modal", None)
+        if pm is not None and pm.is_open:
+            pm.draw_gl(self.win_w, self.win_h)
         pygame.display.flip()
 
     def _init_runtime(self):
@@ -1373,7 +1646,11 @@ class PCRunner:
             else:
                 _, focused, _ = self._sync_focus(st)
                 if focused:
-                    if focused.get("kind") == "slider":
+                    if focused["cid"] == 99003:
+                        self._ensure_port_modal()
+                        if self.port_modal is not None:
+                            self.port_modal.open(ModalPage.OPTIONS)
+                    elif focused.get("kind") == "slider":
                         self.tap_once("sub_confirm", self._main_pt(focused["next_coord"], st), hold_frames=2)
                     else:
                         if form_id == 10 and focused["cid"] in (1005, 1003, 1004):
@@ -1397,7 +1674,12 @@ class PCRunner:
             else:
                 _, focused, _ = self._sync_focus(st)
                 if focused:
-                    self.tap_once("menu_confirm", (focused["cx"], focused["cy"]), hold_frames=2)
+                    if focused["cid"] == 99113:
+                        self._ensure_port_modal()
+                        if self.port_modal is not None:
+                            self.port_modal.open(ModalPage.OPTIONS)
+                    else:
+                        self.tap_once("menu_confirm", (focused["cx"], focused["cy"]), hold_frames=2)
                 else:
                     self.tap_once("menu_confirm", POPUP_CONFIRM, hold_frames=2)
             return
@@ -1470,7 +1752,7 @@ class PCRunner:
 
         # 3. Pre-game menus
         if app_state == 1:
-            if form_id in (41, 42, 43, 40):
+            if form_id in (41, 42, 43, 40, 112, 113, 114, 115, 116, 117, 118):
                 self.tap_once("pregame_back", BTN_BACK, hold_frames=2)
             return
 
@@ -1584,6 +1866,10 @@ class PCRunner:
         for tag in tags_to_release:
             self.touch_up(tag)
 
+        pm = getattr(self, "port_modal", None)
+        if pm is not None:
+            pm.poll()
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.running = False
@@ -1602,15 +1888,35 @@ class PCRunner:
 
             # Mouse / Direct 1:1 Touch
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                if pm is not None and pm.is_open:
+                    pm.handle_mouse_down(event.pos[0], event.pos[1], self.win_w, self.win_h)
+                    self._modal_consumed_click = True
+                    continue
                 gx, gy = self.window_to_game_coord(event.pos[0], event.pos[1])
+                spec = self._get_injected_port_btn_spec()
+                if spec is not None:
+                    _, (fx0, fx1, fy0, fy1), (ox, oy) = spec
+                    if (fx0 + ox) <= gx <= (fx1 + ox) and (fy0 + oy) <= gy <= (fy1 + oy):
+                        self._ensure_port_modal()
+                        if self.port_modal is not None:
+                            self.port_modal.open(ModalPage.OPTIONS)
+                        self._modal_consumed_click = True
+                        continue
                 self.touch_down("mouse", (gx, gy))
 
             elif event.type == MOUSEBUTTONUP and event.button == 1:
+                if getattr(self, "_modal_consumed_click", False):
+                    self._modal_consumed_click = False
+                    continue
                 self.touch_up("mouse")
 
-            elif event.type == MOUSEMOTION and ("mouse" in self.active_touches):
-                gx, gy = self.window_to_game_coord(event.pos[0], event.pos[1])
-                self.touch_move("mouse", (gx, gy))
+            elif event.type == MOUSEMOTION:
+                if pm is not None and pm.is_open:
+                    pm.handle_mouse_motion(event.pos[0], event.pos[1], self.win_w, self.win_h)
+                    continue
+                if "mouse" in self.active_touches:
+                    gx, gy = self.window_to_game_coord(event.pos[0], event.pos[1])
+                    self.touch_move("mouse", (gx, gy))
 
             # Discrete Keydown Events
             elif event.type == KEYDOWN:
@@ -1639,18 +1945,24 @@ class PCRunner:
                     self._apply_win32_icon()
                     self._osd_tex = 0
                     self._osd_tex_key = None
+                    if pm is not None:
+                        pm.reset_gl()
                     if hasattr(self, "rt") and self.rt and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
                         self.rt.gl_bridge.update_viewport(self.win_w, self.win_h)
                         self.game_w = float(self.rt.gl_bridge.game_w)
                         self.game_h = float(self.rt.gl_bridge.game_h)
+                    lang = getattr(self, "language", DEFAULT_LANGUAGE)
                     self.show_osd(
-                        "TELA",
-                        "TELA CHEIA ATIVADA" if self.fullscreen else "MODO JANELA ATIVADO",
-                        f"Proporção {self.aspect_mode.upper()}  •  [F11] alternar",
+                        t("osd.fullscreen.badge", lang),
+                        t("osd.fullscreen.on.title" if self.fullscreen else "osd.fullscreen.off.title", lang),
+                        t("osd.fullscreen.sub", lang, aspect=self.aspect_mode.upper()),
                         accent=(104, 228, 168) if self.fullscreen else (245, 204, 82),
                     )
                 elif event.key == K_F12:
                     self.capture_screenshot()
+                elif pm is not None and pm.is_open:
+                    pm.handle_key(event.key)
+                    continue
                 elif event.key in (K_EQUALS, K_PLUS, getattr(pygame, "K_KP_PLUS", K_PLUS)):
                     if hasattr(self.rt, "audio_mixer"):
                         cur = self.rt.audio_mixer.master_volume
@@ -1740,6 +2052,12 @@ class PCRunner:
             # Gamepad Button Events
             elif event.type == JOYBUTTONDOWN:
                 btn = event.button
+                if pm is not None and pm.is_open:
+                    if btn == 0:
+                        pm.handle_confirm()
+                    elif btn in (1, 7):
+                        pm.handle_cancel()
+                    continue
                 st = self.get_engine_state()
                 is_field = st.get("app_state") == 2 and st.get("sub_state") == 3 and not st.get("active_popup_id")
                 if btn == 0:  # A (Confirm / Talk)
@@ -1781,6 +2099,21 @@ class PCRunner:
             # Gamepad D-pad Hat Events
             elif event.type == JOYHATMOTION:
                 hx, hy = event.value
+                if pm is not None and pm.is_open:
+                    if self.nav_cooldown == 0:
+                        if hy > 0:
+                            pm.handle_nav("up")
+                            self.nav_cooldown = 12
+                        elif hy < 0:
+                            pm.handle_nav("down")
+                            self.nav_cooldown = 12
+                        elif hx < 0:
+                            pm.handle_nav("left")
+                            self.nav_cooldown = 12
+                        elif hx > 0:
+                            pm.handle_nav("right")
+                            self.nav_cooldown = 12
+                    continue
                 if self.nav_cooldown == 0:
                     if hy > 0:
                         self.handle_nav("up")
@@ -1806,6 +2139,43 @@ class PCRunner:
 
         # Continuous Field Movement (D-Pad)
         st = self.get_engine_state()
+        if (pm is not None and pm.is_open) or not (st["app_state"] == 2 and st["sub_state"] == 3 and not st["active_popup_id"]):
+            if "dpad" in self.active_touches:
+                self.touch_up("dpad")
+
+            # Gamepad Left Stick & held D-Pad discrete navigation in menus / popups / port modal
+            modal_open = bool(pm is not None and pm.is_open)
+            if (modal_open or st["app_state"] != 2 or st["active_popup_id"]) and self.nav_cooldown == 0:
+                nav_dir = None
+                for js in self.joysticks:
+                    if js.get_numhats() > 0:
+                        hx, hy = js.get_hat(0)
+                        if hy > 0:
+                            nav_dir = "up"
+                        elif hy < 0:
+                            nav_dir = "down"
+                        elif hx < 0:
+                            nav_dir = "left"
+                        elif hx > 0:
+                            nav_dir = "right"
+                    if not nav_dir and js.get_numaxes() >= 2:
+                        ax = float(js.get_axis(0))
+                        ay = float(js.get_axis(1))
+                        menu_deadzone = 0.55
+                        if abs(ax) > menu_deadzone or abs(ay) > menu_deadzone:
+                            if abs(ay) >= abs(ax):
+                                nav_dir = "up" if ay < 0 else "down"
+                            else:
+                                nav_dir = "left" if ax < 0 else "right"
+                    if nav_dir:
+                        if modal_open:
+                            pm.handle_nav(nav_dir)
+                        else:
+                            self.handle_nav(nav_dir)
+                        self.nav_cooldown = 12
+                        break
+            return
+
         if st["app_state"] == 2 and st["sub_state"] == 3 and not st["active_popup_id"]:
             keys = pygame.key.get_pressed()
             dx, dy = 0.0, 0.0
@@ -1855,37 +2225,6 @@ class PCRunner:
             else:
                 if "dpad" in self.active_touches:
                     self.touch_up("dpad")
-        else:
-            if "dpad" in self.active_touches:
-                self.touch_up("dpad")
-
-            # Gamepad Left Stick & held D-Pad discrete navigation in menus / popups
-            if (st["app_state"] != 2 or st["active_popup_id"]) and self.nav_cooldown == 0:
-                nav_dir = None
-                for js in self.joysticks:
-                    if js.get_numhats() > 0:
-                        hx, hy = js.get_hat(0)
-                        if hy > 0:
-                            nav_dir = "up"
-                        elif hy < 0:
-                            nav_dir = "down"
-                        elif hx < 0:
-                            nav_dir = "left"
-                        elif hx > 0:
-                            nav_dir = "right"
-                    if not nav_dir and js.get_numaxes() >= 2:
-                        ax = float(js.get_axis(0))
-                        ay = float(js.get_axis(1))
-                        menu_deadzone = 0.55
-                        if abs(ax) > menu_deadzone or abs(ay) > menu_deadzone:
-                            if abs(ay) >= abs(ax):
-                                nav_dir = "up" if ay < 0 else "down"
-                            else:
-                                nav_dir = "left" if ax < 0 else "right"
-                    if nav_dir:
-                        self.handle_nav(nav_dir)
-                        self.nav_cooldown = 12
-                        break
 
     def capture_screenshot(self) -> Path:
         pixels = glReadPixels(0, 0, self.win_w, self.win_h, GL_RGBA, GL_UNSIGNED_BYTE)
@@ -1901,8 +2240,10 @@ class PCRunner:
     def step_frame(self):
         self.poll_input()
         self._sync_window_size()
+        st = self.get_engine_state()
+        if st.get("app_state") == 1 and st.get("form_id") == 113 and not st.get("active_popup_id") and st.get("main_form"):
+            self._patch_help_about_layout(st["main_form"])
         if hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
-            st = self.get_engine_state()
             self.rt.gl_bridge.set_world_active(st.get("app_state", 0) not in (0, 1, 256))
             self.game_w = float(self.rt.gl_bridge.game_w)
             self.game_h = float(self.rt.gl_bridge.game_h)
