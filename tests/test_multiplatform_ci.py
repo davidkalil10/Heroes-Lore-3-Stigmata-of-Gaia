@@ -195,7 +195,16 @@ class MultiplatformCiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             apk = Path(tmp) / "test.apk"
             lib_arm64_main = build_minimal_elf(EM_AARCH64, 2, ["SDL_main"], ["libSDL2.so", "libc++_shared.so", "liblog.so"])
-            lib_arm64_sdl = build_minimal_elf(EM_AARCH64, 2, ["SDL_Init"], ["libGLESv2.so", "libOpenSLES.so", "libc.so"])
+            lib_arm64_sdl = build_minimal_elf(
+                EM_AARCH64,
+                2,
+                [
+                    "SDL_Init",
+                    "Java_org_libsdl_app_SDLActivity_nativeSetupJNI",
+                    "Java_org_libsdl_app_HIDDeviceManager_HIDDeviceRegisterCallback",
+                ],
+                ["libGLESv2.so", "libOpenSLES.so", "libc.so"],
+            )
             lib_arm64_cxx = build_minimal_elf(EM_AARCH64, 2, ["_Znwm"], ["libc.so", "libm.so"])
             lib_arm32_main = build_minimal_elf(EM_ARM, 1, ["SDL_main"], ["libSDL2.so", "libc++_shared.so"])
 

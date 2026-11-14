@@ -81,13 +81,18 @@ jobs:
           cp dist/HeroesLore3_PC/HeroesLore3.exe dist/HeroesLore3.exe
           ls -lh dist/HeroesLore3.exe dist/heroes_lore_3_windows_x64.zip
 
-      - name: Upload Windows Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload Windows Executable (Unarchived)
+        uses: actions/upload-artifact@v7
         with:
-          name: heroes_lore_3_windows
-          path: |
-            dist/HeroesLore3.exe
-            dist/heroes_lore_3_windows_x64.zip
+          path: dist/HeroesLore3.exe
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload Windows Portable ZIP (Unarchived)
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/heroes_lore_3_windows_x64.zip
+          archive: false
           if-no-files-found: error
 
   # ============================================================================
@@ -139,7 +144,9 @@ jobs:
             xvfb-run -a -s "-screen 0 1280x720x24" \
             ctest --test-dir build_linux --output-on-failure
           python3 tools/bump_version.py --check
-          python3 tools/verify_workspace.py
+          python3 tools/project_status.py check
+          python3 tools/inspect_apk.py --check
+          python3 tools/probe_macho_contract.py --check
           python3 -m unittest tests/test_multiplatform_ci.py -v
 
       - name: Package Linux AppImage
@@ -154,11 +161,11 @@ jobs:
           file dist/heroes_lore_3_linux_x86_64.AppImage
           ls -lh dist/heroes_lore_3_linux_x86_64.AppImage
 
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Linux AppImage (Unarchived)
+        uses: actions/upload-artifact@v7
         with:
-          name: heroes_lore_3_linux
           path: dist/heroes_lore_3_linux_x86_64.AppImage
+          archive: false
           if-no-files-found: error
 
   # ============================================================================
@@ -220,13 +227,18 @@ jobs:
           python3 tools/verify_android_package.py dist/heroes_lore_3_android_universal.apk --abis arm64-v8a armeabi-v7a x86_64
           ls -lh dist/heroes_lore_3_android_*.apk
 
-      - name: Upload Android Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload Android ARMv8 APK (Unarchived)
+        uses: actions/upload-artifact@v7
         with:
-          name: heroes_lore_3_android
-          path: |
-            dist/heroes_lore_3_android_arm64.apk
-            dist/heroes_lore_3_android_universal.apk
+          path: dist/heroes_lore_3_android_arm64.apk
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload Android Universal APK (Unarchived)
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/heroes_lore_3_android_universal.apk
+          archive: false
           if-no-files-found: error
 
   # ============================================================================
@@ -247,15 +259,14 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           apt-get update
           apt-get install -y cmake ninja-build git python3 python3-pil pkg-config gcc ca-certificates
-          dkp-pacman -Syu --noconfirm
-          dkp-pacman -S --noconfirm --needed \
-            switch-sdl2 \
-            switch-curl \
-            switch-zlib \
-            switch-mbedtls \
-            switch-mesa \
-            switch-libdrm_nouveau \
-            switch-pkg-config
+          PKGS="switch-sdl2 switch-curl switch-zlib switch-mbedtls switch-mesa switch-libdrm_nouveau switch-pkg-config"
+          if ! dkp-pacman -S --noconfirm --needed $PKGS; then
+            for attempt in 1 2 3; do
+              sleep $((attempt * 10))
+              dkp-pacman -Sy --noconfirm $PKGS && break || true
+            done
+            dkp-pacman -Q $PKGS
+          fi
 
       - name: Cache Unicorn-TCI Source
         uses: actions/cache@v4
@@ -311,11 +322,11 @@ jobs:
           python3 tools/verify_switch_package.py dist/heroes_lore_3.nro
           ls -lh dist/heroes_lore_3.nro
 
-      - name: Upload Switch Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Switch NRO (Unarchived)
+        uses: actions/upload-artifact@v7
         with:
-          name: heroes_lore_3_switch
           path: dist/heroes_lore_3.nro
+          archive: false
           if-no-files-found: error
 
   # ============================================================================
@@ -334,7 +345,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Built Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release_staging
           merge-multiple: true
@@ -347,6 +358,7 @@ jobs:
             TAG="${{ inputs.release_tag }}"
           fi
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          find release_staging -mindepth 2 -type f -exec mv -f {} release_staging/ \;
           cd release_staging
           sha256sum HeroesLore3.exe \
             heroes_lore_3_windows_x64.zip \

@@ -149,6 +149,13 @@ def verify_apk(apk_path: Path, abis: list[str]) -> None:
                 raise AssertionError(f"ABI mismatch for {n}: got ({e_machine}, {elf_class})")
             if n.endswith("/libmain.so") and "SDL_main" not in exports:
                 raise AssertionError(f"Missing SDL_main symbol in {n}")
+            if n.endswith("/libSDL2.so"):
+                for sym in (
+                    "Java_org_libsdl_app_SDLActivity_nativeSetupJNI",
+                    "Java_org_libsdl_app_HIDDeviceManager_HIDDeviceRegisterCallback",
+                ):
+                    if sym not in exports:
+                        raise AssertionError(f"Missing JNI export {sym} in {n}")
             for dep in needed:
                 if dep not in ALLOWED_ANDROID_SYSTEM_LIBS and f"lib/{abi}/{dep}" not in names:
                     raise AssertionError(f"Unbundled DT_NEEDED dependency {dep} in {n}")
