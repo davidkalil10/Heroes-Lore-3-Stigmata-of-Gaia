@@ -295,6 +295,8 @@ class MultiplatformCiTests(unittest.TestCase):
         self.assertTrue(ks.is_file(), f"Missing persistent release keystore: {ks}")
         gitignore_txt = (ROOT / ".gitignore").read_text(encoding="utf-8")
         self.assertIn("!android/app/heroes_lore_3.keystore", gitignore_txt)
+        gitattrs_txt = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("*.keystore binary", gitattrs_txt)
 
 
 if __name__ == "__main__":

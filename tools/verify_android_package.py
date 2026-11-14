@@ -104,7 +104,8 @@ def inspect_elf(data: bytes, name: str) -> tuple[int, int, set[str], list[str]]:
 
 
 def find_apksigner() -> str:
-    for name in ("apksigner", "apksigner.bat"):
+    candidates = ("apksigner.bat", "apksigner") if os.name == "nt" else ("apksigner",)
+    for name in candidates:
         found = shutil.which(name)
         if found:
             return found
@@ -115,9 +116,9 @@ def find_apksigner() -> str:
         bt = Path(sdk) / "build-tools"
         if bt.is_dir():
             for ver_dir in sorted(bt.iterdir(), reverse=True):
-                for name in ("apksigner.bat", "apksigner"):
+                for name in candidates:
                     cand = ver_dir / name
-                    if cand.is_file():
+                    if cand.is_file() and (os.name == "nt" or os.access(cand, os.X_OK)):
                         return str(cand)
     raise FileNotFoundError("apksigner not found in PATH or ANDROID_HOME/build-tools")
 

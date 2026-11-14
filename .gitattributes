@@ -14,3 +14,5 @@ reference/jar_ports_docs/** -text
 *.png binary
 *.jpg binary
 *.sqlite binary
+*.keystore binary
+*.jks binary
