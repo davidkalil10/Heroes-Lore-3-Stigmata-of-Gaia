@@ -1,0 +1,21 @@
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+set(DKP /opt/devkitpro)
+
+set(CMAKE_C_COMPILER ${DKP}/devkitA64/bin/aarch64-none-elf-gcc)
+set(CMAKE_CXX_COMPILER ${DKP}/devkitA64/bin/aarch64-none-elf-g++)
+set(CMAKE_AR ${DKP}/devkitA64/bin/aarch64-none-elf-ar)
+set(CMAKE_RANLIB ${DKP}/devkitA64/bin/aarch64-none-elf-ranlib)
+
+set(CMAKE_C_FLAGS_INIT "-D__SWITCH__ -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -ftls-model=local-exec -fPIE -I${DKP}/libnx/include -I${DKP}/portlibs/switch/include -I${CMAKE_CURRENT_LIST_DIR}/compat -L${DKP}/libnx/lib -L${DKP}/portlibs/switch/lib")
+set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT}")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-specs=${DKP}/libnx/switch.specs -L${DKP}/libnx/lib -L${DKP}/portlibs/switch/lib")
+
+set(ENV{PKG_CONFIG_PATH} "${DKP}/portlibs/switch/lib/pkgconfig")
+set(CMAKE_FIND_ROOT_PATH ${DKP}/portlibs/switch ${DKP}/libnx)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+

@@ -5,6 +5,7 @@ out/
 tmp/
 scratch/
 vendor/
+!src/vendor/
 .gradle/
 *.log
 **/*.log
@@ -48,3 +49,19 @@ data/restore-*/
 data/updates/
 config/cloud_auth.json
 config/services.json
+third_party/
+build_cpp/
+build_*/
+AppDir/
+*.jks
+*.keystore
+*.apk
+*.AppImage
+assets/game.ipa
+android/.gradle/
+android/.cxx/
+android/app/.cxx/
+android/local.properties
+android/app/build/
+android/build/
+android/app/src/main/jniLibs/

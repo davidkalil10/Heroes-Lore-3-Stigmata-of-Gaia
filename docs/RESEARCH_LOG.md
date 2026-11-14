@@ -339,6 +339,52 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   - Executado `python tools/bump_version.py patch`, avançando a versão sincronizada do port de `1.0.2` para `1.0.3` em `tools/hl3rt/version.py` e `project.json`.
   - Atualizados `README.md`, `docs/` e recompilado o pacote standalone `dist/heroes_lore_3_windows_x64.zip` (`assets/game.ipa`, sem `.apk` redundante) como 4ª build (`v1.0.3`), publicada no GitHub Releases para validação ponta a ponta da detecção, download SHA-256, substituição e reinício automático a partir da `v1.0.2`.
 
+---
+
+## 2026-11-14 - Sessão 20 (`S12` Fase 1): Migração Integral do Runtime PC para C++17 Estático (`v1.0.3`)
+
+- **Relatório completo**: `research/sessions/2026-11-14-01.md`
+- **Descobertas verificáveis e entregas**:
+  1. **Colisão Estática `crc32` (Unicorn vs `zlib`)**: Identificado via `nm -u libz.a` que `deflate.o` puxa `crc32.o` (`crc32_z` -> `crc32`), colidindo com `third_party/unicorn/qemu/util/crc32c.c:190` (`uint32_t crc32`). Automatizado em `CMakeLists.txt` (`hl3_replace_in_file`) o rename seguro para `uc_qemu_crc32`.
+  2. **Alargamento `u16 -> u32` para Controles Virtuais (`99003`/`99113`)**: Corrigidos `UiNode`, `InjectedButtonSpec`, `focus_cid_`, `is_cancel_cid` e `make_virtual_port_btn` em `src/platform/input_controller.{h,cpp}` para evitar truncamento `-Woverflow`.
+  3. **Empacotamento Standalone & Benchmark (`tools/build_pc_cpp.py`)**: Binário Windows x64 estático/stripped `HeroesLore3.exe` (`6.703.104` bytes, `DllCharacteristics=0x0160` sem CFG, zero DLLs MSYS2/SDL/zlib), pacote `dist/heroes_lore_3_windows_x64.zip` (`45.473.958` bytes, 24 entradas, apenas `assets/game.ipa`), `3/3` CTest OK, e regime estacionário `--fps 60` (`60 -> 300` frames) medido em `5,67 ms/frame` (`176,4 FPS`).
+
+---
+
+## 2026-11-14 - Sessão 21 (`S12` Fase 1 Fix): Correção de Inicialização de Janela Win32/WGL/DWM, Barra de Carregamento no Boot e `make_virtual_port_btn(u32)`
+
+- **Relatório completo**: `research/sessions/2026-11-14-02.md`
+- **Diagnóstico e correções verificáveis**:
+  1. **Causa raiz da janela preta / travamento inicial no desktop Windows (`src/main.cpp`)**:
+     - `PcHost::init_window()` criava a janela com `SDL_WINDOW_HIDDEN`, criava o contexto WGL com HWND oculto e sem atributos `SDL_GL_RED/GREEN/BLUE/ALPHA_SIZE` (selecionando pixel format `10/10/10/2` `pf=8` com apenas 2 bits de alfa), forçava `SDL_GL_SetSwapInterval(0)`, exibia a janela preta não-limpa via `SDL_ShowWindow()` e em seguida bloqueava a fila de mensagens Win32 por ~2 s+ síncronos dentro de `init_runtime()` (`Runtime::init` ~1,75 s + `boot_to_app_main` + `run_launch`) sem nenhum `SDL_PollEvent` nem `SDL_GL_SwapWindow`.
+     - Removido `SDL_WINDOW_HIDDEN` em execuções interativas (`!opts_.headless`), definidos atributos explícitos 32-bit RGBA8 (`8/8/8/8`, `DEPTH_SIZE=16`, `DOUBLEBUFFER=1`), habilitado `SDL_GL_SetSwapInterval(1)` (com fallback `0`) para execuções interativas (mantendo `0` em `--headless`/`--frames`), e adicionados `clear_and_swap_boot_backdrop()`, `pump_boot_events()` (tratando `SDL_QUIT`, `RESIZED`/`SIZE_CHANGED` e `EXPOSED`) e `draw_boot_progress()` (barra de carregamento via `GLBridge` durante as etapas de boot).
+  2. **Correção final `u16 -> u32` e resolução de `cmake` (`src/platform/input_controller.cpp`, `tools/build_pc_cpp.py`)**:
+     - Corrigidos `make_virtual_port_btn(u32 cid, ...)` (linha 173) e `kTargets` (`std::unordered_map<u32, i16>`) em `src/platform/input_controller.cpp`, eliminando os 2 warnings `-Woverflow` nas linhas `606` e `617` (`99003` e `99113`) e restaurando confirmação via teclado em `Opções do Port`.
+     - Corrigido `build_cpp_release()` em `tools/build_pc_cpp.py` para localizar `cmake` via `find_msys_tool("cmake")`, permitindo rodar `--build` em PowerShell sem MSYS2 no `PATH` global.
+  3. **Reempacotamento & Validação Standalone (`v1.0.3` limpo)**:
+     - Compilado com 0 warnings em `dist/HeroesLore3_PC/HeroesLore3.exe` (`6.710.784` bytes, SHA-256 `9ef65a778e773cbd258382405296fe34f6040389249479d2b24d8434697d2c5b`, `HL3 DIAG` ausente no código-fonte e no binário) e `dist/heroes_lore_3_windows_x64.zip` (`45.477.395` bytes, SHA-256 `e1029a53a07fa7c38d6052217299bfa91e6f7d7567e3a6382ad800aa26ecd81d`).
+     - Validados `ctest --test-dir build_cpp --output-on-failure` (`3/3`), `unittest` (`63/63` em `36,285 s`) e pacote `.zip` extraído em `%TEMP%\hl3_zip_verify` sem MSYS2 no `PATH`: `--headless --frames 30` (código `0`), janela visível `--frames 90` (código `0`) e abertura sem flags estilo Explorer (`ClientRect=960x640`) + `Enter` -> `Nation: Askra` + `F7` (`IDIOMA: PORTUGUÊS (BR)` / `NAÇÃO: ASKRA`) + `F12` (screenshot verificada visualmente) + `WM_CLOSE` (código `0`).
+
+---
+
+## 2026-11-14 - Sessão 22 (`S12` + `S13`): Infraestrutura Multiplataforma (Linux/Android/Switch) e Pipeline GitHub Actions (`ADR-024`)
+
+- **Relatório completo**: `research/sessions/2026-11-14-03.md`
+- **Descobertas e correções verificáveis**:
+  1. **Diagnóstico Android (`net_http.cpp`, AGP `8.1.1` e `verify_android_package.py`)**:
+     - Identificado que `__linux__` é definido também no Android NDK, fazendo `open_folder_in_explorer` cair no ramo desktop `xdg-open`; isolado estritamente com `#if defined(__linux__) && !defined(__ANDROID__)`.
+     - Ancorado ponteiro `volatile` para `Java_com_davidbraga_heroeslore3_HeroesLore3Activity_nativeDownloadProgress` contra `--gc-sections` e resolvido classe `HeroesLore3Activity` via `SDL_AndroidGetActivity()` + `GetObjectClass()` para threads em segundo plano.
+     - Corrigido bug em `tools/verify_android_package.py` linha 69 onde `sh_name` (`sh[0]`) era lido no lugar de `sh_type` (`sh[1]`), além de suporte a paths otimizados de release do AGP `8.1.1` (`res/BW.xml` + XML binário `adaptive-icon` + `ic_launcher` em `resources.arsc`).
+  2. **Adaptação Multiplataforma (`src/`, `tools/`, `android/`, `platforms/switch/`, `.github/workflows/build.yml`)**:
+     - Unificação de `<SDL.h>`, pausa em background Android (`AudioMixer::set_paused`), multi-touch `SDL_FINGER*` + botão voltar Android `SDLK_AC_BACK`, cliente HTTP `libcurl` + `romfs:/cacert.pem`, Switch shared font (`plGetSharedFontByType`) e `SwitchRuntimeGuard` (`sdmc:/switch/heroes_lore_3/boot.log`), e Unicorn-TCI com `-DUNICORN_INTERPRETER=ON` + orçamento 32 MiB (`tools/patch_unicorn_switch.py`).
+     - Refatorado `tools/patch_unicorn_switch.py` com tabela `REPLACEMENTS` e retorno inteiro idempotente; corrigido `test_s10_live_language_switch_rewraps_active_dialogue_banner` para forçar estado inicial `"en"` após leitura de `config/display.json` em `PCRunner`.
+     - Ajustado job `build-linux` no `.github/workflows/build.yml` para rodar `verify_workspace.py` e `tests/test_multiplatform_ci.py` (evitando erro de `pygame` ausente na imagem Linux CI mínima) além do `ctest` via `xvfb-run`.
+  3. **Validação Empírica Local**:
+     - Windows C++17: `cmake --build build_cpp --parallel` (`90/90`) + `ctest` `3/3` + empacotamento `HeroesLore3.exe` (`6.723.584` B) & `heroes_lore_3_windows_x64.zip` (`45.482.126` B) + `bump_version.py --check` (`v1.0.3`).
+     - Android NDK `26.3.11579264` + Gradle `8.1.1` (`assembleRelease`): build concluído em `4m 18s` gerando e assinando (`CN=David Kalil Braga`) `dist/heroes_lore_3_android_arm64.apk` (`50.316.995` B) e `dist/heroes_lore_3_android_universal.apk` (`54.029.329` B), validados por `verify_android_package.py` + `apksigner verify` + inspeção ELF confirmando `SDL_main=True` e `nativeDownloadProgress=True` em `arm64-v8a` e `armeabi-v7a`.
+     - Suíte Python completa: `68/68` testes aprovados em `37,536 s`. Linux AppImage e Nintendo Switch NRO configurados no `.github/workflows/build.yml` para execução nos runners Linux e `devkitA64`.
+
+
 
 
 

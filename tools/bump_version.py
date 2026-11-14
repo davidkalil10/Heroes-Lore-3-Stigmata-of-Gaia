@@ -11,10 +11,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION_PY = ROOT / "tools" / "hl3rt" / "version.py"
+COMMON_H = ROOT / "src" / "core" / "common.h"
 PROJECT_JSON = ROOT / "project.json"
 
 SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 PY_VERSION_RE = re.compile(r'^(PORT_VERSION\s*=\s*")([0-9]+\.[0-9]+\.[0-9]+)(")', re.MULTILINE)
+CPP_VERSION_RE = re.compile(
+    r'^(inline constexpr const char\*\s+kPortVersion\s*=\s*")([0-9]+\.[0-9]+\.[0-9]+)(";)',
+    re.MULTILINE,
+)
 
 
 def parse_semver(value: str) -> tuple[int, int, int]:
@@ -27,18 +32,26 @@ def parse_semver(value: str) -> tuple[int, int, int]:
     return int(m.group(1)), int(m.group(2)), int(m.group(3))
 
 
-def read_versions() -> tuple[str, str]:
+def read_versions() -> tuple[str, str, str]:
     py_text = VERSION_PY.read_text(encoding="utf-8")
     m = PY_VERSION_RE.search(py_text)
     if not m:
         raise ValueError(f"Could not find PORT_VERSION in {VERSION_PY}")
     py_ver = m.group(2)
 
+    cpp_ver = py_ver
+    if COMMON_H.exists():
+        cpp_text = COMMON_H.read_text(encoding="utf-8")
+        cm = CPP_VERSION_RE.search(cpp_text)
+        if not cm:
+            raise ValueError(f"Could not find kPortVersion in {COMMON_H}")
+        cpp_ver = cm.group(2)
+
     proj = json.loads(PROJECT_JSON.read_text(encoding="utf-8"))
     json_ver = str(proj.get("port_version", "")).strip()
     if not json_ver:
         raise ValueError(f"Missing 'port_version' in {PROJECT_JSON}")
-    return py_ver, json_ver
+    return py_ver, json_ver, cpp_ver
 
 
 def write_version(new_ver: str) -> None:
@@ -48,6 +61,13 @@ def write_version(new_ver: str) -> None:
     if count != 1:
         raise ValueError(f"Failed updating PORT_VERSION in {VERSION_PY}")
     VERSION_PY.write_text(new_py, encoding="utf-8", newline="\n")
+
+    if COMMON_H.exists():
+        cpp_text = COMMON_H.read_text(encoding="utf-8")
+        new_cpp, cpp_count = CPP_VERSION_RE.subn(rf"\g<1>{new_ver}\g<3>", cpp_text, count=1)
+        if cpp_count != 1:
+            raise ValueError(f"Failed updating kPortVersion in {COMMON_H}")
+        COMMON_H.write_text(new_cpp, encoding="utf-8", newline="\n")
 
     proj = json.loads(PROJECT_JSON.read_text(encoding="utf-8"))
     proj["port_version"] = new_ver
@@ -75,26 +95,27 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Show target version without writing files")
     args = parser.parse_args()
 
-    py_ver, json_ver = read_versions()
+    py_ver, json_ver, cpp_ver = read_versions()
     if args.check:
         parse_semver(py_ver)
         parse_semver(json_ver)
-        if py_ver != json_ver:
+        parse_semver(cpp_ver)
+        if py_ver != json_ver or py_ver != cpp_ver:
             print(
-                f"ERROR: Version mismatch: version.py={py_ver!r} != project.json={json_ver!r}",
+                f"ERROR: Version mismatch: version.py={py_ver!r}, project.json={json_ver!r}, common.h={cpp_ver!r}",
                 file=sys.stderr,
             )
             return 1
-        print(f"OK: Port version synchronized at v{py_ver}")
+        print(f"OK: Port version synchronized at v{py_ver} (version.py + project.json + common.h)")
         return 0
 
     if args.current or not args.target:
         print(py_ver)
         return 0
 
-    if py_ver != json_ver:
+    if py_ver != json_ver or py_ver != cpp_ver:
         print(
-            f"ERROR: Version mismatch before bump: version.py={py_ver!r} != project.json={json_ver!r}",
+            f"ERROR: Version mismatch before bump: version.py={py_ver!r}, project.json={json_ver!r}, common.h={cpp_ver!r}",
             file=sys.stderr,
         )
         return 1

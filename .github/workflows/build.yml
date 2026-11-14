@@ -1,0 +1,372 @@
+name: Build Multiplatform & Release (Windows, Linux, Android, Switch)
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Publish GitHub Release?'
+        required: true
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Release tag (e.g. v1.0.3, used when dispatch creates a release)'
+        required: false
+        default: 'v1.0.3'
+      prerelease:
+        description: 'Publish as prerelease? (true keeps /releases/latest untouched while testing)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  # ============================================================================
+  # 1. Windows x64 (Standalone EXE + Portable ZIP)
+  # ============================================================================
+  build-windows:
+    name: Windows x64 (EXE & ZIP)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 UCRT64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-python-pillow
+
+      - name: Cache Unicorn Source
+        uses: actions/cache@v4
+        with:
+          path: third_party/unicorn
+          key: ${{ runner.os }}-unicorn-8028ec43
+
+      - name: Fetch Third-Party Dependencies (Windows)
+        shell: msys2 {0}
+        run: |
+          python tools/fetch_build_deps.py --windows
+          python tools/prepare_platform_assets.py extract-ipa
+
+      - name: Build & Test Windows Binary
+        shell: msys2 {0}
+        run: |
+          cmake -B build_cpp -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_cpp --parallel
+          ctest --test-dir build_cpp --output-on-failure
+          python tools/bump_version.py --check
+
+      - name: Package Windows Standalone Release
+        shell: msys2 {0}
+        run: |
+          python tools/build_pc_cpp.py --exe build_cpp/HeroesLore3.exe
+          cp dist/HeroesLore3_PC/HeroesLore3.exe dist/HeroesLore3.exe
+          ls -lh dist/HeroesLore3.exe dist/heroes_lore_3_windows_x64.zip
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_3_windows
+          path: |
+            dist/HeroesLore3.exe
+            dist/heroes_lore_3_windows_x64.zip
+          if-no-files-found: error
+
+  # ============================================================================
+  # 2. Linux x86_64 (Portable AppImage)
+  # ============================================================================
+  build-linux:
+    name: Linux x86_64 (AppImage)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libsdl2-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            pkg-config \
+            python3 \
+            python3-pil \
+            xvfb \
+            libgl1-mesa-dri \
+            libglx-mesa0 \
+            wget \
+            file
+
+      - name: Cache Unicorn Source
+        uses: actions/cache@v4
+        with:
+          path: third_party/unicorn
+          key: ${{ runner.os }}-unicorn-8028ec43
+
+      - name: Fetch Third-Party Dependencies (Linux)
+        run: |
+          python3 tools/fetch_build_deps.py --linux
+          python3 tools/prepare_platform_assets.py extract-ipa
+
+      - name: Build & Test Linux Binary
+        run: |
+          cmake -B build_linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_linux --parallel
+          SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s "-screen 0 1280x720x24" \
+            ctest --test-dir build_linux --output-on-failure
+          python3 tools/bump_version.py --check
+          python3 tools/verify_workspace.py
+          python3 -m unittest tests/test_multiplatform_ci.py -v
+
+      - name: Package Linux AppImage
+        run: |
+          python3 tools/prepare_platform_assets.py linux --exe build_linux/HeroesLore3 --appdir AppDir
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage --appimage-extract
+          mkdir -p dist
+          ARCH=x86_64 ./squashfs-root/AppRun AppDir dist/heroes_lore_3_linux_x86_64.AppImage
+          chmod +x dist/heroes_lore_3_linux_x86_64.AppImage
+          file dist/heroes_lore_3_linux_x86_64.AppImage
+          ls -lh dist/heroes_lore_3_linux_x86_64.AppImage
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_3_linux
+          path: dist/heroes_lore_3_linux_x86_64.AppImage
+          if-no-files-found: error
+
+  # ============================================================================
+  # 3. Android (ARM64 + Universal APKs)
+  # ============================================================================
+  build-android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 & Gradle 8.1.1
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.1.1'
+
+      - name: Ensure Android NDK 26.3 & CMake 3.22
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          SDKMAN="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x "$SDKMAN" ]; then
+            yes | "$SDKMAN" --licenses >/dev/null || true
+            "$SDKMAN" "platforms;android-34" "build-tools;34.0.0" "cmake;3.22.1" "ndk;26.3.11579264"
+          fi
+          echo "ANDROID_NDK_VERSION=26.3.11579264" >> "$GITHUB_ENV"
+
+      - name: Cache Third-Party Unicorn & SDL2
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/unicorn
+            third_party/SDL2
+          key: ${{ runner.os }}-android-uc-sdl2-2.30.12
+
+      - name: Fetch Third-Party Dependencies & Stage Android Assets
+        run: |
+          python3 -c "import PIL" 2>/dev/null || python3 -m pip install pillow
+          python3 tools/fetch_build_deps.py --android
+          python3 tools/prepare_platform_assets.py android
+
+      - name: Build & Verify Android Release APKs
+        run: |
+          cd android
+          gradle assembleRelease --no-daemon --stacktrace
+          cd ..
+          mkdir -p dist
+          find android/app/build/outputs/apk/release -name "*arm64-v8a*.apk" -exec cp {} dist/heroes_lore_3_android_arm64.apk \;
+          find android/app/build/outputs/apk/release -name "*universal*.apk" -exec cp {} dist/heroes_lore_3_android_universal.apk \;
+          python3 tools/verify_android_package.py dist/heroes_lore_3_android_arm64.apk --abis arm64-v8a
+          python3 tools/verify_android_package.py dist/heroes_lore_3_android_universal.apk --abis arm64-v8a armeabi-v7a x86_64
+          ls -lh dist/heroes_lore_3_android_*.apk
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_3_android
+          path: |
+            dist/heroes_lore_3_android_arm64.apk
+            dist/heroes_lore_3_android_universal.apk
+          if-no-files-found: error
+
+  # ============================================================================
+  # 4. Nintendo Switch (.nro Homebrew via Unicorn-TCI)
+  # ============================================================================
+  build-switch:
+    name: Nintendo Switch (.nro)
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure Safe Directory & Switch Toolchain Packages
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          apt-get update
+          apt-get install -y cmake ninja-build git python3 python3-pil pkg-config gcc ca-certificates
+          dkp-pacman -Syu --noconfirm
+          dkp-pacman -S --noconfirm --needed \
+            switch-sdl2 \
+            switch-curl \
+            switch-zlib \
+            switch-mbedtls \
+            switch-mesa \
+            switch-libdrm_nouveau \
+            switch-pkg-config
+
+      - name: Cache Unicorn-TCI Source
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/unicorn-tci
+            third_party/certs
+          key: ${{ runner.os }}-switch-tci-e3f075a6
+
+      - name: Fetch & Patch Switch Dependencies
+        run: |
+          python3 tools/fetch_build_deps.py --switch
+
+      - name: Verify Switch Heap Memory Adapter Contract
+        run: |
+          mkdir -p build_switch
+          gcc -Wall -Wextra -Werror -Iplatforms/switch/compat \
+            tests/switch_memory_contract.c platforms/switch/unicorn_os.c \
+            -o build_switch/test_switch_mem
+          ./build_switch/test_switch_mem
+
+      - name: Cross-Compile Switch ELF (Unicorn-TCI)
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          export DEVKITA64=$DEVKITPRO/devkitA64
+          export PORTLIBS=$DEVKITPRO/portlibs/switch
+          export PATH=$DEVKITPRO/tools/bin:$DEVKITA64/bin:$PORTLIBS/bin:$PATH
+          export PKG_CONFIG_LIBDIR=$PORTLIBS/lib/pkgconfig
+          export PKG_CONFIG_PATH=$PORTLIBS/lib/pkgconfig
+          cmake -B build_switch -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE=platforms/switch/toolchain.cmake \
+            -DHL3_SWITCH=ON \
+            -DHL3_TCI=ON \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_switch --parallel
+
+      - name: Stage RomFS & Package Verified .nro
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          export PATH=$DEVKITPRO/tools/bin:$PATH
+          mkdir -p dist
+          python3 tools/prepare_platform_assets.py switch \
+            --romfs build_switch/romfs \
+            --icon-out build_switch/icon.jpg
+          PORT_VER=$(python3 -c 'import sys; sys.path.insert(0, "tools"); from hl3rt.version import PORT_VERSION; print(PORT_VERSION)')
+          TITLE_ID=$(python3 -c 'import sys; sys.path.insert(0, "tools"); from hl3rt.version import SWITCH_TITLE_ID; print(SWITCH_TITLE_ID)')
+          nacptool --create "Heroes Lore 3: Stigmata of Gaia" "David Kalil Braga" "$PORT_VER" \
+            build_switch/hl3.nacp --titleid="$TITLE_ID"
+          elf2nro build_switch/HeroesLore3.elf dist/heroes_lore_3.nro \
+            --icon=build_switch/icon.jpg \
+            --nacp=build_switch/hl3.nacp \
+            --romfsdir=build_switch/romfs
+          python3 tools/verify_switch_package.py dist/heroes_lore_3.nro
+          ls -lh dist/heroes_lore_3.nro
+
+      - name: Upload Switch Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_3_switch
+          path: dist/heroes_lore_3.nro
+          if-no-files-found: error
+
+  # ============================================================================
+  # 5. Multiplatform GitHub Release
+  # ============================================================================
+  release:
+    name: Publish Multiplatform GitHub Release
+    needs: [ build-windows, build-linux, build-android, build-switch ]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_staging
+          merge-multiple: true
+
+      - name: Prepare Release Tag & SHA-256 Checksums
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${{ inputs.release_tag }}"
+          fi
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          cd release_staging
+          sha256sum HeroesLore3.exe \
+            heroes_lore_3_windows_x64.zip \
+            heroes_lore_3_linux_x86_64.AppImage \
+            heroes_lore_3_android_arm64.apk \
+            heroes_lore_3_android_universal.apk \
+            heroes_lore_3.nro > SHA256SUMS.txt
+          ls -lh
+          cat SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "Heroes Lore 3: Stigmata of Gaia Recomp ${{ env.RELEASE_TAG }}"
+          body_path: docs/RELEASE_NOTES.md
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease == true }}
+          files: |
+            release_staging/HeroesLore3.exe
+            release_staging/heroes_lore_3_windows_x64.zip
+            release_staging/heroes_lore_3_linux_x86_64.AppImage
+            release_staging/heroes_lore_3_android_arm64.apk
+            release_staging/heroes_lore_3_android_universal.apk
+            release_staging/heroes_lore_3.nro
+            release_staging/SHA256SUMS.txt

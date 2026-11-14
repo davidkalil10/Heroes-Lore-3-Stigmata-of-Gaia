@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
-  "updated_at": "2026-11-13",
-  "overall_phase": "pc_playable_complete",
+  "updated_at": "2026-11-14",
+  "overall_phase": "multiplatform_ci_configured",
   "current_step": "S12",
   "next_recommended_step": "S12",
-  "summary": "S00..S11 concluidas (v1.0.3 Windows x64 publicada): runtime Mach-O ARMv6 + AOT/Oraculo Unicorn (28 blocos / 48 comparacoes), GLES1 True Widescreen (Auto/16:9/3:2) + 30/60 FPS, audio MP3+WAV fora do callback SDL, catalogo EN auditado e PT-BR completo (6.733 slots + fontes .rff/.pvr estendidas) com troca ao vivo, menu integrado (Help & About + System), Cloud Save Google Drive, credito David Kalil Braga (2026) - v1.0.3 no About, auto-updater Windows corrigido (CREATE_NEW_PROCESS_GROUP + UTF-8 BOM + Invoke-WithRetry) e pacote leve com assets/game.ipa (sem APK redundante), com 63/63 testes OK. Proxima etapa: S12 (Core nativo C++ / Linux / Android ARM64 com.davidbraga.heroeslore3 e CI).",
+  "summary": "S12+S13 multiplataforma implementados (v1.0.3): Windows x64 C++17 (HeroesLore3.exe 6,72 MB + ZIP 45,48 MB, CTest 3/3) e Android Release APKs arm64/universal assinados (50,32 MB e 54,03 MB, NDK 26.3 + SDL2 2.30.12 + verify_android_package + apksigner) compilados e validados localmente; backend libcurl/AppImage Linux e Nintendo Switch (.nro 0100F3A300030000 via Unicorn-TCI/libnx) implementados com pipeline GitHub Actions completo (.github/workflows/build.yml) e 68/68 testes Python aprovados, aguardando execucao dos runners Linux/devkitA64 no CI.",
   "steps": [
     {
       "id": "S00",
@@ -256,23 +256,61 @@
     },
     {
       "id": "S12",
-      "title": "Port Android ARM64 nativo e CI multiplataforma",
-      "status": "pending",
-      "owner": null,
+      "title": "Core nativo C++17, Linux, Android ARM64 e CI multiplataforma",
+      "status": "in_progress",
+      "owner": "agent",
       "completed_at": null,
       "evidence": [
-        "docs/tasks/S12_MULTIPLATFORM_CI.md"
+        "docs/tasks/S12_MULTIPLATFORM_CI.md",
+        ".github/workflows/build.yml",
+        "docs/RELEASE_NOTES.md",
+        "CMakeLists.txt",
+        "src/core/runtime.cpp",
+        "src/core/machine.cpp",
+        "src/hle/gl_bridge.cpp",
+        "src/audio/audio_mixer.cpp",
+        "src/platform/net_http.cpp",
+        "src/platform/cloud_save.cpp",
+        "src/platform/updater.cpp",
+        "src/platform/ui_renderer.cpp",
+        "src/platform/input_controller.cpp",
+        "src/main.cpp",
+        "android/app/build.gradle",
+        "android/app/src/main/AndroidManifest.xml",
+        "android/app/src/main/java/com/davidbraga/heroeslore3/HeroesLore3Activity.java",
+        "android/app/src/main/java/com/davidbraga/heroeslore3/ApkFileProvider.java",
+        "tools/fetch_build_deps.py",
+        "tools/prepare_platform_assets.py",
+        "tools/verify_android_package.py",
+        "tools/build_pc_cpp.py",
+        "tests/test_multiplatform_ci.py",
+        "tests/cpp/test_macho_boot.cpp",
+        "tests/cpp/test_headless_runtime.cpp",
+        "tests/cpp/test_platform_services.cpp",
+        "research/sessions/2026-11-14-01.md",
+        "research/sessions/2026-11-14-02.md",
+        "research/sessions/2026-11-14-03.md"
       ],
-      "notes": "Empacotamento Android ARM64 (com.davidbraga.heroeslore3) e workflow GitHub Actions para os 4 alvos."
+      "notes": "Windows x64 (HeroesLore3.exe 6.723.584 B + ZIP 45.482.126 B, CTest 3/3) e Android Release APKs assinados (arm64-v8a 50.316.995 B + universal 54.029.329 B, NDK 26.3 + SDL2 2.30.12 + verify_android_package + apksigner + SDL_main/nativeDownloadProgress ELF OK) compilados e verificados localmente; AppImage Linux (libcurl/XDG) e pipeline .github/workflows/build.yml configurados e validados com 68/68 unittest, restando apenas a execucao do job build-linux no GitHub Actions."
     },
     {
       "id": "S13",
       "title": "Port Nintendo Switch (.nro) e validacao de hardware/memoria",
-      "status": "pending",
-      "owner": null,
+      "status": "in_progress",
+      "owner": "agent",
       "completed_at": null,
-      "evidence": [],
-      "notes": "Build libnx (0100F3A300030000) com orcamento de memoria seguro, controles Npad e log direto em SD."
+      "evidence": [
+        "platforms/switch/toolchain.cmake",
+        "platforms/switch/unicorn_os.c",
+        "platforms/switch/compat/sys/mman.h",
+        "tools/patch_unicorn_switch.py",
+        "tools/prepare_platform_assets.py",
+        "tools/verify_switch_package.py",
+        "tests/switch_memory_contract.c",
+        ".github/workflows/build.yml",
+        "research/sessions/2026-11-14-03.md"
+      ],
+      "notes": "Toolchain devkitA64/libnx (0100F3A300030000), Unicorn-TCI (-DUNICORN_INTERPRETER=ON, buffer 32 MiB), memalign/free heap adapter, SwitchRuntimeGuard (sdmc:/switch/heroes_lore_3/boot.log), fonte plGetSharedFontByType, RomFS + cacert.pem e job build-switch no Actions implementados e validados via verify_switch_package/patch_unicorn_switch tests; aguardando compilacao devkitA64 no runner CI e teste em hardware."
     },
     {
       "id": "S14",

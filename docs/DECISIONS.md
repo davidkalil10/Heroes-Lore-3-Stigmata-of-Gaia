@@ -458,6 +458,56 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 - **Consequências**:
   - Paridade completa com o sistema de releases/atualizações dos ports anteriores, autoria e versão claramente visíveis em EN/PT-BR no menu Sobre e zero risco de vazamento de credenciais ou perda de saves em atualizações futuras.
 
+---
+
+## ADR-023: Migração Integral do Runtime Desktop para C++17 Estático (`S12` Fase 1)
+
+- **Data**: 2026-11-14
+- **Status**: Aceito
+- **Contexto**:
+  - Para viabilizar as builds multiplataforma (**Linux x86_64**, **Android ARM64 `com.davidbraga.heroeslore3`** e **Nintendo Switch `0100F3A300030000`**) e eliminar a sobrecarga do pacote PyInstaller (`_internal/` >90 MB, `32 ms/frame`), definiu-se migrar primeiro todo o runtime e a camada de host do PC para **C++17** com paridade total frente à versão Python `v1.0.3`.
+  - Durante a integração estática com **MSYS2 UCRT64** (`-static -static-libgcc -static-libstdc++`), surgiram dois problemas sutis de engenharia:
+    1. A biblioteca interna do Unicorn (`third_party/unicorn/qemu/util/crc32c.c`) exporta símbolo global `uint32_t crc32(...)`, colidindo na linkagem estática com `libz.a(crc32.o)` assim que `png_codec.cpp` aciona `zlib::deflate()`.
+    2. Os IDs dos botões virtuais injetados no menu (`99003` em System e `99113` em Help & About) excedem `uint16_t` (`65535`); manter `cid` em `u16` causava truncamento silencioso para `33467`/`33577`.
+- **Decisão**:
+  1. **Stack C++17 Unificada (`CMakeLists.txt` + `hl3_core`)**: Integrar Unicorn ARM1176 (`UNICORN_ARCH=arm`), `ZLIB::ZLIB` estática, `SDL2-static`, OpenGL / `GLBridge`, `dr_mp3.h` + mixer OpenAL HLE, `stb_truetype.h` (`ui_renderer.cpp`), `net_http.cpp` (WinHTTP TLS no Windows), `cloud_save.cpp`, `updater.cpp`, `options_modal.cpp`, `input_controller.cpp` e `src/main.cpp` (+ `assets/hl3.rc`).
+  2. **Isolamento Portável do Símbolo `crc32` do Unicorn**: Aplicar em `CMakeLists.txt` (`hl3_replace_in_file`) a renomeação determinística e idempotente de `crc32(` do QEMU/Unicorn para `uc_qemu_crc32(` antes de `add_subdirectory(third_party/unicorn ...)`, garantindo compatibilidade estática segura também em alvos 64-bit LP64 (Linux/Android/Switch) sem conflito com `uLong crc32` da `zlib`.
+  3. **Largura `u32` para IDs de Controle Virtuais**: Utilizar `u32 cid` em `UiNode`, `InjectedButtonSpec`, `focus_cid_`, `is_cancel_cid` e `make_virtual_port_btn`.
+  4. **Empacotamento Standalone Enxuto (`tools/build_pc_cpp.py`)**: Extrair `assets/game.ipa` verificado por SHA-256 diretamente do `.apk` original (sem enviar `.apk` nem `_internal/`), aplicar `strip -s` em `HeroesLore3.exe`, validar zero dependências DLL não-sistema via `objdump -p` e gerar `dist/heroes_lore_3_windows_x64.zip`.
+- **Consequências**:
+  - Executável único `HeroesLore3.exe` de `6.703.104` bytes (`~6,39 MB`) sem DLLs externas, pacote ZIP total de `45.473.958` bytes e throughput de `5,67 ms/frame` (`176,4 FPS` em teste headless), com base pronta para reutilização em Linux, Android e Nintendo Switch.
+
+---
+
+## ADR-024: Arquitetura Multiplataforma C++17 (Windows, Linux AppImage, Android ARM64/ARMv7, Nintendo Switch TCI) e Pipeline GitHub Actions (`S12` + `S13`)
+
+- **Data**: 2026-11-14
+- **Status**: Aceito
+- **Contexto**:
+  - Após estabilizar o runtime C++17 no Windows, era necessário portar o código C++ e a camada de build/empacotamento para os 4 alvos completos (**Windows x64**, **Linux x86_64 AppImage**, **Android ARM64/universal `com.davidbraga.heroeslore3`** e **Nintendo Switch `0100F3A300030000`**), integrando tudo no workflow `.github/workflows/build.yml` com geração automatizada de `SHA256SUMS.txt` e releases multiplataforma.
+  - Foram descobertas diversas armadilhas específicas de cada plataforma durante a implementação e compilação real:
+    1. No Windows/MSYS2, o `create_config` da `third_party/unicorn` gera um `config-target.h` vazio (`0` bytes) se `C:\msys64\usr\bin` (`sh.exe`) não estiver no `PATH` junto de `C:\msys64\ucrt64\bin` — afetando tanto o build desktop quanto a configuração NDK do Android nesse host.
+    2. No **Android**, worker threads nativas anexadas via JNI não enxergam classes do app por `FindClass`, `android/app` com `--gc-sections` poda funções `JNIEXPORT` dentro de biblioteca estática `hl3_core` se não referenciadas, Android define `__linux__` (causando captura indevida de ramos POSIX/Linux desktop como `xdg-open`), e o Android Gradle Plugin `8.1.1` (`optimizeReleaseResources`) encurta nomes de recursos (`res/mipmap-anydpi-v26/ic_launcher.xml` -> `res/BW.xml`), enquanto `verify_android_package.py` possuía um bug de desempacotamento de seção ELF (`sh[0]` `sh_name` no lugar de `sh[1]` `sh_type`).
+    3. No **Nintendo Switch** (`devkitA64` + `libnx`), o sistema Horizon não permite alocar/executar código JIT dinâmico RWX (`mmap`/`mprotect`), exigindo `unicorn-tci` com `-DUNICORN_INTERPRETER=ON` (além de orçamento TCI de `32 MiB` em vez de `1 GiB`), alocação de RAM guest via `memalign`/`free` em `platforms/switch/unicorn_os.c`, CA bundle em `romfs:/cacert.pem`, fonte compartilhada `plGetSharedFontByType` em `ui_renderer.cpp` e guarda de ciclo `appletMainLoop()`.
+    4. No **Linux AppImage**, o ponto de montagem squashfs é somente leitura, exigindo resolução gravável para saves/configurações (`find_writable_data_root()` em `$XDG_DATA_HOME`/`~/.local/share`), backend `libcurl`, `xdg-open` via double-fork sem vazar descritores, e `xvfb-run` + Mesa software GLX no CI para `test_headless_runtime`.
+- **Decisão**:
+  1. **Unificação de Headers, Input e Storage (`src/`)**:
+     - Padronizar `<SDL.h>` em toda a base C++, adicionar `set_paused(bool)` ao `AudioMixer`, multi-touch `SDL_FINGER*` + desduplicação `SDL_TOUCH_MOUSEID` + botão voltar Android `SDLK_AC_BACK -> SDLK_ESCAPE` em [`src/platform/input_controller.cpp`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/platform/input_controller.cpp), pausamento automático em `SDL_APP_WILLENTERBACKGROUND`/`SDL_APP_DIDENTERFOREGROUND` em [`src/main.cpp`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/main.cpp) e diretórios graváveis portáveis via `find_writable_data_root()`.
+  2. **Ponte HTTP/OTA/Explorer Nativa por Plataforma (`src/platform/net_http.cpp`, `src/platform/updater.cpp`)**:
+     - **Windows**: WinHTTP + Auto-Updater PowerShell staging.
+     - **Android**: bridge JNI via `SDL_AndroidGetActivity()` + `GetObjectClass()` (`HeroesLore3Activity` `httpExecute`, `downloadFile`, `openUrl`, `installApk` via `ApkFileProvider`), ancla `volatile` sobre `Java_com_davidbraga_heroeslore3_HeroesLore3Activity_nativeDownloadProgress` contra `--gc-sections`, e tratamento de `.apk` em `Updater::install_ready_update()`.
+     - **Linux & Switch**: cliente `libcurl` (`romfs:/cacert.pem` no Switch) + `xdg-open` restrito estritamente a `#if defined(__linux__) && !defined(__ANDROID__)` + `chmod(..., 0755)` para `.appimage`.
+  3. **Projeto Android (`android/`), Toolchain Switch (`platforms/switch/`) e Scripts (`tools/`)**:
+     - Configurar Gradle `8.1.1` / AGP `8.1.1` (`compileSdk 34`, `ndkVersion 26.3.11579264`, `ANDROID_STL=c++_shared`, SDL2 `2.30.12` dinâmica + `libmain.so`) gerando `arm64-v8a` e `universal` (`arm64-v8a` + `armeabi-v7a`) APKs em [`android/app/build.gradle`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/android/app/build.gradle).
+     - Configurar [`CMakeLists.txt`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/CMakeLists.txt), [`tools/fetch_build_deps.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/fetch_build_deps.py), [`tools/patch_unicorn_switch.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/patch_unicorn_switch.py), [`tools/prepare_platform_assets.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/prepare_platform_assets.py) e [`platforms/switch/`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/platforms/switch/toolchain.cmake) para cross-compile Switch NRO (`0100F3A300030000`) com `SwitchRuntimeGuard` e `boot.log` no SD.
+     - Corrigir `sh[1]` (`sh_type`) e suporte a XML binário otimizado `adaptive-icon` em [`tools/verify_android_package.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/verify_android_package.py).
+  4. **Workflow Multiplataforma (`.github/workflows/build.yml`)**:
+     - Jobs `build-windows`, `build-linux` (`xvfb-run` + AppImage), `build-android` (NDK + Gradle + `verify_android_package.py`), `build-switch` (`devkitpro/devkita64:latest` + `test_switch_mem` + `elf2nro` + `verify_switch_package.py`) e `release` (`SHA256SUMS.txt` + [`docs/RELEASE_NOTES.md`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/docs/RELEASE_NOTES.md)).
+- **Consequências**:
+  - Builds Windows (`HeroesLore3.exe`, `heroes_lore_3_windows_x64.zip`) e Android assinados (`heroes_lore_3_android_arm64.apk`, `heroes_lore_3_android_universal.apk`) compilados e verificados localmente com sucesso (`ctest` `3/3`, `unittest` `68/68`, `apksigner` e `verify_android_package.py` passando).
+  - Linux (`AppImage`) e Nintendo Switch (`.nro`) possuem infraestrutura, contratos (`test_multiplatform_ci.py`, `switch_memory_contract.c`, `verify_switch_package.py`) e jobs do GitHub Actions prontos para validação nativa nos runners Linux/`devkitA64`.
+
+
 
 
 

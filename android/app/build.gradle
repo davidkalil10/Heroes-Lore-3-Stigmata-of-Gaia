@@ -1,0 +1,89 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.davidbraga.heroeslore3'
+    compileSdk 34
+    buildToolsVersion '34.0.0'
+    ndkVersion (System.getenv('ANDROID_NDK_VERSION') ?: '26.3.11579264')
+
+    defaultConfig {
+        applicationId 'com.davidbraga.heroeslore3'
+        minSdk 24
+        targetSdk 34
+        versionCode 4
+        versionName '1.0.3'
+
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared', '-DANDROID_PLATFORM=android-24'
+                cppFlags '-std=c++17'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('../../CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk true
+        }
+    }
+
+    androidResources {
+        noCompress 'ipa'
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += ['../../third_party/SDL2/android-project/app/src/main/java']
+            assets.srcDirs = ["${buildDir}/staged-assets"]
+            res.srcDirs = ['src/main/res', "${buildDir}/staged-res"]
+        }
+    }
+
+    signingConfigs {
+        release {
+            def ksPath = System.getenv('HL3_KEYSTORE_PATH') ?: 'heroes_lore_3.keystore'
+            def ksFile = file(ksPath)
+            if (ksFile.exists()) {
+                storeFile ksFile
+                storePassword System.getenv('HL3_KEYSTORE_PASS') ?: 'heroeslore3'
+                keyAlias System.getenv('HL3_KEY_ALIAS') ?: 'heroeslore3'
+                keyPassword System.getenv('HL3_KEY_PASS') ?: 'heroeslore3'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+

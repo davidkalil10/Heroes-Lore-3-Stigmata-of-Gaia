@@ -6,32 +6,33 @@
 
 ### Recompilação / Runtime Nativo · Mach-O ARMv6 + iOS HLE + OpenGL ES 1.1
 
-**Windows x64 (Disponível · v1.0.3) · Linux x86_64 · Android ARM64 · Nintendo Switch (Roadmap)**
+**Windows x64 · Linux x86_64 (`AppImage`) · Android (`Global` & `ARMv8`) · Nintendo Switch (`.nro`) · Runtime Nativo C++17 (`v1.0.3`)**
 
 [![Port Version](https://img.shields.io/badge/Port-v1.0.3-d49b35)](#-downloads-e-plataformas)
 [![Original Game](https://img.shields.io/badge/Original_iOS-v1.0.1-6b7280)](#-arquitetura-técnica)
 [![Idiomas](https://img.shields.io/badge/Idiomas-English%20%7C%20PT--BR-2ea043)](#-idioma-em-tempo-real-en--pt-br)
+[![Multiplatform CI](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/workflows/build.yml/badge.svg)](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/workflows/build.yml)
 [![Releases](https://img.shields.io/github/v/release/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia)](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/releases)
 
 </div>
 
-Port nativo e runtime multiplataforma de **Heroes Lore 3: Stigmata of Gaia** (*EA Mobile / Hands-On Mobile*), rodando o executável original iOS **Mach-O 32-bit ARMv6** sobre uma camada HLE própria (`UIKit`, `Foundation`, `EAGL`, `OpenGL ES 1.1`, `OpenAL` / `MP3`+`WAV`, `SQLite3`) com áudio moderno, **True Widescreen**, **30/60 FPS**, **tradução integral PT-BR alternável em tempo real**, **Cloud Save no Google Drive** e **atualizador OTA pelo GitHub Releases**.
+Port nativo em **C++17** e runtime multiplataforma de **Heroes Lore 3: Stigmata of Gaia** (*EA Mobile / Hands-On Mobile*), rodando o executável original iOS **Mach-O 32-bit ARMv6** sobre uma camada HLE própria (`UIKit`, `Foundation`, `EAGL`, `OpenGL ES 1.1`, `OpenAL` / `MP3`+`WAV`, `SQLite3`) com áudio moderno, **True Widescreen**, **30/60 FPS**, **tradução integral PT-BR alternável em tempo real**, **Cloud Save no Google Drive** e **atualizador OTA pelo GitHub Releases**.
 
 ---
 
 ## 📥 Downloads e plataformas
 
-Os pacotes compilados ficam publicados em **[Releases](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/releases)**.
+Os pacotes compilados ficam publicados em **[Releases](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/releases)** e nos artefatos do **[GitHub Actions](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/workflows/build.yml)**.
 
-| Plataforma | Status | Pacote | Observações |
+| Plataforma | Status | Pacote(s) | Observações |
 | --- | --- | --- | --- |
-| **Windows x64** | ✅ Disponível (`v1.0.3`) | `heroes_lore_3_windows_x64.zip` | Executável standalone (`HeroesLore3.exe` + `assets/game.ipa`), sem dependência de Python, SDK ou APK wrapper |
-| **Linux x86_64 / Steam Deck** | ⏳ Planejado (`S12`) | — | Base C++/SDL2 nativa após estabilização da v1.0.3 no Windows |
-| **Android ARM64** | ⏳ Planejado (`S12`) | `com.davidbraga.heroeslore3` | App nativo próprio sem wrapper touchHLE original |
-| **Nintendo Switch** | ⏳ Planejado (`S13`) | Homebrew `.nro` (`0100F3A300030000`) | Layout adaptado a controles Joy-Con / Pro Controller e cache limitado |
+| **Windows x64** | ✅ C++17 Estático | `heroes_lore_3_windows_x64.zip` / `HeroesLore3.exe` | Executável standalone (`HeroesLore3.exe` + `assets/game.ipa`), sem Python/DLLs/APK wrapper |
+| **Linux x86_64 / Steam Deck** | ✅ CI (`AppImage`) | `heroes_lore_3_linux_x86_64.AppImage` | AppImage portável com `libcurl`, mixer OpenAL e saves em `$XDG_DATA_HOME` |
+| **Android** | ✅ C++17 / NDK | `heroes_lore_3_android_arm64.apk` (**ARMv8**)<br>`heroes_lore_3_android_universal.apk` (**Global**) | `com.davidbraga.heroeslore3` (`arm64-v8a` dedicado e universal `arm64-v8a + armeabi-v7a + x86_64`), SDL2 + GLES2 + Cloud/OTA JNI |
+| **Nintendo Switch** | ✅ CI (`devkitA64`) | `heroes_lore_3.nro` | Homebrew `.nro` direto sem `.zip` (Title ID `0100F3A300030000`), Unicorn-TCI + RomFS + Joy-Con/Touch |
 
 > [!NOTE]
-> Na v1.0.3, **somente o pacote de Windows x64** é gerado e publicado. Linux, Android ARM64 e Nintendo Switch compõem as próximas etapas do [Roadmap](docs/ROADMAP.md) (`S12`–`S14`).
+> A builds de **Windows x64** e **Android (Global + ARMv8)** também podem ser compiladas localmente; o workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) gera todos os **4 alvos** automaticamente na nuvem (`Windows`, `Linux AppImage`, `Android Global & ARMv8` e `Nintendo Switch .nro` sem `.zip`).
 
 ---
 
@@ -165,50 +166,45 @@ Mais detalhes em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/DECISION
 | `S08` | True Widescreen (`Auto`/`16:9`/`3:2`), projeção ortográfica dinâmica e `30`/`60` FPS | ✅ Concluído |
 | `S09`–`S10` | Auditoria EN (`6.733` slots), extensão de atlas `.rff`/`.pvr` e tradução ao vivo PT-BR | ✅ Concluído |
 | `S11` | Menu nativo integrado, Cloud Save (Google Drive), créditos About e OTA GitHub Releases | ✅ Concluído |
-| `S12` | Core nativo C++ / Linux x86_64 / Android ARM64 (`com.davidbraga.heroeslore3`) + CI | ⏳ Planejado |
-| `S13` | Port Nintendo Switch (`.nro`, Title ID `0100F3A300030000`) | ⏳ Planejado |
-| `S14` | Polimento multiplataforma e paridade final entre todas as plataformas | ⏳ Planejado |
+| `S12` | Core nativo C++17, Linux AppImage, Android (`arm64-v8a` + `universal`) & CI | 🔄 Em validação no CI |
+| `S13` | Port Nintendo Switch (`.nro`, Title ID `0100F3A300030000`, Unicorn-TCI) | 🔄 Em validação no CI |
+| `S14` | Polimento multiplataforma e paridade final entre todas as plataformas | ⏳ Próximo |
 
 ---
 
-## 🛠️ Desenvolvimento, Build Standalone e Validação
+## 🛠️ Desenvolvimento, Build Multiplataforma e Validação
 
-### Pré-requisitos (ambiente Windows)
-- **Python 3.11+** (testado em Python 3.13) com dependências (`pygame`, `PyOpenGL`, `unicorn`, `Pillow`, `pyinstaller`, etc.)
-- O arquivo base original intacto na raiz (`Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk`) para extração determinística de assets caso `reference/extracted_ipa/` ainda não tenha sido extraído.
-
-### Comandos essenciais
+### Comandos essenciais (Windows C++17 / Python / Android)
 
 ```powershell
 # 1. Verificar integridade completa do workspace, snapshots, SHA-256 e docs
 python tools/verify_workspace.py
 
-# 2. Verificar sincronização da versão do port (version.py <-> project.json)
+# 2. Verificar sincronização da versão do port (version.py <-> project.json <-> common.h)
 python tools/bump_version.py --check
 
-# 3. Extrair APK/IPA e revalidar inventário estático (necessário no primeiro setup)
-python tools/inspect_apk.py --extract --check
+# 3. Compilar runtime C++17 nativo no Windows (MSYS2 UCRT64) e gerar ZIP em dist/
+python tools/build_pc_cpp.py --build
 
-# 4. Rodar a suíte completa de testes automatizados
-python -m unittest discover -s tests -v
+# 4. Preparar assets/keystore do Android e compilar APKs ARMv8 (arm64-v8a) + Global (universal)
+python tools/prepare_platform_assets.py android
+gradle -p android assembleRelease --no-daemon
 
-# 5. Executar o jogo diretamente pelo código-fonte
-python tools/run_pc.py
-
-# 6. Gerar o pacote standalone Windows x64 + ZIP de release em dist/
-python tools/build_standalone_pc.py
+# 5. Rodar testes CTest e Python
+ctest --test-dir build_cpp --output-on-failure
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 ---
 
 ## 📂 Estrutura do Repositório
 
-- [`tools/run_pc.py`](tools/run_pc.py): ponto de entrada do runtime PC, loop principal, atalhos de teclado/gamepad, OSD e integração com o guest ARMv6.
-- [`tools/hl3rt/`](tools/hl3rt/): núcleo do emulador Mach-O ARMv6, runtime ObjC, módulos HLE (GL, Audio, UIKit, Foundation, libc), widescreen, localização, opções responsivas, Cloud Save e OTA Updater.
-- [`tools/build_standalone_pc.py`](tools/build_standalone_pc.py): gerador do bundle standalone (`dist/HeroesLore3_PC/` e `dist/heroes_lore_3_windows_x64.zip`).
-- [`tools/bump_version.py`](tools/bump_version.py): gerenciador e verificador de versão SemVer do port (`tools/hl3rt/version.py` ↔ `project.json`).
+- [`src/`](src/) & [`CMakeLists.txt`](CMakeLists.txt): runtime nativo C++17 completo (loader Mach-O, máquina Unicorn ARMv6/TCI, ObjC 2.0, GLES1 → OpenGL/GLES2, OpenAL + `dr_mp3`, widescreen, Cloud Save, OTA updater e backends Windows/Linux/Android/Switch).
+- [`android/`](android/) & [`platforms/switch/`](platforms/switch/): projeto Gradle/NDK Android (`com.davidbraga.heroeslore3`) e toolchain/adaptador de memória Horizon/Switch (`0100F3A300030000`).
+- [`.github/workflows/build.yml`](.github/workflows/build.yml): pipeline GitHub Actions para Windows, Linux AppImage, Android (Global + ARMv8) e Nintendo Switch (`.nro` direto).
+- [`tools/`](tools/): empacotadores (`build_pc_cpp.py`, `prepare_platform_assets.py`, `fetch_build_deps.py`), verificadores (`verify_android_package.py`, `verify_switch_package.py`, `bump_version.py`, `verify_workspace.py`) e protótipo de referência Python (`run_pc.py`, `hl3rt/`).
 - [`localization/`](localization/) e [`assets/`](assets/): chunks de tradução EN/PT-BR validados, fontes estendidas `.rff`/`.pvr`, ícones e branding.
-- [`tests/`](tests/): suíte de testes unitários e de regressão (`runtime`, `widescreen`, `options_menu`, `updater`, `localization`).
+- [`tests/`](tests/): suítes C++ (`tests/cpp/`) e Python (`unittest` cobrindo runtime, widescreen, options menu, updater, localização e contratos CI).
 - [`docs/`](docs/) e [`research/`](research/): especificações, ADRs, logs técnicos de engenharia reversa, protocolo de sessão e roadmap.
 
 ---

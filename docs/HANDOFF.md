@@ -2,48 +2,39 @@
 
 ## Estado Atual
 
-- **Última etapa concluída**: `S11` (Menu Integrado, Cloud Save Google Drive, Créditos no Menu Sobre, OTA Updater GitHub Releases corrigido para Windows, pacote sem APK redundante, Releases `v1.0.2` e `v1.0.3` Windows x64)
-- **Próxima etapa recomendada**: Validar atualização OTA `v1.0.2 -> v1.0.3` na Build 3 e seguir para `S12` (Core nativo C++ / Linux x86_64 / Android ARM64 `com.davidbraga.heroeslore3` e CI Multiplataforma)
-- **Versão atual do Port**: `v1.0.3` (desacoplada do jogo original iOS `1.0.1`)
+- **Última entrega concluída**: **Infraestrutura Multiplataforma Completa (`Windows x64`, `Linux AppImage`, `Android ARM64/Universal APK`, `Nintendo Switch NRO`) + `.github/workflows/build.yml` (`v1.0.3`)**
+- **Próxima etapa recomendada**: Fazer push para o GitHub e validar no Actions os runners Linux (`AppImage`) e Switch (`devkitA64`), além de testar os APKs em dispositivo/emulador Android e `.nro` no Switch (`0100F3A300030000`).
+- **Versão atual do Port**: `v1.0.3` (`versionCode 4` no Android, sincronizada entre `tools/hl3rt/version.py`, `project.json`, `src/core/common.h` e `android/app/build.gradle`)
 - **Idioma padrão no boot**: Inglês (`en`), alternável em tempo real para Português (`pt-BR`) via `F7` ou `Port Options & Cloud` sem reiniciar nem alterar saves
-- **Pacote base verificado**: `Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk` (`61.755.432` bytes), embarcando `assets/game.ipa` (`43.686.130` bytes) com Mach-O ARMv6 `Payload/Heroes Lore.app/Heroes Lore` (`915.824` bytes) — pacote Windows standalone embarca apenas `assets/game.ipa`
+- **Pacotes verificados localmente no Windows host**:
+  - **Windows x64**: `dist/HeroesLore3_PC/HeroesLore3.exe` (`6.723.584` bytes, SHA-256 `205a2102e717cf40e6977dea3d4f1c55bd49507b8dbc54e09dffda5054da722a`) e `dist/heroes_lore_3_windows_x64.zip` (`45.482.126` bytes, SHA-256 `2a686c55acf74ef052a260eedcce80e9f1847a021c3f18f3304353cac6d05c8b`)
+  - **Android `arm64-v8a`**: `dist/heroes_lore_3_android_arm64.apk` (`50.316.995` bytes, SHA-256 `a496abbd9f2370d9b3aa97dd74f2c6963d01579e8194fd859446f4ce0868ce04`)
+  - **Android `universal` (`arm64-v8a` + `armeabi-v7a`)**: `dist/heroes_lore_3_android_universal.apk` (`54.029.329` bytes, SHA-256 `792d84514c795345512633da5f7478a9e838a9a2a65f28b3d2f0c822d53158e1`)
 
-## O que foi feito e validado na Sessão 19 (`v1.0.3` · Build 4)
+## O que foi feito e validado na Sessão 22 (`S12` + `S13` Multiplataforma + CI)
 
-1. **Bump SemVer `v1.0.2 -> v1.0.3` via `tools/bump_version.py patch`**:
-   - Sincronizadas `PORT_VERSION = "1.0.3"` em `tools/hl3rt/version.py` e `"port_version": "1.0.3"` em `project.json`.
-   - Menu Sobre (`form_id=114`, `slot 6632`), título da janela, modal de opções/atualizações e `README.txt` do pacote standalone passaram para `v1.0.3`.
-2. **Build 4 Standalone e Publicação da Release `v1.0.3`**:
-   - Compilado `dist/HeroesLore3_PC/` + `dist/heroes_lore_3_windows_x64.zip` sem `.apk` redundante (apenas `assets/game.ipa`), validada a suíte completa (`63/63` testes), smoke test do executável e checks do workspace.
-   - Publicada a tag/release pública `v1.0.3` no GitHub (`davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia`) para validar ponta a ponta a detecção, o download SHA-256, a troca de arquivos e o reinício automático a partir da `v1.0.2`.
+1. **Adaptação Multiplataforma do Core C++17 (`CMakeLists.txt`, `src/`)**:
+   - Padronizado `<SDL.h>` em toda a base; adicionados armazenamento gravável portável (`find_writable_data_root()`), pausa em segundo plano (`AudioMixer::set_paused`), multi-touch `SDL_FINGER*` + desduplicação `SDL_TOUCH_MOUSEID` + botão voltar Android (`SDLK_AC_BACK -> SDLK_ESCAPE`), fonte Horizon `plGetSharedFontByType` + fallback TTF Android/Linux em `src/platform/ui_renderer.cpp`.
+   - Em `src/platform/net_http.{h,cpp}` e `src/platform/updater.cpp`: implementada ponte JNI Android (`SDL_AndroidGetActivity()` + `GetObjectClass()`, âncora `volatile` em `nativeDownloadProgress` contra `--gc-sections` e `install_android_apk()` via `ApkFileProvider`), cliente `libcurl` + `romfs:/cacert.pem` para Linux/Switch e `xdg-open` protegido por `#if defined(__linux__) && !defined(__ANDROID__)`.
+2. **Android Gradle + NDK Build & Verificação (`android/`, `tools/verify_android_package.py`)**:
+   - Configurados Gradle `8.1.1`, AGP `8.1.1`, NDK `26.3.11579264`, SDL2 `2.30.12` dinâmica + `libmain.so` (`ANDROID_STL=c++_shared`), `com.davidbraga.heroeslore3`, `versionCode 4`, `versionName '1.0.3'`, permissões `INTERNET` + `REQUEST_INSTALL_PACKAGES` e assets preparados via `tools/prepare_platform_assets.py android`.
+   - Compilados e assinados localmente ambos os APKs de release (`assembleRelease`, `4m 18s`), corrigido bug `sh[1]` (`sh_type`) + detecção de XML binário otimizado `adaptive-icon` em `tools/verify_android_package.py` e validados ambos os APKs com `verify_android_package.py`, `apksigner verify` e inspeção ELF confirmando `SDL_main=True` e `nativeDownloadProgress=True` nas duas ABIs (`arm64-v8a` e `armeabi-v7a`).
+3. **Linux AppImage, Nintendo Switch (`0100F3A300030000`) & GitHub Actions (`.github/workflows/build.yml`)**:
+   - Configurados `platforms/switch/{toolchain.cmake,unicorn_os.c,compat/sys/mman.h}`, `tests/switch_memory_contract.c`, `tools/patch_unicorn_switch.py` (refatorado com tabela `REPLACEMENTS`, `-DUNICORN_INTERPRETER=ON` + buffer TCI `32 MiB`), `tools/fetch_build_deps.py`, `tools/prepare_platform_assets.py` e `tools/verify_switch_package.py`.
+   - Workflow `.github/workflows/build.yml` criado com os jobs `build-windows`, `build-linux` (`xvfb-run` + AppImage), `build-android`, `build-switch` (`devkitpro/devkita64:latest` + `elf2nro`) e `release` (`SHA256SUMS.txt` + `docs/RELEASE_NOTES.md`).
+   - Validação local: `cmake --build build_cpp --parallel` (`90/90`) + `ctest` (`3/3`), `tools/build_pc_cpp.py`, `tools/bump_version.py --check` (`v1.0.3`), e `unittest` (`68/68` incluindo `tests/test_multiplatform_ci.py` e correção de hermeticidade em `tests/test_s09_s10_localization.py`).
 
-## O que foi feito e validado na Sessão 18 (`v1.0.2`)
+## O que ficou pendente
 
-1. **Correção da Falha do Auto-Updater Windows (`tools/hl3rt/updater.py`)**:
-   - Identificado e comprovado experimentalmente em pacote frozen que `CREATE_NO_WINDOW | DETACHED_PROCESS` no `subprocess.Popen` fazia `powershell.exe` encerrar com código `0` sem executar `update_windows.ps1`.
-   - Alterado para `CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW` com `stdin=DEVNULL`, `stdout=DEVNULL`, `stderr=DEVNULL` e `close_fds=True`.
-   - Gravado `update_windows.ps1` com UTF-8 BOM (`utf-8-sig`), retries (`Invoke-WithRetry`, 15 tentativas x 300 ms) para troca/rollback contra bloqueios temporários de antivírus/DLL e limpeza da pasta `staged/` ao concluir.
-2. **Remoção do APK Redundante do Pacote Windows (`tools/hl3rt/machine.py`, `tools/build_standalone_pc.py`)**:
-   - `Bundle.__init__` carrega `assets/game.ipa` diretamente com verificação SHA-256 (`nested_ipa.sha256`), mantendo fallback para o `.apk` no workspace de desenvolvimento.
-   - `build_standalone_pc.py` extrai `assets/game.ipa` (`43.686.130` bytes) para `dist/HeroesLore3_PC/assets/game.ipa` sem copiar os `61.755.432` bytes do `.apk` nem vazar `tools/scratch_*.py` em `_internal/`.
-3. **Bump `v1.0.1 -> v1.0.2`, Testes e Release Build 3**:
-   - `python tools/bump_version.py patch` sincronizou `v1.0.2` em `tools/hl3rt/version.py` e `project.json`.
-   - `tests/test_updater.py` ampliado para `8` testes (`63` testes na suíte total) cobrindo UTF-8 BOM, flags do `Popen` e boot standalone via `assets/game.ipa` sem APK.
-   - Publicada a release `v1.0.2` (Build 3) no GitHub para o usuário baixar e em seguida gerarmos a 4ª build (`v1.0.3`) para testar o update ao vivo.
-   - *Observação*: a detecção pública dentro do jogo (`api.github.com/repos/.../releases/latest`) requer o repositório `davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia` em visibilidade **Pública**.
-
-## O que ficou pendente (`S12`–`S14`)
-
-- **`S12`**: Implementar core nativo C++/SDL2 em `src/`, alvo Linux x86_64 e app Android ARM64 (`com.davidbraga.heroeslore3`) + workflows GitHub Actions.
-- **`S13`**: Port Nintendo Switch (`.nro`, Title ID `0100F3A300030000`) com controle Npad e gerenciamento de memória/cache.
-- **`S14`**: Auditoria final multiplataforma entre Windows, Linux, Android e Nintendo Switch.
+- **Execução real em Linux x86_64 e Nintendo Switch (`devkitA64`)**: o host desta máquina é Windows; os builds/testes reais de `build-linux` (`AppImage`) e `build-switch` (`.nro`) estão prontos no `.github/workflows/build.yml` para validação na primeira execução do GitHub Actions.
+- **Smoke-test em hardware/emulador**: instalar e testar o APK (`arm64-v8a` / `universal`) em aparelho Android real/AVD e o `.nro` no console Nintendo Switch (inclusive HUD/touch/controllers e OTA).
 
 ## Próximo passo concreto ao retomar
 
-Iniciar `S12` verificando o estado do workspace e preparando a base C++/SDL2 e workflows multiplataforma:
+Verificar `.github/workflows/build.yml` após o `git push` no GitHub Actions (ou disparar manualmente via `workflow_dispatch`), além de manter os checks locais verdes:
 
 ```powershell
 python tools/verify_workspace.py
 python tools/bump_version.py --check
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests -p "test_*.py" -v
 ```

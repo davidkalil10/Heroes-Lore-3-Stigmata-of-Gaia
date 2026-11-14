@@ -292,6 +292,7 @@ class S09S10LocalizationTests(unittest.TestCase):
         try:
             set_active_language("en")
             runner = PCRunner(scale=1, headless_frames=0)
+            runner.set_language("en", notify=False)
             m = runner.rt.m
             host_sp = runner.rt.host_sp
             for _ in range(20):
