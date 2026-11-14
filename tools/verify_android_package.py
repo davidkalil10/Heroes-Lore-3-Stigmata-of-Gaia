@@ -5,9 +5,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
+import re
+import shutil
 import struct
+import subprocess
 import zipfile
 from pathlib import Path
+
+EXPECTED_HL3_CERT_SHA256 = "61ca6931c36cc8f1139b9922a07fd5e1e5479c935ed7c12728296b5f1dac4905"
 
 EM_ARM = 40
 EM_X86_64 = 62
@@ -97,7 +103,55 @@ def inspect_elf(data: bytes, name: str) -> tuple[int, int, set[str], list[str]]:
     return e_machine, elf_class, dynsym_exports, needed
 
 
-def verify_apk(apk_path: Path, abis: list[str]) -> None:
+def find_apksigner() -> str:
+    for name in ("apksigner", "apksigner.bat"):
+        found = shutil.which(name)
+        if found:
+            return found
+    for env_key in ("ANDROID_HOME", "ANDROID_SDK_ROOT"):
+        sdk = os.environ.get(env_key, "").strip()
+        if not sdk:
+            continue
+        bt = Path(sdk) / "build-tools"
+        if bt.is_dir():
+            for ver_dir in sorted(bt.iterdir(), reverse=True):
+                for name in ("apksigner.bat", "apksigner"):
+                    cand = ver_dir / name
+                    if cand.is_file():
+                        return str(cand)
+    raise FileNotFoundError("apksigner not found in PATH or ANDROID_HOME/build-tools")
+
+
+def verify_apk_signature(apk_path: Path, expected_cert_sha256: str | None = None) -> str:
+    apksigner = find_apksigner()
+    res = subprocess.run(
+        [apksigner, "verify", "--print-certs", str(apk_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    output = (res.stdout or "") + "\n" + (res.stderr or "")
+    if res.returncode != 0:
+        raise AssertionError(f"APK signature verification failed for {apk_path.name}:\n{output.strip()}")
+    match = re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F]{64})", output)
+    if not match:
+        raise AssertionError(f"Could not parse Signer #1 SHA-256 certificate digest for {apk_path.name}:\n{output.strip()}")
+    actual = match.group(1).lower()
+    if expected_cert_sha256:
+        exp = expected_cert_sha256.strip().lower().replace(":", "")
+        if actual != exp:
+            raise AssertionError(
+                f"APK signing certificate mismatch for {apk_path.name}: got {actual}, expected {exp}"
+            )
+    return actual
+
+
+def verify_apk(
+    apk_path: Path,
+    abis: list[str],
+    require_signed: bool = False,
+    expected_cert_sha256: str | None = None,
+) -> None:
     if not apk_path.exists():
         raise FileNotFoundError(f"APK not found: {apk_path}")
 
@@ -160,15 +214,27 @@ def verify_apk(apk_path: Path, abis: list[str]) -> None:
                 if dep not in ALLOWED_ANDROID_SYSTEM_LIBS and f"lib/{abi}/{dep}" not in names:
                     raise AssertionError(f"Unbundled DT_NEEDED dependency {dep} in {n}")
 
-    print(f"PASS Android APK verified: {apk_path.name} (ABIs={','.join(abis)}, ipa_sha={ipa_sha[:12]})")
+    cert_info = ""
+    if require_signed or expected_cert_sha256:
+        actual_cert = verify_apk_signature(apk_path, expected_cert_sha256=expected_cert_sha256)
+        cert_info = f", cert_sha256={actual_cert[:12]}"
+
+    print(f"PASS Android APK verified: {apk_path.name} (ABIs={','.join(abis)}, ipa_sha={ipa_sha[:12]}{cert_info})")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("apk", type=Path)
     parser.add_argument("--abis", nargs="+", default=["arm64-v8a"])
+    parser.add_argument("--require-signed", action="store_true")
+    parser.add_argument("--expected-cert-sha256", default="")
     args = parser.parse_args()
-    verify_apk(args.apk, args.abis)
+    verify_apk(
+        args.apk,
+        args.abis,
+        require_signed=args.require_signed,
+        expected_cert_sha256=args.expected_cert_sha256.strip() or None,
+    )
     return 0
 
 

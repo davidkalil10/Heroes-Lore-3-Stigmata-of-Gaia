@@ -546,6 +546,21 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 - **Consequências**:
   - Validado ao vivo no emulador `emulator-5554` em `3120x1440` edge-to-edge (estabilidade com acelerômetro ativo, modal legível em alta resolução, alternância visível de proporção/idioma em tempo real e gameplay nativo em `3120x1440`).
 
+---
+
+## ADR-027: Keystore Android Persistente e Verificação Obrigatória de Assinatura no CI (`S12`)
+
+- **Data**: 2026-11-14
+- **Status**: Aceito
+- **Contexto**:
+  - Como `.gitignore` ignorava `*.keystore`, o `tools/prepare_platform_assets.py android` gerava uma nova chave RSA efêmera em cada runner limpo do GitHub Actions, impedindo a atualização direta de APK sobre instalações anteriores e inviabilizando o auto-updater in-app (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
+- **Decisão**:
+  1. Versionar `android/app/heroes_lore_3.keystore` via exceção `!android/app/heroes_lore_3.keystore` no `.gitignore` (com suporte adicional a override via secret `HL3_KEYSTORE_BASE64` / `HL3_KEYSTORE_PATH` no CI) e remover o fallback silencioso para unsigned em `android/app/build.gradle`.
+  2. Adicionar `--require-existing-keystore` em [`tools/prepare_platform_assets.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/prepare_platform_assets.py) e `--require-signed` / `--expected-cert-sha256` em [`tools/verify_android_package.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/verify_android_package.py), validando no CI a impressão digital `61ca6931c36cc8f1139b9922a07fd5e1e5479c935ed7c12728296b5f1dac4905`.
+- **Consequências**:
+  - Todos os APKs gerados localmente e no GitHub Actions passam a compartilhar exatamente o mesmo certificado de assinatura (`SHA-256: 61ca6931...`), permitindo upgrades diretos e OTA automático no Android após uma única substituição das builds efêmeras anteriores.
+
+
 
 
 

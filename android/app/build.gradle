@@ -53,12 +53,10 @@ android {
         release {
             def ksPath = System.getenv('HL3_KEYSTORE_PATH') ?: 'heroes_lore_3.keystore'
             def ksFile = file(ksPath)
-            if (ksFile.exists()) {
-                storeFile ksFile
-                storePassword System.getenv('HL3_KEYSTORE_PASS') ?: 'heroeslore3'
-                keyAlias System.getenv('HL3_KEY_ALIAS') ?: 'heroeslore3'
-                keyPassword System.getenv('HL3_KEY_PASS') ?: 'heroeslore3'
-            }
+            storeFile ksFile
+            storePassword System.getenv('HL3_KEYSTORE_PASS') ?: 'heroeslore3'
+            keyAlias System.getenv('HL3_KEY_ALIAS') ?: 'heroeslore3'
+            keyPassword System.getenv('HL3_KEY_PASS') ?: 'heroeslore3'
         }
     }
 
@@ -67,9 +65,7 @@ android {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (signingConfigs.release.storeFile != null) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false

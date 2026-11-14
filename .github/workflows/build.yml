@@ -210,12 +210,26 @@ jobs:
           key: ${{ runner.os }}-android-uc-sdl2-2.30.12
 
       - name: Fetch Third-Party Dependencies & Stage Android Assets
+        env:
+          HL3_KEYSTORE_BASE64: ${{ secrets.HL3_KEYSTORE_BASE64 }}
+          HL3_KEYSTORE_PASS: ${{ secrets.HL3_KEYSTORE_PASS }}
+          HL3_KEY_ALIAS: ${{ secrets.HL3_KEY_ALIAS }}
+          HL3_KEY_PASS: ${{ secrets.HL3_KEY_PASS }}
         run: |
           python3 -c "import PIL" 2>/dev/null || python3 -m pip install pillow
           python3 tools/fetch_build_deps.py --android
-          python3 tools/prepare_platform_assets.py android
+          if [ -n "$HL3_KEYSTORE_BASE64" ]; then
+            echo "$HL3_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/hl3_release.keystore"
+            echo "HL3_KEYSTORE_PATH=$RUNNER_TEMP/hl3_release.keystore" >> "$GITHUB_ENV"
+            export HL3_KEYSTORE_PATH="$RUNNER_TEMP/hl3_release.keystore"
+          fi
+          python3 tools/prepare_platform_assets.py android --require-existing-keystore
 
       - name: Build & Verify Android Release APKs
+        env:
+          HL3_KEYSTORE_PASS: ${{ secrets.HL3_KEYSTORE_PASS }}
+          HL3_KEY_ALIAS: ${{ secrets.HL3_KEY_ALIAS }}
+          HL3_KEY_PASS: ${{ secrets.HL3_KEY_PASS }}
         run: |
           cd android
           gradle assembleRelease --no-daemon --stacktrace
@@ -223,8 +237,12 @@ jobs:
           mkdir -p dist
           find android/app/build/outputs/apk/release -name "*arm64-v8a*.apk" -exec cp {} dist/heroes_lore_3_android_arm64.apk \;
           find android/app/build/outputs/apk/release -name "*universal*.apk" -exec cp {} dist/heroes_lore_3_android_universal.apk \;
-          python3 tools/verify_android_package.py dist/heroes_lore_3_android_arm64.apk --abis arm64-v8a
-          python3 tools/verify_android_package.py dist/heroes_lore_3_android_universal.apk --abis arm64-v8a armeabi-v7a x86_64
+          CERT_ARGS="--require-signed"
+          if [ -z "${HL3_KEYSTORE_PATH:-}" ]; then
+            CERT_ARGS="--require-signed --expected-cert-sha256 61ca6931c36cc8f1139b9922a07fd5e1e5479c935ed7c12728296b5f1dac4905"
+          fi
+          python3 tools/verify_android_package.py dist/heroes_lore_3_android_arm64.apk --abis arm64-v8a $CERT_ARGS
+          python3 tools/verify_android_package.py dist/heroes_lore_3_android_universal.apk --abis arm64-v8a armeabi-v7a x86_64 $CERT_ARGS
           ls -lh dist/heroes_lore_3_android_*.apk
 
       - name: Upload Android ARMv8 APK (Unarchived)

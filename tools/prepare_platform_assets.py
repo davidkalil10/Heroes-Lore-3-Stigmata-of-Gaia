@@ -167,10 +167,19 @@ def generate_android_icons(res_dir: Path) -> None:
     )
 
 
-def ensure_android_keystore() -> Path:
-    keystore = ROOT / "android" / "app" / "heroes_lore_3.keystore"
+def ensure_android_keystore(require_existing: bool = False) -> Path:
+    env_ks = os.environ.get("HL3_KEYSTORE_PATH", "").strip()
+    if env_ks:
+        cand = Path(env_ks)
+        keystore = cand if cand.is_absolute() else (ROOT / "android" / "app" / cand)
+    else:
+        keystore = ROOT / "android" / "app" / "heroes_lore_3.keystore"
     if keystore.exists():
         return keystore
+    if require_existing:
+        raise FileNotFoundError(
+            f"Missing persistent Android release keystore at {keystore}; refusing to generate an ephemeral keypair"
+        )
     keystore.parent.mkdir(parents=True, exist_ok=True)
     keytool = shutil.which("keytool")
     if not keytool:
@@ -202,7 +211,7 @@ def ensure_android_keystore() -> Path:
     return keystore
 
 
-def prepare_android(with_keystore: bool = True) -> None:
+def prepare_android(with_keystore: bool = True, require_existing_keystore: bool = False) -> None:
     build_root = ROOT / "android" / "app" / "build"
     assets_dir = build_root / "staged-assets"
     res_dir = build_root / "staged-res"
@@ -210,7 +219,7 @@ def prepare_android(with_keystore: bool = True) -> None:
     copy_runtime_overrides(assets_dir)
     generate_android_icons(res_dir)
     if with_keystore:
-        ensure_android_keystore()
+        ensure_android_keystore(require_existing=require_existing_keystore)
     print(f"OK: Staged Android assets ({assets_dir}), icons ({res_dir}), package {ANDROID_PACKAGE_ID}")
 
 
@@ -308,6 +317,7 @@ def main() -> int:
 
     p_and = sub.add_parser("android", help="Stage Android APK assets, launcher icons, and keystore")
     p_and.add_argument("--no-keystore", action="store_true")
+    p_and.add_argument("--require-existing-keystore", action="store_true")
 
     p_sw = sub.add_parser("switch", help="Stage Switch RomFS directory and 256x256 JPEG icon")
     p_sw.add_argument("--romfs", type=Path, default=ROOT / "build_switch" / "romfs")
@@ -323,7 +333,10 @@ def main() -> int:
         write_verified_ipa(args.out)
         print(f"OK: Extracted verified game.ipa to {args.out}")
     elif args.cmd == "android":
-        prepare_android(with_keystore=not args.no_keystore)
+        prepare_android(
+            with_keystore=not args.no_keystore,
+            require_existing_keystore=args.require_existing_keystore,
+        )
     elif args.cmd == "switch":
         prepare_switch(args.romfs, args.icon_out)
     elif args.cmd == "linux":

@@ -26,7 +26,12 @@ from hl3rt.version import (  # noqa: E402
 )
 from patch_unicorn_common import REPLACEMENTS as COMMON_REPLACEMENTS, patch_unicorn_crc32  # noqa: E402
 from patch_unicorn_switch import REPLACEMENTS as SWITCH_REPLACEMENTS, patch_switch_unicorn  # noqa: E402
-from verify_android_package import EM_AARCH64, EM_ARM, verify_apk  # noqa: E402
+from verify_android_package import (  # noqa: E402
+    EM_AARCH64,
+    EM_ARM,
+    EXPECTED_HL3_CERT_SHA256,
+    verify_apk,
+)
 from verify_switch_package import verify_nro  # noqa: E402
 
 
@@ -281,6 +286,15 @@ class MultiplatformCiTests(unittest.TestCase):
         self.assertEqual(SWITCH_TITLE_ID, "0100F3A300030000")
         self.assertNotIn("01005E14", SWITCH_TITLE_ID)
         self.assertNotIn("0100F4A5", SWITCH_TITLE_ID)
+
+        # Ensure persistent Android signing keystore is tracked and enforced in CI.
+        self.assertIn("--require-existing-keystore", wf)
+        self.assertIn("--require-signed", wf)
+        self.assertIn(EXPECTED_HL3_CERT_SHA256, wf)
+        ks = ROOT / "android" / "app" / "heroes_lore_3.keystore"
+        self.assertTrue(ks.is_file(), f"Missing persistent release keystore: {ks}")
+        gitignore_txt = (ROOT / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("!android/app/heroes_lore_3.keystore", gitignore_txt)
 
 
 if __name__ == "__main__":

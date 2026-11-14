@@ -55,6 +55,7 @@ build_*/
 AppDir/
 *.jks
 *.keystore
+!android/app/heroes_lore_3.keystore
 *.apk
 *.AppImage
 assets/game.ipa

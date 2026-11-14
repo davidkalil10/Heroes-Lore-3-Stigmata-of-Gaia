@@ -417,6 +417,17 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   4. **Validações**:
      - `ctest --test-dir build_cpp --output-on-failure` (`3/3`), `verify_android_package.py` nos APKs locais (`arm64` e `universal`) e verificação visual completa ao vivo no emulador `Pixel_6_Pro_API_35` (`3120x1440` no título, `PortOptionsModal`, alternância `Auto`/`16:9`/`Original`, idioma `PT-BR` e cutscene/gameplay).
 
+---
+
+## 2026-11-14 - Sessão 25 (`S12`): Assinatura Android Persistente e Validação `apksigner` no CI (`ADR-027`)
+
+- **Relatório completo**: `research/sessions/2026-11-14-06.md`
+- **Descobertas e correções verificáveis**:
+  - `*.keystore` no `.gitignore` fazia cada runner limpo do Actions gerar um par de chaves RSA aleatório em `tools/prepare_platform_assets.py`.
+  - Versionado `android/app/heroes_lore_3.keystore` (`!android/app/heroes_lore_3.keystore`), tornado `signingConfig signingConfigs.release` obrigatório no build `release` de `android/app/build.gradle`, e adicionados `--require-existing-keystore` (`prepare_platform_assets.py`) e `--require-signed` / `--expected-cert-sha256` (`verify_android_package.py` via `apksigner verify --print-certs`) no workflow `build-android` (com suporte opcional a `HL3_KEYSTORE_BASE64`).
+  - Validado nos APKs locais (`cert_sha256=61ca6931c36c`) e em `tests/test_multiplatform_ci.py`.
+
+
 
 
 
