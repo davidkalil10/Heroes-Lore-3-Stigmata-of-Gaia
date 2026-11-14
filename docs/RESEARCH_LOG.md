@@ -315,6 +315,15 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - `tools/build_standalone_pc.py` ajustado para excluir saves pessoais de `data/internal/Documents/` e `config/cloud_auth.json` por padrão, empacotando `dist/heroes_lore_3_windows_x64.zip`.
      - Suíte completa com `62/62` testes `OK` (`tests/test_updater.py` + `tests/test_options_menu.py` + demais suítes).
 
+---
+
+## 2026-11-13 - Sessão 17 (Release `v1.0.1`): Bump SemVer para Teste de Atualização OTA (`v1.0.0 -> v1.0.1`)
+
+- **Relatório completo**: `research/sessions/2026-11-13-17.md`
+- **Entregas e validações**:
+  - Executado `python tools/bump_version.py patch`, avançando a versão sincronizada do port de `1.0.0` para `1.0.1` em `tools/hl3rt/version.py` e `project.json`.
+  - Atualizados `README.md`, `docs/` e recompilado o pacote standalone `dist/heroes_lore_3_windows_x64.zip` com `v1.0.1` para habilitar teste ponta a ponta de detecção, download, verificação SHA-256 e auto-instalação a partir de instalações `v1.0.0` (requer repositório público no GitHub para consulta não autenticada).
+
 
 
 

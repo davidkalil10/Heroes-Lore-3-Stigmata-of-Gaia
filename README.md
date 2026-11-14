@@ -6,9 +6,9 @@
 
 ### Recompilação / Runtime Nativo · Mach-O ARMv6 + iOS HLE + OpenGL ES 1.1
 
-**Windows x64 (Disponível · v1.0.0) · Linux x86_64 · Android ARM64 · Nintendo Switch (Roadmap)**
+**Windows x64 (Disponível · v1.0.1) · Linux x86_64 · Android ARM64 · Nintendo Switch (Roadmap)**
 
-[![Port Version](https://img.shields.io/badge/Port-v1.0.0-d49b35)](#-downloads-e-plataformas)
+[![Port Version](https://img.shields.io/badge/Port-v1.0.1-d49b35)](#-downloads-e-plataformas)
 [![Original Game](https://img.shields.io/badge/Original_iOS-v1.0.1-6b7280)](#-arquitetura-técnica)
 [![Idiomas](https://img.shields.io/badge/Idiomas-English%20%7C%20PT--BR-2ea043)](#-idioma-em-tempo-real-en--pt-br)
 [![Releases](https://img.shields.io/github/v/release/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia)](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/releases)
@@ -25,17 +25,17 @@ Os pacotes compilados ficam publicados em **[Releases](https://github.com/davidk
 
 | Plataforma | Status | Pacote | Observações |
 | --- | --- | --- | --- |
-| **Windows x64** | ✅ Disponível (`v1.0.0`) | `heroes_lore_3_windows_x64.zip` | Executável standalone (`HeroesLore3.exe`), sem dependência de Python ou SDK |
-| **Linux x86_64 / Steam Deck** | ⏳ Planejado (`S12`) | — | Base C++/SDL2 nativa após estabilização da v1.0.0 no Windows |
+| **Windows x64** | ✅ Disponível (`v1.0.1`) | `heroes_lore_3_windows_x64.zip` | Executável standalone (`HeroesLore3.exe`), sem dependência de Python ou SDK |
+| **Linux x86_64 / Steam Deck** | ⏳ Planejado (`S12`) | — | Base C++/SDL2 nativa após estabilização da v1.0.1 no Windows |
 | **Android ARM64** | ⏳ Planejado (`S12`) | `com.davidbraga.heroeslore3` | App nativo próprio sem wrapper touchHLE original |
 | **Nintendo Switch** | ⏳ Planejado (`S13`) | Homebrew `.nro` (`0100F3A300030000`) | Layout adaptado a controles Joy-Con / Pro Controller e cache limitado |
 
 > [!NOTE]
-> Na v1.0.0, **somente o pacote de Windows x64** é gerado e publicado. Linux, Android ARM64 e Nintendo Switch compõem as próximas etapas do [Roadmap](docs/ROADMAP.md) (`S12`–`S14`).
+> Na v1.0.1, **somente o pacote de Windows x64** é gerado e publicado. Linux, Android ARM64 e Nintendo Switch compõem as próximas etapas do [Roadmap](docs/ROADMAP.md) (`S12`–`S14`).
 
 ---
 
-## ✨ Recursos da versão `v1.0.0`
+## ✨ Recursos da versão `v1.0.1`
 
 - 🖥️ **True Widescreen (`Auto` / `16:9` / `Original 3:2`)**: expansão real da projeção ortográfica OpenGL ES 1.1 (`480×320` nativo até `1020 px` de largura lógica) preservando a proporção de sprites, menus e botões do HUD sem esticar a imagem.
 - ⚡ **Seleção de FPS (`30` / `60`) em tempo real**: alternância pelo menu do port ou tecla `F8`, com aviso estilizado na tela (OSD).
@@ -47,7 +47,7 @@ Os pacotes compilados ficam publicados em **[Releases](https://github.com/davidk
 - ☁️ **Cloud Save no Google Drive**: autenticação OAuth Device Code no próprio menu, envio e restauração da pasta isolada **`Heroes Lore III - Stigmata of Gaia`** (`heroes_lore_3_save.json`), backup automático em `data/save-backups/` antes de restaurar e recarga limpa para a tela de título.
 - 🔄 **Atualizador OTA pelo GitHub Releases**: verificação opcional no boot (configurável em `config/services.json` e no menu) + consulta manual, visualização de *Release Notes*, validação de HTTPS e **SHA-256**, proteção contra ZIP Slip e script de substituição que preserva `config/` e `data/` com rollback em caso de falha.
 - 🎵 **Subsistema de Áudio fora do callback SDL**: pré-decodificação e mixagem separada para os **20 temas `.mp3`** (`bgm0_mf.mp3`..`bgm16_mf.mp3`) e **28 efeitos `.wav`** via OpenAL HLE, com controle de volume e mudo persistidos em `config/audio.json`.
-- 🏷️ **Créditos e Versão no Menu Sobre**: logo abaixo da versão original do jogo (`1.0.1`), o menu **About** exibe em tempo real o crédito **`Port by David Kalil Braga (2026) - v1.0.0`** (EN) / **`Port por David Kalil Braga (2026) - v1.0.0`** (PT-BR).
+- 🏷️ **Créditos e Versão no Menu Sobre**: logo abaixo da versão original do jogo (`1.0.1`), o menu **About** exibe em tempo real o crédito **`Port by David Kalil Braga (2026) - v1.0.1`** (EN) / **`Port por David Kalil Braga (2026) - v1.0.1`** (PT-BR).
 
 ---
 
@@ -101,7 +101,7 @@ O sistema de backup na nuvem utiliza exatamente o mesmo fluxo seguro dos ports a
 
 - Por padrão, ao iniciar em modo interativo, o `UpdateManager` consulta de forma assíncrona o endpoint oficial de releases públicas de **`davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia`** (pode ser ligado/desligado em **Port Options & Cloud → Startup Update Check**).
 - Em **Port Options & Cloud → System Updates (GitHub)** você pode:
-  1. Consultar manualmente se há versão SemVer mais nova que a instalada (`v1.0.0`).
+  1. Consultar manualmente se há versão SemVer mais nova que a instalada (`v1.0.1`).
   2. Baixar o pacote `.zip` com barra de progresso em tempo real e validação obrigatória de URL HTTPS confiável + checksum SHA-256 (quando publicado pela release).
   3. Clicar em **Install Update**: no Windows, o atualizador staging cria backup de rollback em `data/updates/`, preserva `config/` e `data/`, substitui os binários após o encerramento seguro do processo atual e reabre `HeroesLore3.exe` automaticamente.
 
