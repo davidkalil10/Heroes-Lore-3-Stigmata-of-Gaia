@@ -2,11 +2,20 @@
 
 ## Estado Atual
 
-- **Última etapa concluída**: `S11` (Menu Integrado, Cloud Save Google Drive, Créditos no Menu Sobre, OTA Updater GitHub Releases corrigido para Windows, pacote sem APK redundante, Release `v1.0.2` Windows x64)
-- **Próxima etapa recomendada**: Testar atualização OTA `v1.0.2 -> v1.0.3` quando o usuário confirmar o download da `v1.0.2`, e seguir para `S12` (Core nativo C++ / Linux x86_64 / Android ARM64 `com.davidbraga.heroeslore3` e CI Multiplataforma)
-- **Versão atual do Port**: `v1.0.2` (desacoplada do jogo original iOS `1.0.1`)
+- **Última etapa concluída**: `S11` (Menu Integrado, Cloud Save Google Drive, Créditos no Menu Sobre, OTA Updater GitHub Releases corrigido para Windows, pacote sem APK redundante, Releases `v1.0.2` e `v1.0.3` Windows x64)
+- **Próxima etapa recomendada**: Validar atualização OTA `v1.0.2 -> v1.0.3` na Build 3 e seguir para `S12` (Core nativo C++ / Linux x86_64 / Android ARM64 `com.davidbraga.heroeslore3` e CI Multiplataforma)
+- **Versão atual do Port**: `v1.0.3` (desacoplada do jogo original iOS `1.0.1`)
 - **Idioma padrão no boot**: Inglês (`en`), alternável em tempo real para Português (`pt-BR`) via `F7` ou `Port Options & Cloud` sem reiniciar nem alterar saves
 - **Pacote base verificado**: `Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk` (`61.755.432` bytes), embarcando `assets/game.ipa` (`43.686.130` bytes) com Mach-O ARMv6 `Payload/Heroes Lore.app/Heroes Lore` (`915.824` bytes) — pacote Windows standalone embarca apenas `assets/game.ipa`
+
+## O que foi feito e validado na Sessão 19 (`v1.0.3` · Build 4)
+
+1. **Bump SemVer `v1.0.2 -> v1.0.3` via `tools/bump_version.py patch`**:
+   - Sincronizadas `PORT_VERSION = "1.0.3"` em `tools/hl3rt/version.py` e `"port_version": "1.0.3"` em `project.json`.
+   - Menu Sobre (`form_id=114`, `slot 6632`), título da janela, modal de opções/atualizações e `README.txt` do pacote standalone passaram para `v1.0.3`.
+2. **Build 4 Standalone e Publicação da Release `v1.0.3`**:
+   - Compilado `dist/HeroesLore3_PC/` + `dist/heroes_lore_3_windows_x64.zip` sem `.apk` redundante (apenas `assets/game.ipa`), validada a suíte completa (`63/63` testes), smoke test do executável e checks do workspace.
+   - Publicada a tag/release pública `v1.0.3` no GitHub (`davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia`) para validar ponta a ponta a detecção, o download SHA-256, a troca de arquivos e o reinício automático a partir da `v1.0.2`.
 
 ## O que foi feito e validado na Sessão 18 (`v1.0.2`)
 

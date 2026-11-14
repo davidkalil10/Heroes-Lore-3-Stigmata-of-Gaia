@@ -5,7 +5,7 @@
   "overall_phase": "pc_playable_complete",
   "current_step": "S12",
   "next_recommended_step": "S12",
-  "summary": "S00..S11 concluidas (v1.0.2 Windows x64 publicada): runtime Mach-O ARMv6 + AOT/Oraculo Unicorn (28 blocos / 48 comparacoes), GLES1 True Widescreen (Auto/16:9/3:2) + 30/60 FPS, audio MP3+WAV fora do callback SDL, catalogo EN auditado e PT-BR completo (6.733 slots + fontes .rff/.pvr estendidas) com troca ao vivo, menu integrado (Help & About + System), Cloud Save Google Drive, credito David Kalil Braga (2026) - v1.0.2 no About, auto-updater Windows corrigido (CREATE_NEW_PROCESS_GROUP + UTF-8 BOM + Invoke-WithRetry) e pacote leve com assets/game.ipa (sem APK redundante), com 63/63 testes OK. Proxima etapa: S12 (Core nativo C++ / Linux / Android ARM64 com.davidbraga.heroeslore3 e CI).",
+  "summary": "S00..S11 concluidas (v1.0.3 Windows x64 publicada): runtime Mach-O ARMv6 + AOT/Oraculo Unicorn (28 blocos / 48 comparacoes), GLES1 True Widescreen (Auto/16:9/3:2) + 30/60 FPS, audio MP3+WAV fora do callback SDL, catalogo EN auditado e PT-BR completo (6.733 slots + fontes .rff/.pvr estendidas) com troca ao vivo, menu integrado (Help & About + System), Cloud Save Google Drive, credito David Kalil Braga (2026) - v1.0.3 no About, auto-updater Windows corrigido (CREATE_NEW_PROCESS_GROUP + UTF-8 BOM + Invoke-WithRetry) e pacote leve com assets/game.ipa (sem APK redundante), com 63/63 testes OK. Proxima etapa: S12 (Core nativo C++ / Linux / Android ARM64 com.davidbraga.heroeslore3 e CI).",
   "steps": [
     {
       "id": "S00",
@@ -249,9 +249,10 @@
         "research/sessions/2026-11-13-13.md",
         "research/sessions/2026-11-13-16.md",
         "research/sessions/2026-11-13-17.md",
-        "research/sessions/2026-11-13-18.md"
+        "research/sessions/2026-11-13-18.md",
+        "research/sessions/2026-11-13-19.md"
       ],
-      "notes": "S11 integralmente concluida (v1.0.2): acesso duplo em Help & About (form=113) e System (form=3), modal responsivo (6 linhas incluindo checagem startup e pagina ModalPage.UPDATE para GitHub Releases), Cloud Save Google Drive isolado (Heroes Lore III - Stigmata of Gaia / heroes_lore_3_save.json), credito 'Port by David Kalil Braga (2026) - v1.0.2' injetado em About (slot 6632 EN/PT-BR), auto-updater Windows corrigido (CREATE_NEW_PROCESS_GROUP + UTF-8 BOM + Invoke-WithRetry + limpeza staged/), bundle standalone carregando assets/game.ipa sem APK redundante, documentacao/README atualizados e 63/63 testes passando."
+      "notes": "S11 integralmente concluida (v1.0.3): acesso duplo em Help & About (form=113) e System (form=3), modal responsivo (6 linhas incluindo checagem startup e pagina ModalPage.UPDATE para GitHub Releases), Cloud Save Google Drive isolado (Heroes Lore III - Stigmata of Gaia / heroes_lore_3_save.json), credito 'Port by David Kalil Braga (2026) - v1.0.3' injetado em About (slot 6632 EN/PT-BR), auto-updater Windows corrigido (CREATE_NEW_PROCESS_GROUP + UTF-8 BOM + Invoke-WithRetry + limpeza staged/), bundle standalone carregando assets/game.ipa sem APK redundante, documentacao/README atualizados e Build 4 (v1.0.3) publicada para teste OTA ao vivo a partir da v1.0.2, com 63/63 testes passando."
     },
     {
       "id": "S12",

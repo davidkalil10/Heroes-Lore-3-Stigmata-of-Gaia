@@ -332,6 +332,13 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   - Removido o `.apk` redundante (`61,75 MB`) do pacote Windows x64 (`tools/hl3rt/machine.py` + `tools/build_standalone_pc.py`), extraindo diretamente `assets/game.ipa` (`43.686.130` bytes) com verificação SHA-256 e evitando empacotar `tools/`/`config/*.json` em `_internal/`.
   - Executado `python tools/bump_version.py patch` (`v1.0.1 -> v1.0.2`), ampliada a suíte em `tests/test_updater.py` (`8` testes, total `63` na suíte) e publicada release `v1.0.2` (Build 3) para download e posterior teste OTA contra uma 4ª build (`v1.0.3`).
 
+## 2026-11-13 - Sessão 19 (Release `v1.0.3` · Build 4): Bump SemVer para Teste ao Vivo do Auto-Updater a partir da `v1.0.2`
+
+- **Relatório completo**: `research/sessions/2026-11-13-19.md`
+- **Entregas e validações**:
+  - Executado `python tools/bump_version.py patch`, avançando a versão sincronizada do port de `1.0.2` para `1.0.3` em `tools/hl3rt/version.py` e `project.json`.
+  - Atualizados `README.md`, `docs/` e recompilado o pacote standalone `dist/heroes_lore_3_windows_x64.zip` (`assets/game.ipa`, sem `.apk` redundante) como 4ª build (`v1.0.3`), publicada no GitHub Releases para validação ponta a ponta da detecção, download SHA-256, substituição e reinício automático a partir da `v1.0.2`.
+
 
 
 
