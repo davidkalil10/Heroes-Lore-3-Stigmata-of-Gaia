@@ -2,36 +2,43 @@
 
 ## Estado Atual
 
-- **Última entrega concluída**: **Infraestrutura Multiplataforma Completa (`Windows x64`, `Linux AppImage`, `Android ARM64/Universal APK`, `Nintendo Switch NRO`) + `.github/workflows/build.yml` (`v1.0.3`)**
-- **Próxima etapa recomendada**: Fazer push para o GitHub e validar no Actions os runners Linux (`AppImage`) e Switch (`devkitA64`), além de testar os APKs em dispositivo/emulador Android e `.nro` no Switch (`0100F3A300030000`).
+- **Última entrega concluída**: **Builds 4/4 verdes no GitHub Actions (`Run 43626533694`), artefatos individuais sem `.zip` extra (`upload-artifact@v7 archive: false`) e correção do crash Android testada ao vivo no emulador (`Pixel_6_Pro_API_35`)**
+- **Próxima etapa recomendada**: Usuário testar os artefatos da Run [`43626533694`](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43626533694) no celular Android físico, desktop Linux e Nintendo Switch físico (`0100F3A300030000`), e quando desejar publicar um GitHub Release formal, criar/enviar a tag `v1.0.3` (ou rodar `workflow_dispatch` com `create_release=true`).
 - **Versão atual do Port**: `v1.0.3` (`versionCode 4` no Android, sincronizada entre `tools/hl3rt/version.py`, `project.json`, `src/core/common.h` e `android/app/build.gradle`)
 - **Idioma padrão no boot**: Inglês (`en`), alternável em tempo real para Português (`pt-BR`) via `F7` ou `Port Options & Cloud` sem reiniciar nem alterar saves
-- **Pacotes verificados localmente no Windows host**:
-  - **Windows x64**: `dist/HeroesLore3_PC/HeroesLore3.exe` (`6.723.584` bytes, SHA-256 `205a2102e717cf40e6977dea3d4f1c55bd49507b8dbc54e09dffda5054da722a`) e `dist/heroes_lore_3_windows_x64.zip` (`45.482.126` bytes, SHA-256 `2a686c55acf74ef052a260eedcce80e9f1847a021c3f18f3304353cac6d05c8b`)
-  - **Android `arm64-v8a`**: `dist/heroes_lore_3_android_arm64.apk` (`50.316.995` bytes, SHA-256 `a496abbd9f2370d9b3aa97dd74f2c6963d01579e8194fd859446f4ce0868ce04`)
-  - **Android `universal` (`arm64-v8a` + `armeabi-v7a`)**: `dist/heroes_lore_3_android_universal.apk` (`54.029.329` bytes, SHA-256 `792d84514c795345512633da5f7478a9e838a9a2a65f28b3d2f0c822d53158e1`)
+- **Artefatos da Run GitHub Actions [`43626533694`](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43626533694) (commit `8757fab`, publicados diretamente via `archive: false`)**:
+  - `HeroesLore3.exe` (`6.752.256` bytes)
+  - `heroes_lore_3_windows_x64.zip` (`45.497.323` bytes)
+  - `heroes_lore_3_linux_x86_64.AppImage` (`53.352.952` bytes)
+  - `heroes_lore_3_android_arm64.apk` (`50.497.979` bytes; local: `50.497.707` bytes, SHA-256 `a7f4075f73c2957e1dedaa329e7996145bd9574840260bae4cd4c902965bc0e4`)
+  - `heroes_lore_3_android_universal.apk` (`60.178.568` bytes; local: `60.174.184` bytes, SHA-256 `85c4c2941eb1e2ca35f2fe0fd6ff8c205eede32a0fd8a50d4e197aeebc2071fa`)
+  - `heroes_lore_3.nro` (`55.908.565` bytes)
 
-## O que foi feito e validado na Sessão 22 (`S12` + `S13` Multiplataforma + CI)
+## O que foi feito e validado na Sessão 23
 
-1. **Adaptação Multiplataforma do Core C++17 (`CMakeLists.txt`, `src/`)**:
-   - Padronizado `<SDL.h>` em toda a base; adicionados armazenamento gravável portável (`find_writable_data_root()`), pausa em segundo plano (`AudioMixer::set_paused`), multi-touch `SDL_FINGER*` + desduplicação `SDL_TOUCH_MOUSEID` + botão voltar Android (`SDLK_AC_BACK -> SDLK_ESCAPE`), fonte Horizon `plGetSharedFontByType` + fallback TTF Android/Linux em `src/platform/ui_renderer.cpp`.
-   - Em `src/platform/net_http.{h,cpp}` e `src/platform/updater.cpp`: implementada ponte JNI Android (`SDL_AndroidGetActivity()` + `GetObjectClass()`, âncora `volatile` em `nativeDownloadProgress` contra `--gc-sections` e `install_android_apk()` via `ApkFileProvider`), cliente `libcurl` + `romfs:/cacert.pem` para Linux/Switch e `xdg-open` protegido por `#if defined(__linux__) && !defined(__ANDROID__)`.
-2. **Android Gradle + NDK Build & Verificação (`android/`, `tools/verify_android_package.py`)**:
-   - Configurados Gradle `8.1.1`, AGP `8.1.1`, NDK `26.3.11579264`, SDL2 `2.30.12` dinâmica + `libmain.so` (`ANDROID_STL=c++_shared`), `com.davidbraga.heroeslore3`, `versionCode 4`, `versionName '1.0.3'`, permissões `INTERNET` + `REQUEST_INSTALL_PACKAGES` e assets preparados via `tools/prepare_platform_assets.py android`.
-   - Compilados e assinados localmente ambos os APKs de release (`assembleRelease`, `4m 18s`), corrigido bug `sh[1]` (`sh_type`) + detecção de XML binário otimizado `adaptive-icon` em `tools/verify_android_package.py` e validados ambos os APKs com `verify_android_package.py`, `apksigner verify` e inspeção ELF confirmando `SDL_main=True` e `nativeDownloadProgress=True` nas duas ABIs (`arm64-v8a` e `armeabi-v7a`).
-3. **Linux AppImage, Nintendo Switch (`0100F3A300030000`) & GitHub Actions (`.github/workflows/build.yml`)**:
-   - Configurados `platforms/switch/{toolchain.cmake,unicorn_os.c,compat/sys/mman.h}`, `tests/switch_memory_contract.c`, `tools/patch_unicorn_switch.py` (refatorado com tabela `REPLACEMENTS`, `-DUNICORN_INTERPRETER=ON` + buffer TCI `32 MiB`), `tools/fetch_build_deps.py`, `tools/prepare_platform_assets.py` e `tools/verify_switch_package.py`.
-   - Workflow `.github/workflows/build.yml` criado com os jobs `build-windows`, `build-linux` (`xvfb-run` + AppImage), `build-android`, `build-switch` (`devkitpro/devkita64:latest` + `elf2nro`) e `release` (`SHA256SUMS.txt` + `docs/RELEASE_NOTES.md`).
-   - Validação local: `cmake --build build_cpp --parallel` (`90/90`) + `ctest` (`3/3`), `tools/build_pc_cpp.py`, `tools/bump_version.py --check` (`v1.0.3`), e `unittest` (`68/68` incluindo `tests/test_multiplatform_ci.py` e correção de hermeticidade em `tests/test_s09_s10_localization.py`).
+1. **Diagnóstico e Correção do Crash Imediato no Android (`CMakeLists.txt`, `tools/verify_android_package.py`)**:
+   - Reproduzido no emulador local `Pixel_6_Pro_API_35` (`emulator-5554`): `FATAL EXCEPTION: SDLActivity` -> `java.lang.UnsatisfiedLinkError: No implementation found for void org.libsdl.app.HIDDeviceManager.HIDDeviceRegisterCallback()`, causado por `set(SDL_HIDAPI OFF)` excluindo `src/hidapi/android/hid.cpp` de `libSDL2.so`.
+   - Habilitado `SDL_HIDAPI ON` + `SDL_HIDAPI_LIBUSB OFF` em [`CMakeLists.txt`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/CMakeLists.txt#L31-L39) e adicionado check obrigatório das exportações JNI (`Java_org_libsdl_app_SDLActivity_nativeSetupJNI`, `Java_org_libsdl_app_HIDDeviceManager_HIDDeviceRegisterCallback`) em [`tools/verify_android_package.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/verify_android_package.py) e [`tests/test_multiplatform_ci.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_multiplatform_ci.py).
+   - Validado ao vivo em `emulator-5554` com `dist/heroes_lore_3_android_universal.apk`: abertura fria (`1858 ms`), tela de título idêntica à versão PC (portrait e landscape `2975x1440`), processo mantido vivo (`PID=4082`) após `10 s` e responsivo a toque sintético.
+2. **Desbloqueio Linux + Switch e Remoção de `.zip` Extra no Actions (`.github/workflows/build.yml`, `tools/prepare_platform_assets.py`, `CMakeLists.txt`)**:
+   - **Actions sem `.zip`**: migrados uploads para `actions/upload-artifact@v7` com `archive: false` (um arquivo por upload) e job `release` para `actions/download-artifact@v8`.
+   - **Linux `build-linux`**: substituído `verify_workspace.py` (que dependia de arquivos gitignored em `reference/hl5_snapshot/src/vendor/`) pelos verificadores versionados do repo; adicionado fallback `_pil_lanczos()` em [`tools/prepare_platform_assets.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/prepare_platform_assets.py) compatível com Pillow `<9.1` (`Image.Resampling` ausente no Ubuntu CI).
+   - **Switch `build-switch`**: removido `dkp-pacman -Syu` redundante (HTTP `403` rate limit) em favor de `-S --noconfirm --needed` com fallback em backoff para `-Sy`; movido `platforms/switch/unicorn_os.c` de `libhl3_core.a` para `target_sources(HeroesLore3 PRIVATE ...)` em `CMakeLists.txt` eliminando `undefined reference to mmap/munmap/mprotect` no `ld` estático.
+3. **Validações Locais Finais (após última edição de código em `8757fab`)**:
+   - PC C++17: `cmake --build build_cpp -j` (`102/102`), `ctest --test-dir build_cpp --output-on-failure` (`3/3`: `macho_boot`, `headless_runtime`, `platform_services`).
+   - Python: `python -m unittest discover -s tests -p "test_*.py" -v` (`68/68` OK em `36,115 s`), `python tools/bump_version.py --check` (`v1.0.3`) e `python tools/verify_android_package.py` nos 2 APKs reconstruídos.
+   - CI: GitHub Actions Run [`43626533694`](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43626533694) concluiu com `success` em todas as 4 plataformas.
 
 ## O que ficou pendente
 
-- **Execução real em Linux x86_64 e Nintendo Switch (`devkitA64`)**: o host desta máquina é Windows; os builds/testes reais de `build-linux` (`AppImage`) e `build-switch` (`.nro`) estão prontos no `.github/workflows/build.yml` para validação na primeira execução do GitHub Actions.
-- **Smoke-test em hardware/emulador**: instalar e testar o APK (`arm64-v8a` / `universal`) em aparelho Android real/AVD e o `.nro` no console Nintendo Switch (inclusive HUD/touch/controllers e OTA).
+- **Teste manual do usuário em hardware físico**:
+  - Instalar e testar o novo `heroes_lore_3_android_arm64.apk` / `heroes_lore_3_android_universal.apk` (da Run `43626533694`) no celular Android real;
+  - Testar `heroes_lore_3_linux_x86_64.AppImage` em desktop Linux e `heroes_lore_3.nro` no Nintendo Switch real (`0100F3A300030000`, inclusive conferindo `sdmc:/switch/heroes_lore_3/boot.log` e jogabilidade TCI).
+- **Publicação de Tag/Release**: após aprovação dos testes em hardware, publicar GitHub Release via tag `v1.0.3` (ou `workflow_dispatch` com `create_release=true`), e evoluir para `S14` (`1.0.0` final/auditoria).
 
 ## Próximo passo concreto ao retomar
 
-Verificar `.github/workflows/build.yml` após o `git push` no GitHub Actions (ou disparar manualmente via `workflow_dispatch`), além de manter os checks locais verdes:
+Testar os artefatos baixados da Run `43626533694` nos dispositivos físicos ou, caso queira rodar a verificação completa local do repositório:
 
 ```powershell
 python tools/verify_workspace.py

@@ -507,6 +507,28 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Builds Windows (`HeroesLore3.exe`, `heroes_lore_3_windows_x64.zip`) e Android assinados (`heroes_lore_3_android_arm64.apk`, `heroes_lore_3_android_universal.apk`) compilados e verificados localmente com sucesso (`ctest` `3/3`, `unittest` `68/68`, `apksigner` e `verify_android_package.py` passando).
   - Linux (`AppImage`) e Nintendo Switch (`.nro`) possuem infraestrutura, contratos (`test_multiplatform_ci.py`, `switch_memory_contract.c`, `verify_switch_package.py`) e jobs do GitHub Actions prontos para validação nativa nos runners Linux/`devkitA64`.
 
+---
+
+## ADR-025: Correção `SDL_HIDAPI` no Android, Ordem de Linkagem Estática no Switch, Pillow `<9.1` no Linux e Artefatos Actions sem ZIP (`S12` + `S13`)
+
+- **Data**: 2026-11-14
+- **Status**: Aceito
+- **Contexto**:
+  - Na primeira execução completa dos runners no GitHub Actions e do APK em dispositivo real/emulador surgiram 4 falhas concretas:
+    1. **Crash imediato no Android (`UnsatisfiedLinkError`)**: `SDLActivity.onCreate()` instancia `HIDDeviceManager.acquire(this)`, que invoca o método nativo `HIDDeviceRegisterCallback()`. Com `SDL_HIDAPI OFF` em [`CMakeLists.txt`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/CMakeLists.txt#L31-L39), o CMake do SDL2 omitia `src/hidapi/android/hid.cpp` de `libSDL2.so`.
+    2. **Linkagem no Nintendo Switch (`devkitA64`)**: embora [`platforms/switch/unicorn_os.c`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/platforms/switch/unicorn_os.c) implementasse `mmap`/`munmap`/`mprotect`, incluí-lo em `libhl3_core.a` colocava esse archive *antes* de `libarm-softmmu.a` e `libunicorn-common.a` na linha do GNU `ld`, descartando seus objetos antes das referências pendentes da Unicorn. Além disso, `dkp-pacman -Syu` sofria rate limit HTTP `403` em `pkg.devkitpro.org`.
+    3. **Linux AppImage & Runner Validation**: a imagem Ubuntu fornecia `python3-pil` `<9.1` (sem `Image.Resampling`), causando `AttributeError` ao gerar o ícone `256x256` em [`tools/prepare_platform_assets.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/prepare_platform_assets.py#L251), além de `verify_workspace.py` exigir arquivos locais gitignored em `reference/hl5_snapshot/src/vendor/`.
+    4. **Downloads no GitHub Actions**: `actions/upload-artifact@v4` encapsulava todos os artefatos (`.apk`, `.nro`, `.AppImage`, `.exe`) dentro de um `.zip` extra.
+- **Decisão**:
+  1. Habilitar `SDL_HIDAPI ON` e `SDL_HIDAPI_LIBUSB OFF` no bloco Android de [`CMakeLists.txt`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/CMakeLists.txt#L31-L39), e reforçar [`tools/verify_android_package.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/verify_android_package.py) + [`tests/test_multiplatform_ci.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_multiplatform_ci.py) para exigir `Java_org_libsdl_app_SDLActivity_nativeSetupJNI` e `Java_org_libsdl_app_HIDDeviceManager_HIDDeviceRegisterCallback` em `.dynsym` da `libSDL2.so`.
+  2. Mover `platforms/switch/unicorn_os.c` para `target_sources(HeroesLore3 PRIVATE ...)` em [`CMakeLists.txt`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/CMakeLists.txt#L150-L157) para garantir sua presença como objeto direto na linkagem final do `.elf`.
+  3. Adicionar o helper `_pil_lanczos()` com fallback para `Image.LANCZOS` em [`tools/prepare_platform_assets.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/prepare_platform_assets.py#L111-L116) e ajustar `build-linux`/`build-switch` em [`.github/workflows/build.yml`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/.github/workflows/build.yml).
+  4. Atualizar todos os uploads em [`.github/workflows/build.yml`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/.github/workflows/build.yml) para `actions/upload-artifact@v7` com `archive: false` (um arquivo por artefato) e `actions/download-artifact@v8` no job `release`.
+- **Consequências**:
+  - Execução [`43626533694`](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43626533694) aprovada nos 4 builds (`Windows`, `Linux`, `Android`, `Switch`) com os 6 arquivos publicados diretamente sem `.zip` extra.
+  - APK universal validado ao vivo no emulador `Pixel_6_Pro_API_35` (`emulator-5554`), abrindo na tela de título e mantendo-se ativo após entrada touch.
+
+
 
 
 

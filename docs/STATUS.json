@@ -2,10 +2,10 @@
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
   "updated_at": "2026-11-14",
-  "overall_phase": "multiplatform_ci_configured",
+  "overall_phase": "multiplatform_ci_green",
   "current_step": "S12",
-  "next_recommended_step": "S12",
-  "summary": "S12+S13 multiplataforma implementados (v1.0.3): Windows x64 C++17 (HeroesLore3.exe 6,72 MB + ZIP 45,48 MB, CTest 3/3) e Android Release APKs arm64/universal assinados (50,32 MB e 54,03 MB, NDK 26.3 + SDL2 2.30.12 + verify_android_package + apksigner) compilados e validados localmente; backend libcurl/AppImage Linux e Nintendo Switch (.nro 0100F3A300030000 via Unicorn-TCI/libnx) implementados com pipeline GitHub Actions completo (.github/workflows/build.yml) e 68/68 testes Python aprovados, aguardando execucao dos runners Linux/devkitA64 no CI.",
+  "next_recommended_step": "S13",
+  "summary": "S12+S13 builds 4/4 verdes no GitHub Actions Run 43626533694 (commit 8757fab, v1.0.3): Windows x64, Linux x86_64 AppImage, Android ARMv8/Universal APKs e Nintendo Switch .nro (0100F3A300030000) compilados com sucesso e publicados individualmente sem .zip extra (upload-artifact@v7 archive:false). Crash de inicializacao Android (UnsatisfiedLinkError HIDDeviceRegisterCallback) corrigido com SDL_HIDAPI=ON e validado ao vivo no emulador Pixel_6_Pro_API_35 (boot, tela de titulo e toque ativos). Validacao local: 68/68 Python unittest, CTest 3/3, verify_android_package e verify_workspace aprovados.",
   "steps": [
     {
       "id": "S00",
@@ -289,9 +289,10 @@
         "tests/cpp/test_platform_services.cpp",
         "research/sessions/2026-11-14-01.md",
         "research/sessions/2026-11-14-02.md",
-        "research/sessions/2026-11-14-03.md"
+        "research/sessions/2026-11-14-03.md",
+        "research/sessions/2026-11-14-04.md"
       ],
-      "notes": "Windows x64 (HeroesLore3.exe 6.723.584 B + ZIP 45.482.126 B, CTest 3/3) e Android Release APKs assinados (arm64-v8a 50.316.995 B + universal 54.029.329 B, NDK 26.3 + SDL2 2.30.12 + verify_android_package + apksigner + SDL_main/nativeDownloadProgress ELF OK) compilados e verificados localmente; AppImage Linux (libcurl/XDG) e pipeline .github/workflows/build.yml configurados e validados com 68/68 unittest, restando apenas a execucao do job build-linux no GitHub Actions."
+      "notes": "Builds CI 4/4 verdes no Actions Run 43626533694 (8757fab) com artefatos individuais sem zip extra (upload-artifact@v7 archive:false): Windows x64 (HeroesLore3.exe 6.752.256 B + ZIP 45.497.323 B), Linux AppImage (53.352.952 B), Android arm64 APK (50.497.979 B CI / 50.497.707 B local SHA-256 a7f4075f...) e universal APK (60.178.568 B CI / 60.174.184 B local SHA-256 85c4c294...). Crash Android (HIDDeviceRegisterCallback) corrigido via SDL_HIDAPI=ON e validado ao vivo no emulador Pixel_6_Pro_API_35. CTest 3/3 e unittest 68/68 aprovados."
     },
     {
       "id": "S13",
@@ -308,9 +309,10 @@
         "tools/verify_switch_package.py",
         "tests/switch_memory_contract.c",
         ".github/workflows/build.yml",
-        "research/sessions/2026-11-14-03.md"
+        "research/sessions/2026-11-14-03.md",
+        "research/sessions/2026-11-14-04.md"
       ],
-      "notes": "Toolchain devkitA64/libnx (0100F3A300030000), Unicorn-TCI (-DUNICORN_INTERPRETER=ON, buffer 32 MiB), memalign/free heap adapter, SwitchRuntimeGuard (sdmc:/switch/heroes_lore_3/boot.log), fonte plGetSharedFontByType, RomFS + cacert.pem e job build-switch no Actions implementados e validados via verify_switch_package/patch_unicorn_switch tests; aguardando compilacao devkitA64 no runner CI e teste em hardware."
+      "notes": "Toolchain devkitA64/libnx (0100F3A300030000), Unicorn-TCI (-DUNICORN_INTERPRETER=ON, buffer 32 MiB) e ordem de linkagem unicorn_os.c corrigida (direto em HeroesLore3) compilando com sucesso no Actions Run 43626533694 (heroes_lore_3.nro 55.908.565 B, archive:false, verify_switch_package OK); aguardando teste em hardware Switch fisico."
     },
     {
       "id": "S14",

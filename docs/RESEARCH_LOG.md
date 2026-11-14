@@ -384,6 +384,24 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Android NDK `26.3.11579264` + Gradle `8.1.1` (`assembleRelease`): build concluído em `4m 18s` gerando e assinando (`CN=David Kalil Braga`) `dist/heroes_lore_3_android_arm64.apk` (`50.316.995` B) e `dist/heroes_lore_3_android_universal.apk` (`54.029.329` B), validados por `verify_android_package.py` + `apksigner verify` + inspeção ELF confirmando `SDL_main=True` e `nativeDownloadProgress=True` em `arm64-v8a` e `armeabi-v7a`.
      - Suíte Python completa: `68/68` testes aprovados em `37,536 s`. Linux AppImage e Nintendo Switch NRO configurados no `.github/workflows/build.yml` para execução nos runners Linux e `devkitA64`.
 
+---
+
+## 2026-11-14 - Sessão 23 (`S12` + `S13`): Correção do Crash `SDL_HIDAPI` no Emulador Android, Unblock dos 4 Builds CI e Artefatos sem ZIP (`ADR-025`)
+
+- **Relatório completo**: `research/sessions/2026-11-14-04.md`
+- **Descobertas e correções verificáveis**:
+  1. **Diagnóstico do Crash Android no Emulador (`Pixel_6_Pro_API_35` / `emulator-5554`)**:
+     - Capturado stacktrace real no `logcat`: `FATAL EXCEPTION: SDLActivity` -> `java.lang.UnsatisfiedLinkError: No implementation found for void org.libsdl.app.HIDDeviceManager.HIDDeviceRegisterCallback()`.
+     - Causa: `set(SDL_HIDAPI OFF)` em [`CMakeLists.txt`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/CMakeLists.txt#L31-L39) omitia `src/hidapi/android/hid.cpp` de `libSDL2.so`. Habilitado `SDL_HIDAPI ON` + `SDL_HIDAPI_LIBUSB OFF`, e adicionado check explícito dos símbolos JNI `Java_org_libsdl_app_SDLActivity_nativeSetupJNI` e `Java_org_libsdl_app_HIDDeviceManager_HIDDeviceRegisterCallback` em [`tools/verify_android_package.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/verify_android_package.py) e [`tests/test_multiplatform_ci.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_multiplatform_ci.py).
+     - Pós-fix: `heroes_lore_3_android_universal.apk` (`60.174.184` B) instalado e validado ao vivo em `emulator-5554` (`LaunchState: COLD` `1858 ms`, vivo após `10 s` em `PID=4082`, screenshot comparada com PC na tela de título e responsivo após toque sintético).
+  2. **Unblock Switch & Linux + Artefatos Individuais no Actions (`archive: false`)**:
+     - Em `CMakeLists.txt`, `platforms/switch/unicorn_os.c` foi movido de `libhl3_core.a` para `target_sources(HeroesLore3 PRIVATE ...)` resolvendo `undefined reference to mmap/munmap/mprotect` no `devkitA64`.
+     - Em `tools/prepare_platform_assets.py`, substituído `Image.Resampling.LANCZOS` por `_pil_lanczos()` com fallback para `Image.LANCZOS` (Pillow `<9.1` do Ubuntu).
+     - Em `.github/workflows/build.yml`, migrados uploads para `actions/upload-artifact@v7` (`archive: false`) e downloads para `actions/download-artifact@v8`, substituído `dkp-pacman -Syu` por `-S --noconfirm --needed` (com retry em `-Sy`), e ajustada validação do runner Linux para os checks presentes no checkout.
+  3. **Resultados Finais**:
+     - **GitHub Actions Run `43626533694`** (`8757fab`): **4/4 jobs aprovados** (`Windows x64`, `Linux x86_64 AppImage`, `Android APK`, `Nintendo Switch .nro`), com os 6 artefatos enviados diretamente sem `.zip` extra.
+     - **Validação local**: `ctest --test-dir build_cpp --output-on-failure` (`3/3`), `verify_android_package.py` nos 2 APKs reconstruídos (`arm64-v8a` e `arm64-v8a,armeabi-v7a,x86_64`), e `unittest discover` (`68/68` em `36,115 s`).
+
 
 
 
