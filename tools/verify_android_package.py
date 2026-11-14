@@ -134,9 +134,12 @@ def verify_apk_signature(apk_path: Path, expected_cert_sha256: str | None = None
     output = (res.stdout or "") + "\n" + (res.stderr or "")
     if res.returncode != 0:
         raise AssertionError(f"APK signature verification failed for {apk_path.name}:\n{output.strip()}")
-    match = re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F]{64})", output)
+    match = re.search(
+        r"(?:Signer\s*#\d+|V\d+\s+Signer:)\s+certificate SHA-256 digest:\s*([0-9a-fA-F]{64})",
+        output,
+    )
     if not match:
-        raise AssertionError(f"Could not parse Signer #1 SHA-256 certificate digest for {apk_path.name}:\n{output.strip()}")
+        raise AssertionError(f"Could not parse signer SHA-256 certificate digest for {apk_path.name}:\n{output.strip()}")
     actual = match.group(1).lower()
     if expected_cert_sha256:
         exp = expected_cert_sha256.strip().lower().replace(":", "")

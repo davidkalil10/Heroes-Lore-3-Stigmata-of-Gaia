@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
@@ -31,6 +33,7 @@ from verify_android_package import (  # noqa: E402
     EM_ARM,
     EXPECTED_HL3_CERT_SHA256,
     verify_apk,
+    verify_apk_signature,
 )
 from verify_switch_package import verify_nro  # noqa: E402
 
@@ -297,6 +300,28 @@ class MultiplatformCiTests(unittest.TestCase):
         self.assertIn("!android/app/heroes_lore_3.keystore", gitignore_txt)
         gitattrs_txt = (ROOT / ".gitattributes").read_text(encoding="utf-8")
         self.assertIn("*.keystore binary", gitattrs_txt)
+
+    def test_verify_apk_signature_parses_v1_and_v2_apksigner_formats(self) -> None:
+        v34_out = (
+            "Signer #1 certificate DN: CN=David Kalil Braga\n"
+            f"Signer #1 certificate SHA-256 digest: {EXPECTED_HL3_CERT_SHA256}\n"
+        )
+        v35_out = (
+            "V2 Signer: certificate DN: CN=David Kalil Braga\n"
+            f"V2 Signer: certificate SHA-256 digest: {EXPECTED_HL3_CERT_SHA256}\n"
+        )
+        with mock.patch("verify_android_package.find_apksigner", return_value="apksigner"):
+            for sample in (v34_out, v35_out):
+                fake_proc = subprocess.CompletedProcess(["apksigner"], 0, stdout=sample, stderr="")
+                with mock.patch("verify_android_package.subprocess.run", return_value=fake_proc):
+                    got = verify_apk_signature(Path("dummy.apk"), expected_cert_sha256=EXPECTED_HL3_CERT_SHA256)
+                    self.assertEqual(got, EXPECTED_HL3_CERT_SHA256)
+            bad_proc = subprocess.CompletedProcess(
+                ["apksigner"], 0, stdout=v35_out.replace(EXPECTED_HL3_CERT_SHA256, "0" * 64), stderr=""
+            )
+            with mock.patch("verify_android_package.subprocess.run", return_value=bad_proc):
+                with self.assertRaises(AssertionError):
+                    verify_apk_signature(Path("dummy.apk"), expected_cert_sha256=EXPECTED_HL3_CERT_SHA256)
 
 
 if __name__ == "__main__":
