@@ -365,8 +365,9 @@ jobs:
       - name: Download Built Artifacts
         uses: actions/download-artifact@v8
         with:
-          path: release_staging
+          path: release_download
           merge-multiple: true
+          skip-decompress: true
 
       - name: Prepare Release Tag & SHA-256 Checksums
         run: |
@@ -376,8 +377,20 @@ jobs:
             TAG="${{ inputs.release_tag }}"
           fi
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
-          find release_staging -mindepth 2 -type f -exec mv -f {} release_staging/ \;
+          mkdir -p release_staging
+          find release_download -type f -exec mv -f {} release_staging/ \;
           cd release_staging
+          for expected in \
+            HeroesLore3.exe \
+            heroes_lore_3_windows_x64.zip \
+            heroes_lore_3_linux_x86_64.AppImage \
+            heroes_lore_3_android_arm64.apk \
+            heroes_lore_3_android_universal.apk \
+            heroes_lore_3.nro; do
+            if [ ! -f "$expected" ] && [ -f "${expected}.zip" ]; then
+              mv -f "${expected}.zip" "$expected"
+            fi
+          done
           sha256sum HeroesLore3.exe \
             heroes_lore_3_windows_x64.zip \
             heroes_lore_3_linux_x86_64.AppImage \
