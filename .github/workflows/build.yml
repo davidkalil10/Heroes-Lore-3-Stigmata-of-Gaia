@@ -16,7 +16,7 @@ on:
       release_tag:
         description: 'Release tag (e.g. v1.0.3, used when dispatch creates a release)'
         required: false
-        default: 'v1.0.4'
+        default: 'v1.0.5'
       prerelease:
         description: 'Publish as prerelease? (true keeps /releases/latest untouched while testing)'
         required: false

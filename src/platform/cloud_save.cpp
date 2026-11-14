@@ -611,17 +611,32 @@ void CloudSaveManager::wait_idle() {
     }
 }
 
-bool CloudSaveManager::launch_worker(std::function<void()> op) {
+bool CloudSaveManager::launch_worker(std::function<void()> op, const char* initial_msg_key, bool authorizing) {
     {
         std::lock_guard<std::mutex> lk(mutex_);
         if (status_.busy) return false;
         status_.busy = true;
+        if (authorizing) {
+            status_.authorizing = true;
+            status_.user_code.clear();
+            status_.verification_url.clear();
+        }
+        if (initial_msg_key) {
+            status_.last_op_ok = true;
+            status_.message_key = initial_msg_key;
+            status_.message_detail.clear();
+        }
     }
     if (worker_.joinable()) worker_.join();
     cancel_req_ = false;
     worker_ = std::thread([this, func = std::move(op)]() mutable {
+        struct BusyResetGuard {
+            CloudSaveManager* self;
+            ~BusyResetGuard() {
+                self->update_status([](CloudStatus& s) { s.busy = false; });
+            }
+        } guard{this};
         func();
-        update_status([](CloudStatus& s) { s.busy = false; });
     });
     return true;
 }
@@ -941,11 +956,6 @@ void CloudSaveManager::cancel_login() {
 
 bool CloudSaveManager::refresh_backup() {
     return launch_worker([this]() {
-        update_status([](CloudStatus& s) {
-            s.last_op_ok = true;
-            s.message_key = "cloud.msg.checking";
-            s.message_detail.clear();
-        });
         bool found = false;
         std::string err;
         if (!query_backup_sync(found, err)) {
@@ -961,7 +971,7 @@ bool CloudSaveManager::refresh_backup() {
             s.message_key = found ? "cloud.msg.found" : "cloud.msg.not_found";
             s.message_detail.clear();
         });
-    });
+    }, "cloud.msg.checking");
 }
 
 bool CloudSaveManager::upload_backup(const std::function<void()>& flush_before_read) {
@@ -1001,11 +1011,6 @@ bool CloudSaveManager::upload_backup(const std::function<void()>& flush_before_r
     std::string expected_ver = file_version_;
     return launch_worker([this, package = std::move(package), summary = std::move(summary),
                           expected_id, expected_ver]() {
-        update_status([](CloudStatus& s) {
-            s.last_op_ok = true;
-            s.message_key = "cloud.msg.uploading";
-            s.message_detail.clear();
-        });
         bool found = false;
         std::string werr;
         if (!query_backup_sync(found, werr)) {
@@ -1095,18 +1100,13 @@ bool CloudSaveManager::upload_backup(const std::function<void()>& flush_before_r
             s.message_key = "cloud.msg.uploaded";
             s.message_detail.clear();
         });
-    });
+    }, "cloud.msg.uploading");
 }
 
 bool CloudSaveManager::restore_backup() {
     std::string expected_id = file_id_;
     std::string expected_ver = file_version_;
     return launch_worker([this, expected_id, expected_ver]() {
-        update_status([](CloudStatus& s) {
-            s.last_op_ok = true;
-            s.message_key = "cloud.msg.downloading";
-            s.message_detail.clear();
-        });
         bool found = false;
         std::string werr;
         if (!query_backup_sync(found, werr)) {
@@ -1167,7 +1167,7 @@ bool CloudSaveManager::restore_backup() {
             status_.message_key = "cloud.msg.restored_reloading";
             status_.message_detail.clear();
         }
-    });
+    }, "cloud.msg.downloading");
 }
 
 bool CloudSaveManager::consume_pending_restore(std::filesystem::path* out_backup) {

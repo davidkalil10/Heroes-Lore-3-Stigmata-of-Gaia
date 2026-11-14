@@ -1,13 +1,11 @@
-## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.4`
+## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.5`
 
 Native multiplatform C++17 recompilation/runtime port by **David Kalil Braga (2026)** built from the original iOS release `com.ea.heroesloresg.bv` (v1.0.1).
 
-### What's New in `v1.0.4` (`Android versionCode 5`)
-- **BGM / Music Playback Fix**: Implemented `+[NSString stringWithCString:length:]`, `+[NSString stringWithCString:encoding:]`, and `-[NSString stringByAppendingFormat:]` in the HLE Objective-C Foundation layer so `AVAudioPlayer` resolves all 20 `.mp3` music tracks (`snd/bgm0_mf.mp3`..`bgm18_mf.mp3`, `battle_cry.mp3`) instead of loading the root directory path.
-- **Independent In-Game & Port BGM Volume**: Decoupled `AVAudioPlayer`'s internal fades (`setVolume:`) from `AudioMixer`'s user music volume preference (`config/audio.json`), preserving both in-game fades and Port Options volume controls cleanly.
-- **Persistent Android Signing & OTA Compatibility**: Signed `arm64-v8a` and `universal` APKs use the persistent release keystore (`SHA-256: 61ca6931c36cc8f1139b9922a07fd5e1e5479c935ed7c12728296b5f1dac4905`) for direct over-install and in-app OTA upgrades.
-- **Android Gameplay & UI Fixes**: Disabled SDL accelerometer-as-joystick auto-scrolling, scaled **Port Options & Cloud** + OSD badges for Hi-DPI displays, enabled `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`, and added widescreen pre-game backdrop + gameplay aspect handling.
-- **Cross-Platform Version Sync Tool**: Enhanced `tools/bump_version.py` (documented in `docs/VERSIONING.md`) to synchronize `PORT_VERSION`, `kPortVersion`, `project.json`, Android `versionName`/`versionCode`, Switch NACP metadata, CI workflow defaults, and `README.md`.
+### What's New in `v1.0.5` (`Android versionCode 6`)
+- **Fix for Transient Grid / Tile Seams in Menus & Map (GLES2 `highp` UV Precision)**: Raised OpenGL ES 2.0 vertex and fragment shader float precision to `highp` (`GL_FRAGMENT_PRECISION_HIGH` guard in fragment shader) so `1024x1024` UI/HUD/sprite atlas texture coordinates do not suffer FP16 quantization (`0.5` texel steps) or border bleeding under mobile fractional scaling. Also routed `GLBridge::tex_parameter_f` filter/wrap calls through `tex_parameter_i` to enforce crisp `GL_NEAREST` sampling consistently.
+- **Instant Cloud Save & Updater UI Status Refresh**: Fixed `PortOptionsModal::poll()` failing to trigger a redraw on the final frame when a background Cloud Save or OTA updater worker transitioned from active (`busy` / `authorizing`) back to idle, preventing the menu from staying visually stuck on `"Verificando save na nuvem..."` or `"Fazendo backup..."` until re-opening. Added `CloudSaveManager::launch_worker` atomic initial status assignment and RAII busy-flag cleanup.
+- **OTA & Over-Install Ready**: Signed `arm64-v8a` and `universal` APKs use the persistent release keystore (`SHA-256: 61ca6931c36cc8f1139b9922a07fd5e1e5479c935ed7c12728296b5f1dac4905`) with `versionCode 6` for direct over-install and in-app OTA upgrade from `v1.0.4`.
 
 ### Downloads Included in This Release
 

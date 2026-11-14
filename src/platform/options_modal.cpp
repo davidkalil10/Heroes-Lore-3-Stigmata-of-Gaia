@@ -85,6 +85,61 @@ std::vector<UpdateButtonSpec> build_update_buttons(const UpdaterState& ust, cons
     return btns;
 }
 
+std::string build_live_state_signature(const CloudSaveManager* cloud, const UpdateManager* updater, ModalPage page) {
+    std::string sig;
+    sig.reserve(256);
+    sig += std::to_string(static_cast<int>(page));
+    sig.push_back('|');
+    if (cloud) {
+        CloudStatus cs = cloud->get_status();
+        sig += cs.connected ? '1' : '0';
+        sig += cs.busy ? '1' : '0';
+        sig += cs.authorizing ? '1' : '0';
+        sig += cs.backup_exists ? '1' : '0';
+        sig += cs.restore_ready ? '1' : '0';
+        sig += cs.last_op_ok ? '1' : '0';
+        sig.push_back('|');
+        sig += cs.backup_date;
+        sig.push_back('|');
+        sig += cs.backup_date_local;
+        sig.push_back('|');
+        sig += cs.backup_summary;
+        sig.push_back('|');
+        sig += cs.backup_platform;
+        sig.push_back('|');
+        sig += cs.user_code;
+        sig.push_back('|');
+        sig += cs.verification_url;
+        sig.push_back('|');
+        sig += cs.message_key;
+        sig.push_back('|');
+        sig += cs.message_detail;
+        sig.push_back('|');
+    }
+    if (updater) {
+        UpdaterState us = updater->snapshot();
+        sig += std::to_string(static_cast<int>(us.phase));
+        sig.push_back('|');
+        sig += us.startup_check ? '1' : '0';
+        sig += us.has_release ? '1' : '0';
+        sig.push_back('|');
+        sig += us.release.tag_name;
+        sig.push_back('|');
+        sig += std::to_string(us.downloaded_bytes);
+        sig.push_back('/');
+        sig += std::to_string(us.total_bytes);
+        sig.push_back('|');
+        sig += us.downloaded_path.string();
+        sig.push_back('|');
+        sig += us.staged_root.string();
+        sig.push_back('|');
+        sig += us.error_detail;
+        sig.push_back('|');
+        sig += us.last_checked_at;
+    }
+    return sig;
+}
+
 }  // namespace
 
 PortOptionsModal::PortOptionsModal(CloudSaveManager* cloud, UpdateManager* updater, Callbacks cb)
@@ -136,6 +191,8 @@ void PortOptionsModal::open(ModalPage start_page) {
     cloud_focus_ = 0;
     update_focus_ = 0;
     confirm_focus_ = 1;
+    was_live_ = false;
+    last_state_sig_.clear();
     dirty_ = true;
     if (start_page == ModalPage::Cloud && cloud_) {
         auto st = cloud_->get_status();
@@ -145,6 +202,7 @@ void PortOptionsModal::open(ModalPage start_page) {
 
 void PortOptionsModal::close() {
     is_open_ = false;
+    was_live_ = false;
     dirty_ = true;
 }
 
@@ -158,6 +216,7 @@ void PortOptionsModal::poll() {
             std::filesystem::path bdir;
             if (cloud_->consume_pending_restore(&bdir)) {
                 is_open_ = false;
+                was_live_ = false;
                 dirty_ = true;
                 if (cb_.on_cloud_restore_ready) cb_.on_cloud_restore_ready();
                 return;
@@ -172,10 +231,17 @@ void PortOptionsModal::poll() {
             live = true;
         }
     }
-    if (live && now - last_live_poll_ms_ >= 90u) {
+
+    std::string sig = build_live_state_signature(cloud_, updater_, page_);
+    if (sig != last_state_sig_ || (was_live_ && !live)) {
+        last_state_sig_ = std::move(sig);
+        last_live_poll_ms_ = now;
+        dirty_ = true;
+    } else if (live && now - last_live_poll_ms_ >= 90u) {
         last_live_poll_ms_ = now;
         dirty_ = true;
     }
+    was_live_ = live;
 }
 
 void PortOptionsModal::activate_options_row(int delta) {
@@ -935,6 +1001,7 @@ void PortOptionsModal::rebuild_canvas(GLBridge& gl, int box_w, int box_h) {
     else if (page_ == ModalPage::Cloud) draw_cloud_page(c, box_w, box_h, scale);
     else if (page_ == ModalPage::Update) draw_update_page(c, box_w, box_h, scale);
     else draw_confirm_page(c, box_w, box_h, scale);
+    last_state_sig_ = build_live_state_signature(cloud_, updater_, page_);
 
     if (tex_id_ == 0 || tex_w_ != box_w || tex_h_ != box_h) {
         if (tex_id_ != 0) gl.destroy_texture(tex_id_);

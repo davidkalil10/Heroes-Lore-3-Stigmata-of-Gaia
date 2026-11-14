@@ -2,10 +2,10 @@
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
   "updated_at": "2026-11-14",
-  "overall_phase": "multiplatform_release_v1_0_4",
+  "overall_phase": "multiplatform_release_v1_0_5",
   "current_step": "S12",
   "next_recommended_step": "S13",
-  "summary": "Release v1.0.4 (Android versionCode 5): corrigida a reproducao das musicas .mp3 (BGM) via +[NSString stringWithCString:length:] e desacoplamento de gain AVAudioPlayer/AudioMixer, unificado o script tools/bump_version.py para todas as plataformas (documentado em docs/VERSIONING.md) e publicada nova tag v1.0.4 com assinatura Android persistente (SHA-256 61ca6931...) para teste OTA.",
+  "summary": "Release v1.0.5 (Android versionCode 6): eliminadas linhas quadriculadas em GLES2 via precisao highp float nos shaders de atlas 1024x1024 + tex_parameter_f -> GL_NEAREST, e corrigido travamento visual na tela de Cloud Save/Updater garantindo redesenho imediato ao concluir workers assincronos.",
   "steps": [
     {
       "id": "S00",
@@ -295,9 +295,10 @@
         "research/sessions/2026-11-14-04.md",
         "research/sessions/2026-11-14-05.md",
         "research/sessions/2026-11-14-06.md",
-        "research/sessions/2026-11-14-07.md"
+        "research/sessions/2026-11-14-07.md",
+        "research/sessions/2026-11-14-08.md"
       ],
-      "notes": "Release v1.0.4 (Android versionCode 5): corrigida a reproducao de todas as faixas BGM .mp3 via +[NSString stringWithCString:length:] e desacoplamento player_bgm_volume_ em AudioMixer (validado com dr_mp3 no ctest headless_runtime), ampliado tools/bump_version.py + docs/VERSIONING.md cobrindo Python/C++/project.json/Android/Workflow/README, mantida keystore persistente SHA-256 61ca6931... e correcoes Android em 3120x1440."
+      "notes": "Release v1.0.5 (Android versionCode 6) com correcoes pos-playtest Android: (1) GLES2 vertex/fragment shaders elevados para highp float (eliminando quantizacao FP16 de UVs em atlas 1024x1024 e seams quadriculados nos menus/mapa) + tex_parameter_f roteado para GL_NEAREST; (2) PortOptionsModal::poll() passa a detectar mudanca de assinatura de estado e transicao live->idle (busy: true->false) para atualizar na hora a tela Cloud Save / Updater apos check/upload; (3) CloudSaveManager::launch_worker define mensagem inicial atomicamente e usa BusyResetGuard RAII."
     },
     {
       "id": "S13",

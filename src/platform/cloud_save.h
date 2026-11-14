@@ -119,7 +119,7 @@ private:
     void load_tokens();
     void save_tokens();
     void update_status(const std::function<void(CloudStatus&)>& fn);
-    bool launch_worker(std::function<void()> op);
+    bool launch_worker(std::function<void()> op, const char* initial_msg_key = nullptr, bool authorizing = false);
 
     bool parse_json_resp(const HttpResponse& resp, class JsonValue& out_doc, std::string& err);
     HttpHeaders auth_headers(bool json_content = false) const;

@@ -1,5 +1,6 @@
 #include "core/bundle.h"
 #include "core/common.h"
+#include "hle/gl_bridge.h"
 #include "platform/cloud_save.h"
 #include "platform/display_config.h"
 #include "platform/i18n.h"
@@ -223,6 +224,99 @@ void test_android_port_regressions() {
     check(t_169.h == 1440 && t_169.w == 2560 && t_169.x == 280, "16:9 target rect on 3120x1440");
     hl3::RectI t_orig = hl3::compute_target_aspect_rect("original", 3120, 1440);
     check(t_orig.h == 1440 && t_orig.w == 2160 && t_orig.x == 480, "original target rect on 3120x1440");
+
+    // 4. GLBridge tex_parameter_f routes filter params safely (no crash headless, GL_NEAREST preserved).
+    hl3::GLBridge headless_gl(nullptr, 960, 640, "auto");
+    headless_gl.tex_parameter_f(0x0DE1u, 0x2801u, static_cast<float>(0x2601u));  // GL_TEXTURE_MIN_FILTER <- GL_LINEAR
+    headless_gl.tex_parameter_f(0x0DE1u, 0x2800u, static_cast<float>(0x2601u));  // GL_TEXTURE_MAG_FILTER <- GL_LINEAR
+}
+
+void test_modal_live_poll_redraws(const std::filesystem::path& tmp_root) {
+    // Verify PortOptionsModal::poll() marks dirty_ = true immediately when async Cloud/Update workers finish
+    // even after draw_gl() already cleared dirty_ while busy == true.
+    std::filesystem::path data_root = tmp_root / "modal_live_data";
+    std::filesystem::path docs = data_root / "internal" / "Documents";
+    std::filesystem::create_directories(docs);
+    hl3::Bytes sample_save = {'H', 'L', '3', 'T', 1, 2, 3, 4};
+    check(hl3::write_file_bytes(docs / "save0.sav", sample_save.data(), sample_save.size()),
+          "write modal live save");
+
+    std::filesystem::path auth_path = tmp_root / "modal_auth.json";
+    const std::string auth_json =
+        R"({"app":"heroes_lore_3","refresh_token":"ref123","access_token":"acc123","expires_at":4102444800})";
+    check(hl3::write_file_bytes(auth_path, auth_json.data(), auth_json.size()), "write modal auth tokens");
+
+    std::string cur_mod = "2026-11-14T12:00:00Z";
+    std::string cur_ver = "1";
+    auto mock_cloud_http = [&](const std::string& method, const std::string& url, const hl3::HttpHeaders&,
+                               const std::string&, double) -> hl3::HttpResponse {
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        if (method == "GET" && url.find("mimeType") != std::string::npos) {
+            return {200, R"({"files":[{"id":"folder1"}]})", url, 0, {}};
+        }
+        if (method == "GET" && url.find("drive/v3/files") != std::string::npos) {
+            std::string body = std::string(R"({"files":[{"id":"file1","modifiedTime":")") + cur_mod +
+                               R"(","description":"windows | 1 slot","version":")" + cur_ver +
+                               R"(","parents":["folder1"]}]})";
+            return {200, body, url, body.size(), {}};
+        }
+        if (method == "PATCH") {
+            cur_mod = "2026-11-14T12:05:00Z";
+            cur_ver = "2";
+            return {200, R"({"id":"file1","name":"heroes_lore_3_save.json"})", url, 0, {}};
+        }
+        return {404, {}, url, 0, "unexpected"};
+    };
+
+    hl3::CloudSaveManager cloud(data_root, auth_path, mock_cloud_http, []() { return 1794690000.0; });
+    hl3::PortOptionsModal::Callbacks cb;
+    cb.get_fps = []() { return 60; };
+    cb.get_aspect = []() { return std::string("auto"); };
+    cb.get_language = []() { return std::string("pt-BR"); };
+
+    hl3::PortOptionsModal modal(&cloud, nullptr, cb);
+    hl3::GLBridge headless_gl(nullptr, 960, 640);
+
+    // Phase A: open Cloud page -> refresh_backup() starts async check
+    modal.open(hl3::ModalPage::Cloud);
+    check(cloud.get_status().message_key == "cloud.msg.checking", "refresh starts with checking message immediately");
+    modal.poll();
+    modal.draw_gl(headless_gl, 960, 640);
+    check(!modal.needs_redraw(), "draw_gl clears dirty while refresh busy");
+
+    for (int i = 0; i < 200; ++i) {
+        if (!cloud.get_status().busy) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    check(!cloud.get_status().busy && cloud.get_status().message_key == "cloud.msg.found",
+          "refresh_backup finished with found");
+    modal.poll();
+    check(modal.needs_redraw(), "poll marks dirty_ = true immediately when refresh finishes");
+    modal.draw_gl(headless_gl, 960, 640);
+    check(!modal.needs_redraw(), "draw_gl clears dirty after refresh result");
+
+    // Phase B: simulate user selecting Upload -> ConfirmUpload -> Confirm
+    modal.handle_confirm();  // focus 0 = ask_upload -> ModalPage::ConfirmUpload
+    check(modal.page() == hl3::ModalPage::ConfirmUpload, "entered ConfirmUpload page");
+    modal.handle_nav("left");  // move focus from Cancel (1) to Confirm (0)
+    modal.handle_confirm();    // confirm_yes -> upload_backup() & ModalPage::Cloud
+    check(modal.page() == hl3::ModalPage::Cloud, "returned to Cloud page on upload");
+    check(cloud.get_status().message_key == "cloud.msg.uploading", "upload starts with uploading message immediately");
+
+    modal.poll();
+    modal.draw_gl(headless_gl, 960, 640);
+    check(!modal.needs_redraw(), "draw_gl clears dirty while upload busy");
+
+    for (int i = 0; i < 200; ++i) {
+        if (!cloud.get_status().busy) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    check(!cloud.get_status().busy && cloud.get_status().message_key == "cloud.msg.uploaded",
+          "upload_backup finished with uploaded");
+    check(cloud.get_status().backup_date == "2026-11-14T12:05:00Z", "upload refreshed backup timestamp");
+    modal.poll();
+    check(modal.needs_redraw(), "poll marks dirty_ = true immediately when upload finishes");
+    cloud.wait_idle();
 }
 
 }  // namespace
@@ -240,6 +334,7 @@ int main() {
     test_cloud_save(tmp_root);
     test_png_and_ui(root, tmp_root);
     test_android_port_regressions();
+    test_modal_live_poll_redraws(tmp_root);
 
     std::filesystem::remove_all(tmp_root, ec);
 

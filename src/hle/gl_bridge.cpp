@@ -843,6 +843,7 @@ bool GLBridge::init_gl() {
     bool is_gles = (ver.find("OpenGL ES") != std::string::npos);
 
     const char* vs_src = is_gles ?
+        "precision highp float;\n"
         "attribute vec3 a_pos;\n"
         "attribute vec2 a_uv;\n"
         "attribute vec4 a_col;\n"
@@ -869,7 +870,11 @@ bool GLBridge::init_gl() {
         "}\n";
 
     const char* fs_src = is_gles ?
+        "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
+        "precision highp float;\n"
+        "#else\n"
         "precision mediump float;\n"
+        "#endif\n"
         "varying vec2 v_uv;\n"
         "varying vec4 v_col;\n"
         "uniform sampler2D u_tex;\n"
@@ -1296,6 +1301,11 @@ void GLBridge::tex_parameter_i(u32 target, u32 pname, int param) {
 }
 
 void GLBridge::tex_parameter_f(u32 target, u32 pname, float param) {
+    if (pname == kGlTextureMinFilter || pname == kGlTextureMagFilter ||
+        pname == kGlTextureWrapS || pname == kGlTextureWrapT) {
+        tex_parameter_i(target, pname, static_cast<int>(param));
+        return;
+    }
     if (gl_ready_ && impl_->tex_parameterf) impl_->tex_parameterf(target, pname, param);
 }
 

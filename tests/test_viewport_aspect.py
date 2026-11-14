@@ -192,6 +192,11 @@ class S08ViewportAndFPSUnitTests(unittest.TestCase):
         self.assertEqual(runner.aspect_mode, "auto")
         self.assertIn("AUTO", runner._osd_title)
 
+    def test_gles2_shaders_request_highp_for_atlas_uvs(self):
+        gl_bridge_src = (ROOT / "src" / "hle" / "gl_bridge.cpp").read_text(encoding="utf-8")
+        self.assertIn("precision highp float;", gl_bridge_src)
+        self.assertIn("#ifdef GL_FRAGMENT_PRECISION_HIGH", gl_bridge_src)
+
 
 if __name__ == "__main__":
     unittest.main()

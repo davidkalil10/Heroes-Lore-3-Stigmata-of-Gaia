@@ -441,6 +441,20 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Expandido `tools/bump_version.py` e documentado em `docs/VERSIONING.md` para sincronizar e validar `PORT_VERSION` (`tools/hl3rt/version.py`), `kPortVersion` (`src/core/common.h`), `project.json`, `android/app/build.gradle` (`versionName` + `versionCode`), `.github/workflows/build.yml` (`release_tag`) e `README.md`.
      - Bump aplicado via `python tools/bump_version.py patch` (`v1.0.3 -> v1.0.4`, Android `versionCode 4 -> 5`) e `docs/RELEASE_NOTES.md` atualizado para publicação da release `v1.0.4`.
 
+---
+
+## 2026-11-14 - Sessão 27 (`S12`): Correção de Linhas Quadriculadas GLES2 (`highp` UV) e Refresh Imediato do Cloud Save/Updater
+
+- **Relatório completo**: `research/sessions/2026-11-14-08.md`
+- **Descobertas e correções verificáveis**:
+  1. **Artefatos quadriculados intermitentes em menus e jogo no Android (`src/hle/gl_bridge.cpp`)**:
+     - Texturas de UI/HUD do bundle (`user_interface_with_alpha.pvr`, `hud.pvr`, `menu_bkg.pvr`) possuem dimensões `1024x1024`, enquanto o *fragment shader* GLES2 usava `precision mediump float;` (FP16, passo de `1/2048` = `0,5` texel em `[0.5, 1.0)`) e `tex_parameter_f` não filtrava chamadas float para `GL_NEAREST`.
+     - Elevados os shaders GLES2 para `precision highp float;` (`#ifdef GL_FRAGMENT_PRECISION_HIGH` no fragment shader) e roteado `tex_parameter_f` via `tex_parameter_i`.
+  2. **Tela de Cloud Save congelada em `"Verificando..."` e `"Fazendo backup..."` (`src/platform/options_modal.*`, `src/platform/cloud_save.*`)**:
+     - `PortOptionsModal::poll()` só acionava `dirty_ = true` enquanto `live` fosse `true`; ao finalizar (`busy: true -> false`), `live` ficava `false` e o canvas em cache nunca redesenhava até reabrir o modal.
+     - Adicionados `build_live_state_signature(...)` e `was_live_` em `PortOptionsModal::poll()`/`rebuild_canvas()`, além de definição atômica de `message_key` inicial e `BusyResetGuard` RAII em `CloudSaveManager::launch_worker`.
+  3. **Validações**: `ctest --test-dir build_cpp --output-on-failure` (`3/3` com `test_modal_live_poll_redraws`) e `unittest discover` (`72/72` com `test_gles2_shaders_request_highp_for_atlas_uvs`).
+
 
 
 

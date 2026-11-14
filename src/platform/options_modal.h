@@ -42,6 +42,7 @@ public:
     PortOptionsModal& operator=(const PortOptionsModal&) = delete;
 
     bool is_open() const { return is_open_; }
+    bool needs_redraw() const { return dirty_; }
     ModalPage page() const { return page_; }
     UiRect compute_box(int win_w, int win_h) const;
 
@@ -95,7 +96,9 @@ private:
     int confirm_focus_ = 1;  // 0=Confirm, 1=Cancel
 
     bool dirty_ = true;
+    bool was_live_ = false;
     u32 last_live_poll_ms_ = 0;
+    std::string last_state_sig_;
     u32 tex_id_ = 0;
     int tex_w_ = 0;
     int tex_h_ = 0;
