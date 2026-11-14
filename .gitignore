@@ -45,4 +45,6 @@ data/external/*
 !data/external/.gitkeep
 data/save-backups/
 data/restore-*/
+data/updates/
 config/cloud_auth.json
+config/services.json

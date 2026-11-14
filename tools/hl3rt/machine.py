@@ -171,6 +171,9 @@ class Machine:
             return
         self.uc.mem_write(addr, struct.pack("<I", value & 0xFFFFFFFF))
 
+    def wr8(self, addr: int, value: int):
+        self.uc.mem_write(addr, bytes([value & 0xFF]))
+
     def rdbytes(self, addr: int, n: int) -> bytes:
         if n <= 0:
             return b""
@@ -396,7 +399,7 @@ class Machine:
 
 
 class Bundle:
-    """Read-only view of Payload/Heroes Lore.app inside the IPA inside the APK (hash verified)."""
+    """Read-only view of Payload/Heroes Lore.app with localized asset overrides (S10)."""
 
     def __init__(self):
         project = json.loads((ROOT / "project.json").read_text(encoding="utf-8"))
@@ -409,12 +412,47 @@ class Bundle:
         self.macho = self.zf.read(APP_PREFIX + "Heroes Lore")
         if hashlib.sha256(self.macho).hexdigest() != project["macho_executable"]["sha256"]:
             raise ValueError("Mach-O hash mismatch")
-        self.cache: dict[str, bytes] = {}
+        self.cache: dict[object, bytes] = {}
+        assets_dir = ROOT / "assets"
+        # Extended PT-BR fonts remain 100% compatible with EN & preserve original glyphs
+        self._font_overrides: dict[str, Path] = {}
+        for fn in ("font_mainmenu", "font_menu_medium", "font_menu_small"):
+            for ext in ("rff", "pvr"):
+                self._font_overrides[f"newres/fonts/{fn}.{ext}"] = assets_dir / "fonts" / f"{fn}.{ext}"
+        self._ptbr_text_overrides: dict[str, Path] = {
+            "newres/texts/t_en": assets_dir / "texts" / "t_pt-br",
+            "newres/texts/hdr": assets_dir / "texts" / "hdr_pt-br",
+            "dat/InGame_txt_2": assets_dir / "texts" / "InGame_txt_2_pt-br",
+        }
+
+    def _active_override_path(self, rel: str) -> Path | None:
+        fpath = self._font_overrides.get(rel)
+        if fpath is not None and fpath.exists():
+            return fpath
+        tpath = self._ptbr_text_overrides.get(rel)
+        if tpath is not None and tpath.exists():
+            from .i18n import get_active_language
+
+            if get_active_language() == "pt-BR":
+                return tpath
+        return None
 
     def exists(self, rel: str) -> bool:
-        return (APP_PREFIX + rel) in self.names
+        if (APP_PREFIX + rel) in self.names:
+            return True
+        return self._active_override_path(rel) is not None
 
     def read(self, rel: str) -> bytes:
-        if rel not in self.cache:
-            self.cache[rel] = self.zf.read(APP_PREFIX + rel)
-        return self.cache[rel]
+        ovr = self._active_override_path(rel)
+        if rel in self._ptbr_text_overrides:
+            from .i18n import get_active_language
+
+            key: object = (rel, get_active_language())
+        else:
+            key = rel
+        if key not in self.cache:
+            if ovr is not None:
+                self.cache[key] = ovr.read_bytes()
+            else:
+                self.cache[key] = self.zf.read(APP_PREFIX + rel)
+        return self.cache[key]

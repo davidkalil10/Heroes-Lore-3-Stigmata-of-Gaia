@@ -43,7 +43,7 @@ class HL3OptionsMenuTests(unittest.TestCase):
             (1080, 2400),  # High-DPI Mobile Portrait (20:9 phone)
         ]
         for vw, vh in viewports:
-            for page in (ModalPage.OPTIONS, ModalPage.CLOUD, ModalPage.CONFIRM_RESTORE):
+            for page in (ModalPage.OPTIONS, ModalPage.CLOUD, ModalPage.UPDATE, ModalPage.CONFIRM_RESTORE):
                 lay = compute_modal_layout(vw, vh, page)
                 # Panel stays inside viewport with clean margins
                 self.assertGreater(lay.panel.width, 200, f"{vw}x{vh} {page}")
@@ -54,9 +54,19 @@ class HL3OptionsMenuTests(unittest.TestCase):
                 self.assertGreaterEqual(lay.panel.y, 0)
 
                 if page == ModalPage.OPTIONS:
+                    self.assertEqual(len(lay.option_rows), 6)
                     for i, rc in enumerate(lay.option_rows):
                         self.assertTrue(lay.panel.contains(rc), f"row {i} outside panel on {vw}x{vh}")
                     self.assertTrue(lay.panel.contains(lay.back_rect))
+                elif page == ModalPage.UPDATE:
+                    self.assertTrue(lay.panel.contains(lay.remote_card), f"update info outside panel on {vw}x{vh}")
+                    self.assertTrue(lay.panel.contains(lay.local_card), f"update notes outside panel on {vw}x{vh}")
+                    self.assertTrue(lay.panel.contains(lay.status_bar), f"update status outside panel on {vw}x{vh}")
+                    for i, b1 in enumerate(lay.action_buttons):
+                        self.assertTrue(lay.panel.contains(b1), f"update btn {i} outside panel on {vw}x{vh}")
+                        for j, b2 in enumerate(lay.action_buttons):
+                            if i != j:
+                                self.assertFalse(b1.colliderect(b2), f"update btns {i} & {j} overlap on {vw}x{vh}")
                 elif page == ModalPage.CLOUD:
                     # Landscape desktop keeps cards side-by-side & 4 action buttons in 1 row
                     # Portrait stacks cards vertically & uses 2x2 tactile button grid

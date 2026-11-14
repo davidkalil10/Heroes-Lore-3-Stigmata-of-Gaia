@@ -1,41 +1,65 @@
-# Validação e Portões de Qualidade - Heroes Lore 3 Recomp
+# Critérios e Comandos de Validação - Heroes Lore 3 Recomp
 
-Nenhuma etapa do `docs/ROADMAP.md` deve ser marcada como concluída (`done`) sem passar pelos portões determinísticos abaixo.
+Este documento consolida todas as verificações determinísticas de integridade, comportamento em runtime, localização e empacotamento standalone.
 
-## 1. Portão de Integridade do Workspace e Inventário (`S00` e `S01`)
-
-Comandos obrigatórios:
+## 1. Validação Estática e Integridade do Workspace
 
 ```powershell
+# Verifica arquivos obrigatórios, SHA-256 de APK/IPA/Mach-O, manifestos de snapshots e status.json
 python tools/verify_workspace.py
+
+# Confirma sincronização entre docs/STATUS.json e docs/STATUS.md
 python tools/project_status.py check
+
+# Confirma sincronização da versão do port (tools/hl3rt/version.py <-> project.json)
+python tools/bump_version.py --check
+
+# Reexecuta inspeção estática e compara byte a byte com reference/analysis/
 python tools/inspect_apk.py --check
+python tools/probe_macho_contract.py --check
 ```
 
-O que é verificado:
-- Existência e SHA-256 exato do APK original (`Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk`), do `assets/game.ipa` embutido e do executável Mach-O ARMv6 (`Payload/Heroes Lore.app/Heroes Lore`).
-- Integridade completa dos snapshots congelados (`reference/HL4_SNAPSHOT.json`, `reference/HL5_SNAPSHOT.json` e `reference/JAR_PORTS_DOCS.json`).
-- Sincronização entre `docs/STATUS.json` e `docs/STATUS.md`.
-- Consistência entre os bytes do APK/IPA/Mach-O e os relatórios em `reference/analysis/`.
+## 2. Validação de CPU ARMv6, Oráculo Unicorn e Fases
 
-## 2. Portão de Contrato de Runtime e Boot Headless (`S02` e `S03`)
+```powershell
+# Confere equivalência de registradores/CPSR e memória dos 28 blocos AOT contra Unicorn (48 comparações)
+python tools/verify_aot_oracle.py
 
-- `S02`: Script de probe do Mach-O validando os 27 inicializadores de `__mod_init_func`, as tabelas `__nl_symbol_ptr`/`__la_symbol_ptr`, os 30 objetos de classe Objective-C e os parsers de `.pvr`, `.rff` e `dat/InGame_txt`.
-- `S03`: Execução headless determinística desde a entrada até a criação da `GLView` e primeiro disparo do loop de renderização sem acessos inválidos de memória.
+# Gera métricas determinísticas de execução por fase (boot, title, menu)
+python tools/profile_phases.py
+```
 
-## 3. Portão de Gameplay Desktop e Áudio (`S04`, `S05` e `S06`)
+## 3. Validação de Textos EN e Tradução PT-BR
 
-- `S04`/`S05`: Replay automatizado navegando pela tela título, iniciando novo jogo, movimentando o personagem em campo, executando ataques/skills, abrindo inventário/mapa e salvando/carregando progresso.
-- `S06`: Reprodução contínua das 20 faixas MP3 (`snd/bgm0_mf.mp3`..`bgm16_mf.mp3`) e 28 efeitos WAV sem underruns nem bloqueio do thread principal.
+```powershell
+# Garante extração idêntica dos 6.733 slots de texto EN e métricas das 4 fontes .rff/.pvr
+python tools/extract_texts.py --check
 
-## 4. Portão de Performance AOT + Oráculo (`S07`)
+# Compila t_pt-br, hdr_pt-br e InGame_txt_2_pt-br validando prefixos, [Speaker]#, tags #|{}^, printf e glifos
+python tools/build_ptbr_texts.py
+```
 
-- Guarda de decodificação de opcodes (`verify_arm_emit.py`) com zero instruções silenciosamente ignoradas.
-- Verificação de equivalência bit a bit contra o oráculo Unicorn (`verify_fast_runtime.py`) comparando `r0..r15`, `CPSR` e páginas de memória modificadas.
-- Tempo de frame estável para 60 FPS em campo, combate e menus.
+## 4. Suíte de Testes Automatizados (`tests/`)
 
-## 5. Portão de True Widescreen, Localização e Plataformas (`S08` a `S14`)
+```powershell
+python -m unittest discover -s tests -v
+```
 
-- `S08`: Capturas automatizadas em `480x320` (`3:2`), `16:9`, `16:10`, `20:9` e `4:3` comprovando ausência de estiramento da HUD.
-- `S09`/`S10`: Auditoria de strings EN e PT-BR sem truncamento visual e troca de idioma ao vivo sem corromper saves.
-- `S11`..`S14`: Testes de serviços (`Cloud Save` + `OTA`), pacotes verificados de Windows, Linux, Android ARM64 e Nintendo Switch (`.nro`).
+Cobertura atual da suíte (`62` testes):
+- `tests/test_runtime_boot.py`: loader Mach-O, runtime ObjC, boot, New Game, combate e save/load local.
+- `tests/test_audio_and_aot.py`: mixer OpenAL/WAV + MP3 fora do callback SDL, guarda de opcodes e blocos AOT.
+- `tests/test_viewport_aspect.py`: projeção ortográfica OpenGL, True Widescreen (`Auto`, `16:9`, `Original`), centralização de popups/menus e ancoragem de HUD.
+- `tests/test_s09_s10_localization.py`: catálogo EN (`6.733` slots), extensão de glifos `.rff`/`.pvr`, integridade dos 12 chunks PT-BR, reload live via `TextUtils` + `GameWorld` banner e linha de crédito no menu `About` (`slot 6632`).
+- `tests/test_cloud_save.py`: autenticação Google Drive OAuth, isolamento de pasta/arquivo HL3, backups de segurança e detecção de corrupção.
+- `tests/test_options_menu.py`: navegação, hitboxes responsivas (paisagem e retrato), 6 linhas de opções, páginas Cloud Save e Updates.
+- `tests/test_updater.py`: parser SemVer e API do GitHub Releases, filtro HTTPS/domínio, verificação de versão sincronizada, download streaming com SHA-256, proteção ZIP Slip e geração de script Windows com preservação de `config/`/`data/`.
+
+## 5. Validação de Build Standalone (Windows x64)
+
+```powershell
+# Gera dist/HeroesLore3_PC/ e dist/heroes_lore_3_windows_x64.zip sem dados pessoais/credenciais
+python tools/build_standalone_pc.py
+
+# Smoke test headless do executável compilado
+.\dist\HeroesLore3_PC\HeroesLore3.exe --frames 15
+```

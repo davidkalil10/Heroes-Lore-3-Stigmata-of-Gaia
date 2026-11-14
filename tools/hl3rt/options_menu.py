@@ -7,9 +7,12 @@ navigation, and full mouse/touch hit-testing.
 
 from __future__ import annotations
 
+import os
+import sys
 import webbrowser
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable
 
 import pygame
@@ -56,11 +59,14 @@ from OpenGL.GL import (
 from .cloud_save import CloudSaveManager, CloudStatus, LocalSaveInfo
 from .display import UI_ASPECT_CYCLE, normalize_language
 from .i18n import get_active_language, t
+from .updater import UpdateManager, UpdatePhase, UpdaterState
+from .version import ORIGINAL_GAME_VERSION, PORT_VERSION, RELEASES_HTML_URL
 
 
 class ModalPage(str, Enum):
     OPTIONS = "options"
     CLOUD = "cloud"
+    UPDATE = "update"
     CONFIRM_UPLOAD = "confirm_upload"
     CONFIRM_RESTORE = "confirm_restore"
     CONFIRM_DISCONNECT = "confirm_disconnect"
@@ -178,13 +184,13 @@ def compute_modal_layout(
     close_sz = max(22, int(round(28 * scale)))
 
     if page == ModalPage.OPTIONS:
-        n_rows = 4
-        row_h = max(34, int(round((56 if not is_compact else 42) * scale)))
-        row_gap = max(6, int(round((10 if not is_compact else 7) * scale)))
+        n_rows = 6
+        row_h = max(28, int(round((50 if not is_compact else 38) * scale)))
+        row_gap = max(4, int(round((8 if not is_compact else 5) * scale)))
         desired_mh = header_h + pad + n_rows * row_h + (n_rows - 1) * row_gap + gap + footer_h + pad // 2
-        mh = min(max_mh, max(desired_mh, int(h * 0.50)))
+        mh = min(max_mh, max(desired_mh, int(h * 0.66)))
         avail_body = mh - header_h - footer_h - pad - gap
-        row_h = max(28, (avail_body - (n_rows - 1) * row_gap) // n_rows)
+        row_h = max(24, (avail_body - (n_rows - 1) * row_gap) // n_rows)
 
         panel = pygame.Rect((w - mw) // 2, (h - mh) // 2, mw, mh)
         close_rect = pygame.Rect(panel.right - pad - close_sz, panel.y + (header_h - close_sz) // 2, close_sz, close_sz)
@@ -194,8 +200,8 @@ def compute_modal_layout(
         r_arrows: list[pygame.Rect] = []
         y_cur = panel.y + header_h + pad // 2
         inner_w = mw - pad * 2
-        pill_w = max(120, min(int(inner_w * (0.44 if not is_portrait else 0.48)), int(280 * scale)))
-        arr_w = max(24, int(round(32 * scale)))
+        pill_w = max(116, min(int(inner_w * (0.42 if not is_portrait else 0.46)), int(270 * scale)))
+        arr_w = max(22, int(round(30 * scale)))
 
         for _ in range(n_rows):
             rc = pygame.Rect(panel.x + pad, y_cur, inner_w, row_h)
@@ -221,6 +227,56 @@ def compute_modal_layout(
             auth_box=pygame.Rect(0, 0, 0, 0), open_browser_rect=pygame.Rect(0, 0, 0, 0),
             refresh_rect=pygame.Rect(0, 0, 0, 0), status_bar=pygame.Rect(0, 0, 0, 0),
             action_buttons=[], confirm_buttons=[],
+            font_title_sz=font_title_sz, font_sub_sz=font_sub_sz,
+            font_label_sz=font_label_sz, font_small_sz=font_small_sz,
+            font_code_sz=font_code_sz,
+        )
+
+    if page == ModalPage.UPDATE:
+        btn_h = max(32, int(round((42 if not is_portrait else 48) * scale)))
+        status_bar_h = max(28, int(round(36 * scale)))
+        hint_h = max(18, int(round(22 * scale)))
+        stacked_btns = is_portrait or mw < int(500 * max(0.85, scale))
+        btns_area_h = (btn_h * 2 + gap) if stacked_btns else btn_h
+        cards_min_h = max(140, int(round((220 if is_portrait else 185) * scale)))
+        desired_mh = header_h + pad // 2 + cards_min_h + gap + status_bar_h + gap + btns_area_h + gap // 2 + hint_h + pad // 2
+        mh = min(max_mh, max(desired_mh, int(h * 0.68)))
+        panel = pygame.Rect((w - mw) // 2, (h - mh) // 2, mw, mh)
+        close_rect = pygame.Rect(panel.right - pad - close_sz, panel.y + (header_h - close_sz) // 2, close_sz, close_sz)
+
+        inner_x = panel.x + pad
+        inner_w = mw - pad * 2
+        cards_y = panel.y + header_h + pad // 2
+        bottom_fixed = pad // 2 + hint_h + gap // 2 + btns_area_h + gap + status_bar_h + gap
+        cards_h = max(84, mh - (cards_y - panel.y) - bottom_fixed)
+        top_h = max(62, min(int(cards_h * 0.48), int(round(126 * scale))))
+        info_card = pygame.Rect(inner_x, cards_y, inner_w, top_h)
+        notes_card = pygame.Rect(inner_x, cards_y + top_h + gap, inner_w, max(36, cards_h - top_h - gap))
+        status_bar = pygame.Rect(inner_x, cards_y + cards_h + gap, inner_w, status_bar_h)
+        btns_y = status_bar.bottom + gap
+
+        action_buttons: list[pygame.Rect] = []
+        if stacked_btns:
+            bw = (inner_w - gap) // 2
+            action_buttons.append(pygame.Rect(inner_x, btns_y, bw, btn_h))
+            action_buttons.append(pygame.Rect(inner_x + bw + gap, btns_y, inner_w - bw - gap, btn_h))
+            action_buttons.append(pygame.Rect(inner_x, btns_y + btn_h + gap, inner_w, btn_h))
+        else:
+            bw = (inner_w - gap * 2) // 3
+            for i in range(3):
+                w_i = bw if i < 2 else (inner_w - bw * 2 - gap * 2)
+                action_buttons.append(pygame.Rect(inner_x + i * (bw + gap), btns_y, w_i, btn_h))
+
+        return ModalLayout(
+            win_w=w, win_h=h, scale=scale, is_portrait=is_portrait, is_compact=is_compact,
+            panel=panel, close_rect=close_rect, header_h=header_h, footer_h=0,
+            pad=pad, gap=gap, btn_h=btn_h,
+            option_rows=[], option_left_arrows=[], option_right_arrows=[],
+            back_rect=pygame.Rect(0, 0, 0, 0),
+            remote_card=info_card, local_card=notes_card,
+            auth_box=pygame.Rect(0, 0, 0, 0), open_browser_rect=pygame.Rect(0, 0, 0, 0),
+            refresh_rect=pygame.Rect(0, 0, 0, 0), status_bar=status_bar,
+            action_buttons=action_buttons, confirm_buttons=[],
             font_title_sz=font_title_sz, font_sub_sz=font_sub_sz,
             font_label_sz=font_label_sz, font_small_sz=font_small_sz,
             font_code_sz=font_code_sz,
@@ -305,7 +361,7 @@ def compute_modal_layout(
 
 
 class PortOptionsModal:
-    """Self-contained OpenGL overlay modal for Port Options and Cloud Save."""
+    """Self-contained OpenGL overlay modal for Port Options, Cloud Save, and OTA Updates."""
 
     def __init__(
         self,
@@ -317,8 +373,10 @@ class PortOptionsModal:
         get_lang: Callable[[], str],
         set_lang: Callable[[str], None],
         on_restore_applied: Callable[[], None] | None = None,
+        updater: UpdateManager | None = None,
     ):
         self.cloud = cloud
+        self.updater = updater or UpdateManager()
         self.get_fps = get_fps
         self.set_fps = set_fps
         self.get_aspect = get_aspect
@@ -334,6 +392,7 @@ class PortOptionsModal:
         self.hover_close: bool = False
         self.hover_refresh: bool = False
         self.hover_browser: bool = False
+        self.notes_scroll: int = 0
 
         self._gl_tex: int = 0
         self._tex_key: tuple | None = None
@@ -348,12 +407,17 @@ class PortOptionsModal:
         self.page = start_page
         self.focus_idx = 0
         self.hover_idx = -1
+        self.notes_scroll = 0
         self._tex_key = None
         self._local_info_cache = self.cloud.get_local_info()
         if start_page == ModalPage.CLOUD:
             st = self.cloud.get_status()
             if st.connected and not st.busy:
                 self.cloud.refresh_backup()
+        elif start_page == ModalPage.UPDATE:
+            ust = self.updater.snapshot()
+            if ust.phase in (UpdatePhase.IDLE, UpdatePhase.ERROR):
+                self.updater.start_check(startup=False)
 
     def close(self):
         if self.cloud.get_status().authorizing:
@@ -402,12 +466,17 @@ class PortOptionsModal:
         self.page = page
         self.focus_idx = default_focus
         self.hover_idx = -1
+        self.notes_scroll = 0
         self._tex_key = None
         if page == ModalPage.CLOUD:
             self._local_info_cache = self.cloud.get_local_info()
             st = self.cloud.get_status()
             if st.connected and not st.busy:
                 self.cloud.refresh_backup()
+        elif page == ModalPage.UPDATE:
+            ust = self.updater.snapshot()
+            if ust.phase in (UpdatePhase.IDLE, UpdatePhase.ERROR):
+                self.updater.start_check(startup=False)
 
     def _go_back(self):
         if self.page in (ModalPage.CONFIRM_UPLOAD, ModalPage.CONFIRM_RESTORE, ModalPage.CONFIRM_DISCONNECT):
@@ -416,10 +485,12 @@ class PortOptionsModal:
             if self.cloud.get_status().authorizing:
                 self.cloud.cancel_login()
             self._set_page(ModalPage.OPTIONS, default_focus=3)
+        elif self.page == ModalPage.UPDATE:
+            self._set_page(ModalPage.OPTIONS, default_focus=5)
         else:
             self.close()
 
-    def _adjust_option_row(self, row_idx: int, direction: int):
+    def _adjust_option_row(self, row_idx: int, direction: int, *, from_lr: bool = False):
         if row_idx == 0:
             cur_fps = self.get_fps()
             self.set_fps(60 if cur_fps == 30 else 30)
@@ -431,8 +502,42 @@ class PortOptionsModal:
         elif row_idx == 2:
             cur_lang = normalize_language(self.get_lang())
             self.set_lang("pt-BR" if cur_lang == "en" else "en")
-        elif row_idx == 3:
+        elif row_idx == 3 and not from_lr:
             self._set_page(ModalPage.CLOUD, default_focus=0)
+        elif row_idx == 4:
+            self.updater.toggle_startup_check()
+        elif row_idx == 5 and not from_lr:
+            self._set_page(ModalPage.UPDATE, default_focus=0)
+        self._tex_key = None
+
+    def _trigger_update_button(self, btn_idx: int):
+        ust = self.updater.snapshot()
+        if btn_idx == 0:
+            if ust.phase in (UpdatePhase.CHECKING, UpdatePhase.DOWNLOADING, UpdatePhase.INSTALLING):
+                return
+            if ust.phase == UpdatePhase.UPDATE_AVAILABLE and ust.release and ust.release.asset_url:
+                self.updater.start_download()
+            elif ust.phase == UpdatePhase.READY_TO_INSTALL:
+                self.updater.install_ready_update()
+            elif ust.phase == UpdatePhase.MANUAL_STAGED:
+                target = str((ust.staged_root or self.updater.updates_dir))
+                try:
+                    if sys.platform == "win32":
+                        os.startfile(target)  # type: ignore[attr-defined]
+                    else:
+                        webbrowser.open(Path(target).as_uri())
+                except Exception:
+                    pass
+            else:
+                self.updater.start_check(startup=False)
+        elif btn_idx == 1:
+            url = (ust.release.html_url if ust.release and ust.release.html_url else self.updater.releases_url) or RELEASES_HTML_URL
+            try:
+                webbrowser.open(url)
+            except Exception:
+                pass
+        elif btn_idx == 2:
+            self._go_back()
         self._tex_key = None
 
     def _trigger_cloud_button(self, btn_idx: int):
@@ -498,9 +603,11 @@ class PortOptionsModal:
     # ------------------------------------------------------------------ Input
     def _nav_count(self) -> int:
         if self.page == ModalPage.OPTIONS:
-            return 5  # 4 setting rows + Back
+            return 7  # 6 setting rows + Back
         if self.page == ModalPage.CLOUD:
             return 4
+        if self.page == ModalPage.UPDATE:
+            return 3  # Primary + Open GitHub + Back
         return 2
 
     def handle_nav(self, dir_name: str):
@@ -512,8 +619,12 @@ class PortOptionsModal:
                 self.focus_idx = (self.focus_idx - 1) % n
             elif dir_name == "down":
                 self.focus_idx = (self.focus_idx + 1) % n
-            elif dir_name in ("left", "right") and 0 <= self.focus_idx <= 3:
-                self._adjust_option_row(self.focus_idx, -1 if dir_name == "left" else 1)
+            elif dir_name in ("left", "right") and 0 <= self.focus_idx < 6:
+                self._adjust_option_row(
+                    self.focus_idx,
+                    -1 if dir_name == "left" else 1,
+                    from_lr=True,
+                )
         elif self.page == ModalPage.CLOUD:
             layout = self._last_layout
             two_by_two = bool(layout and (layout.is_portrait or layout.panel.width < int(560 * max(0.85, layout.scale))))
@@ -527,6 +638,15 @@ class PortOptionsModal:
                     self.focus_idx = (self.focus_idx - 1) % n
                 elif dir_name in ("right", "down"):
                     self.focus_idx = (self.focus_idx + 1) % n
+        elif self.page == ModalPage.UPDATE:
+            if dir_name == "up":
+                self.notes_scroll = max(0, self.notes_scroll - 1)
+            elif dir_name == "down":
+                self.notes_scroll += 1
+            elif dir_name == "left":
+                self.focus_idx = (self.focus_idx - 1) % n
+            elif dir_name == "right":
+                self.focus_idx = (self.focus_idx + 1) % n
         else:
             if dir_name in ("left", "right", "up", "down"):
                 self.focus_idx = 1 - self.focus_idx
@@ -536,12 +656,14 @@ class PortOptionsModal:
         if not self.is_open:
             return
         if self.page == ModalPage.OPTIONS:
-            if self.focus_idx == 4:
+            if self.focus_idx == 6:
                 self._go_back()
             else:
                 self._adjust_option_row(self.focus_idx, 1)
         elif self.page == ModalPage.CLOUD:
             self._trigger_cloud_button(self.focus_idx)
+        elif self.page == ModalPage.UPDATE:
+            self._trigger_update_button(self.focus_idx)
         else:
             self._trigger_confirm_button(self.focus_idx)
 
@@ -569,6 +691,11 @@ class PortOptionsModal:
             if st.connected and not st.busy:
                 self.cloud.refresh_backup()
                 self._tex_key = None
+        elif key == pygame.K_r and self.page == ModalPage.UPDATE:
+            ust = self.updater.snapshot()
+            if ust.phase not in (UpdatePhase.CHECKING, UpdatePhase.DOWNLOADING, UpdatePhase.INSTALLING):
+                self.updater.start_check(startup=False)
+                self._tex_key = None
         return True
 
     def handle_mouse_motion(self, wx: int, wy: int, win_w: int, win_h: int):
@@ -587,8 +714,8 @@ class PortOptionsModal:
                     self.hover_idx = i
                     break
             if self.hover_idx == -1 and lay.back_rect.collidepoint(pt):
-                self.hover_idx = 4
-        elif self.page == ModalPage.CLOUD:
+                self.hover_idx = 6
+        elif self.page in (ModalPage.CLOUD, ModalPage.UPDATE):
             for i, rc in enumerate(lay.action_buttons):
                 if rc.collidepoint(pt):
                     self.hover_idx = i
@@ -621,7 +748,7 @@ class PortOptionsModal:
             for i, rc in enumerate(lay.option_rows):
                 if rc.collidepoint(pt):
                     self.focus_idx = i
-                    if i < 3 and lay.option_left_arrows[i].collidepoint(pt):
+                    if i in (0, 1, 2, 4) and lay.option_left_arrows[i].collidepoint(pt):
                         self._adjust_option_row(i, -1)
                     else:
                         self._adjust_option_row(i, 1)
@@ -646,6 +773,14 @@ class PortOptionsModal:
                 if rc.collidepoint(pt):
                     self.focus_idx = i
                     self._trigger_cloud_button(i)
+                    return True
+            return True
+
+        if self.page == ModalPage.UPDATE:
+            for i, rc in enumerate(lay.action_buttons):
+                if rc.collidepoint(pt):
+                    self.focus_idx = i
+                    self._trigger_update_button(i)
                     return True
             return True
 
@@ -761,12 +896,22 @@ class PortOptionsModal:
         f_lbl = self._font(lay.font_label_sz, bold=True)
         f_sm = self._font(lay.font_small_sz, bold=False)
 
+        ust = self.updater.snapshot()
         if self.page == ModalPage.OPTIONS:
             title_txt = t("options.title", lang)
-            sub_txt = t("options.subtitle", lang)
+            sub_txt = t("options.subtitle", lang, version=ust.local_version)
         elif self.page == ModalPage.CLOUD:
             title_txt = t("cloud.title", lang)
             sub_txt = t("cloud.subtitle", lang)
+        elif self.page == ModalPage.UPDATE:
+            title_txt = t("update.title", lang)
+            sub_txt = t(
+                "update.subtitle",
+                lang,
+                version=ust.local_version,
+                original=ust.original_version,
+                repo=ust.repo,
+            )
         elif self.page == ModalPage.CONFIRM_UPLOAD:
             title_txt = t("confirm.upload.title", lang)
             sub_txt = ""
@@ -811,6 +956,15 @@ class PortOptionsModal:
             fps = self.get_fps()
             asp = self.get_aspect()
             cur_lang = normalize_language(self.get_lang())
+            if ust.phase == UpdatePhase.UPDATE_AVAILABLE and ust.release:
+                upd_val = t("options.val.updates.available", lang, tag=ust.release.tag_name)
+                upd_col = (104, 228, 168)
+            elif ust.phase == UpdatePhase.CHECKING:
+                upd_val = t("options.val.updates.checking", lang)
+                upd_col = (245, 204, 82)
+            else:
+                upd_val = t("options.val.updates.check", lang, version=ust.local_version)
+                upd_col = (164, 206, 255)
             rows_meta = [
                 (
                     t("options.row.fps", lang),
@@ -839,6 +993,20 @@ class PortOptionsModal:
                     t("options.val.cloud.connected" if st.connected else "options.val.cloud.disconnected", lang),
                     False,
                     (104, 228, 168) if st.connected else (164, 206, 255),
+                ),
+                (
+                    t("options.row.startup_updates", lang),
+                    t("options.row.startup_updates.desc", lang),
+                    t("options.val.toggle.on" if ust.startup_check else "options.val.toggle.off", lang),
+                    True,
+                    (104, 228, 168) if ust.startup_check else (182, 194, 214),
+                ),
+                (
+                    t("options.row.updates", lang),
+                    t("options.row.updates.desc", lang),
+                    upd_val,
+                    False,
+                    upd_col,
                 ),
             ]
             for i, (r_title, r_desc, val_str, has_chevrons, val_col) in enumerate(rows_meta):
@@ -898,7 +1066,7 @@ class PortOptionsModal:
             bf = self._fit_uniform_button_font([t("common.back", lang)], [lay.back_rect], lay.font_label_sz)
             self._draw_button(
                 surf, lay.back_rect, t("common.back", lang), bf,
-                focused=(self.focus_idx == 4), tone="blue", radius=max(6, int(7 * lay.scale)),
+                focused=(self.focus_idx == 6), tone="blue", radius=max(6, int(7 * lay.scale)),
             )
             hint_key = "options.footer.hints.compact" if (lay.is_portrait or lay.is_compact) else "options.footer.hints"
             hint_txt = t(hint_key, lang)
@@ -1046,6 +1214,155 @@ class PortOptionsModal:
             if hs.get_width() <= p.width - lay.pad * 2:
                 surf.blit(hs, (p.centerx - hs.get_width() // 2, p.bottom - max(16, int(18 * lay.scale)) - hs.get_height() // 2))
 
+        # ------------------------------------------------- PAGE: UPDATE
+        elif self.page == ModalPage.UPDATE:
+            card_r = max(6, int(8 * lay.scale))
+            inner_pad = max(8, int(12 * lay.scale))
+            rc_ver = lay.remote_card
+            rc_notes = lay.local_card
+            self._draw_gradient_panel(surf, rc_ver, (24, 42, 82), (16, 26, 54), radius=card_r, alpha=255)
+            pygame.draw.rect(surf, (110, 214, 255, 155), rc_ver, width=1, border_radius=card_r)
+            surf.blit(f_lbl.render(t("update.card.version_title", lang), True, (110, 214, 255)), (rc_ver.x + inner_pad, rc_ver.y + inner_pad // 2))
+            vy = rc_ver.y + inner_pad // 2 + f_lbl.get_height() + max(4, int(5 * lay.scale))
+            pygame.draw.line(surf, (110, 214, 255, 65), (rc_ver.x + inner_pad, vy), (rc_ver.right - inner_pad, vy), 1)
+            vy += max(4, int(5 * lay.scale))
+
+            ver_lines: list[tuple[str, tuple[int, int, int]]] = [
+                (t("update.field.installed", lang, version=ust.local_version), (248, 246, 236)),
+            ]
+            if ust.release is not None:
+                tag_txt = t("update.field.remote", lang, tag=ust.release.tag_name)
+                if ust.release.published_at:
+                    tag_txt += f"  ({ust.release.published_at[:10]})"
+                ver_lines.append((tag_txt, (104, 228, 168) if ust.phase == UpdatePhase.UPDATE_AVAILABLE else (184, 214, 248)))
+                if ust.release.asset_url:
+                    sz_mb = ust.release.asset_size / (1024.0 * 1024.0)
+                    ver_lines.append((f"{t('update.field.asset', lang, name=ust.release.asset_name)} ({sz_mb:.1f} MB)", (166, 198, 238)))
+            else:
+                ver_lines.append((t("update.field.none", lang), (170, 188, 214)))
+            for line, col in ver_lines:
+                if vy + f_sm.get_height() <= rc_ver.bottom - 4:
+                    surf.blit(f_sm.render(line, True, col), (rc_ver.x + inner_pad, vy))
+                    vy += f_sm.get_height() + 2
+
+            # Progress bar inside Version card when downloading or staged
+            if ust.phase == UpdatePhase.DOWNLOADING and vy + 10 <= rc_ver.bottom - 4:
+                bar_rect = pygame.Rect(rc_ver.x + inner_pad, rc_ver.bottom - max(12, int(10 * lay.scale)), rc_ver.width - inner_pad * 2, max(6, int(6 * lay.scale)))
+                pygame.draw.rect(surf, (14, 24, 48, 255), bar_rect, border_radius=3)
+                frac = min(1.0, float(ust.downloaded_bytes) / float(ust.total_bytes)) if ust.total_bytes > 0 else 0.0
+                if frac > 0:
+                    fill_rect = pygame.Rect(bar_rect.x, bar_rect.y, max(4, int(bar_rect.width * frac)), bar_rect.height)
+                    pygame.draw.rect(surf, (104, 228, 168, 255), fill_rect, border_radius=3)
+
+            # Release notes box
+            self._draw_gradient_panel(surf, rc_notes, (22, 36, 70), (14, 22, 46), radius=card_r, alpha=255)
+            pygame.draw.rect(surf, (232, 188, 76, 130), rc_notes, width=1, border_radius=card_r)
+            surf.blit(f_lbl.render(t("update.card.notes_title", lang), True, (250, 214, 108)), (rc_notes.x + inner_pad, rc_notes.y + inner_pad // 2))
+            ny = rc_notes.y + inner_pad // 2 + f_lbl.get_height() + max(4, int(5 * lay.scale))
+            pygame.draw.line(surf, (232, 188, 76, 65), (rc_notes.x + inner_pad, ny), (rc_notes.right - inner_pad, ny), 1)
+            ny += max(4, int(5 * lay.scale))
+
+            notes_src = (ust.release.body if ust.release and ust.release.body else t("update.notes.empty", lang))
+            wrapped_notes: list[str] = []
+            avail_nw = max(60, rc_notes.width - inner_pad * 2)
+            for raw_line in notes_src.splitlines():
+                clean_line = raw_line.strip()
+                if not clean_line:
+                    wrapped_notes.append("")
+                    continue
+                wrapped_notes.extend(self._wrap_text(f_sm, clean_line, avail_nw))
+            line_h = f_sm.get_height() + 2
+            max_lines = max(1, (rc_notes.bottom - 4 - ny) // max(1, line_h))
+            max_scroll = max(0, len(wrapped_notes) - max_lines)
+            if self.notes_scroll > max_scroll:
+                self.notes_scroll = max_scroll
+            for w_line in wrapped_notes[self.notes_scroll : self.notes_scroll + max_lines]:
+                if w_line:
+                    surf.blit(f_sm.render(w_line, True, (224, 236, 252)), (rc_notes.x + inner_pad, ny))
+                ny += line_h
+
+            # Update Status Bar
+            sb = lay.status_bar
+            if ust.phase == UpdatePhase.ERROR:
+                umsg = t("update.status.error", lang, detail=ust.error_detail or "Network error")
+                sb_bg, sb_brd, sb_col = (72, 26, 32, 255), (235, 112, 112), (255, 222, 222)
+            elif ust.phase == UpdatePhase.NO_RELEASE_YET:
+                umsg = t("update.status.no_release", lang)
+                sb_bg, sb_brd, sb_col = (52, 46, 28, 255), (218, 178, 86), (250, 232, 176)
+            elif ust.phase == UpdatePhase.UPDATE_AVAILABLE and ust.release:
+                umsg = t("update.status.available", lang, tag=ust.release.tag_name, version=ust.local_version)
+                sb_bg, sb_brd, sb_col = (24, 58, 44, 255), (104, 228, 168), (220, 255, 235)
+            elif ust.phase == UpdatePhase.UP_TO_DATE:
+                umsg = t("update.status.up_to_date", lang, version=ust.local_version)
+                sb_bg, sb_brd, sb_col = (20, 46, 42, 255), (88, 184, 138), (218, 250, 232)
+            elif ust.phase == UpdatePhase.CHECKING:
+                umsg = t("update.status.checking", lang)
+                sb_bg, sb_brd, sb_col = (58, 48, 22, 255), (245, 204, 82), (255, 242, 194)
+            elif ust.phase == UpdatePhase.DOWNLOADING and ust.release:
+                mb_done = ust.downloaded_bytes / (1024.0 * 1024.0)
+                if ust.total_bytes > 0:
+                    mb_tot = ust.total_bytes / (1024.0 * 1024.0)
+                    pct = min(100, int(round((ust.downloaded_bytes * 100.0) / ust.total_bytes)))
+                    umsg = t("update.status.downloading", lang, name=ust.release.asset_name, mb_done=mb_done, mb_total=mb_tot, pct=pct)
+                else:
+                    umsg = t("update.status.downloading_unknown", lang, name=ust.release.asset_name, mb_done=mb_done)
+                sb_bg, sb_brd, sb_col = (58, 48, 22, 255), (245, 204, 82), (255, 242, 194)
+            elif ust.phase == UpdatePhase.READY_TO_INSTALL:
+                umsg = t("update.status.ready", lang)
+                sb_bg, sb_brd, sb_col = (24, 58, 44, 255), (104, 228, 168), (220, 255, 235)
+            elif ust.phase == UpdatePhase.INSTALLING:
+                umsg = t("update.status.installing", lang)
+                sb_bg, sb_brd, sb_col = (58, 48, 22, 255), (245, 204, 82), (255, 242, 194)
+            elif ust.phase == UpdatePhase.MANUAL_STAGED:
+                umsg = t("update.status.manual_staged", lang, path=str(ust.staged_root or ust.downloaded_path or self.updater.updates_dir))
+                sb_bg, sb_brd, sb_col = (24, 58, 44, 255), (104, 228, 168), (220, 255, 235)
+            else:
+                umsg = t("update.status.idle", lang)
+                sb_bg, sb_brd, sb_col = (24, 38, 66, 255), (110, 154, 216), (220, 234, 255)
+
+            pygame.draw.rect(surf, sb_bg, sb, border_radius=max(5, int(6 * lay.scale)))
+            pygame.draw.rect(surf, (*sb_brd, 210), sb, width=1, border_radius=max(5, int(6 * lay.scale)))
+            sb_font = f_sm
+            sb_sz = lay.font_small_sz
+            while sb_sz > 9 and sb_font.size(umsg)[0] > sb.width - 16:
+                sb_sz -= 1
+                sb_font = self._font(sb_sz, bold=False)
+            ums = sb_font.render(umsg, True, sb_col)
+            surf.blit(ums, (sb.x + int(10 * lay.scale), sb.centery - ums.get_height() // 2))
+
+            # 3 Action Buttons
+            busy = ust.phase in (UpdatePhase.CHECKING, UpdatePhase.DOWNLOADING, UpdatePhase.INSTALLING)
+            if ust.phase == UpdatePhase.UPDATE_AVAILABLE and ust.release and ust.release.asset_url:
+                b0_lbl = t("update.btn.download", lang, tag=ust.release.tag_name)
+                b0_tone = "gold"
+            elif ust.phase == UpdatePhase.READY_TO_INSTALL:
+                b0_lbl = t("update.btn.install", lang)
+                b0_tone = "emerald"
+            elif ust.phase == UpdatePhase.MANUAL_STAGED:
+                b0_lbl = t("update.btn.open_staged", lang)
+                b0_tone = "emerald"
+            else:
+                b0_lbl = t("update.btn.check", lang)
+                b0_tone = "gold"
+
+            ubtn_specs = [
+                (b0_lbl, not busy, b0_tone),
+                (t("update.btn.github", lang), True, "blue"),
+                (t("common.back", lang), True, "blue"),
+            ]
+            uni_f = self._fit_uniform_button_font([s[0] for s in ubtn_specs], lay.action_buttons, lay.font_label_sz)
+            for idx, (lbl, enabled, tone) in enumerate(ubtn_specs):
+                self._draw_button(
+                    surf, lay.action_buttons[idx], lbl, uni_f,
+                    focused=(self.focus_idx == idx), enabled=enabled, tone=tone,
+                    radius=max(6, int(7 * lay.scale)),
+                )
+
+            hint_txt = t("update.footer.hints", lang)
+            hs = f_sm.render(hint_txt, True, (148, 178, 218))
+            if hs.get_width() <= p.width - lay.pad * 2:
+                surf.blit(hs, (p.centerx - hs.get_width() // 2, p.bottom - max(16, int(18 * lay.scale)) - hs.get_height() // 2))
+
         # ------------------------------------------------- PAGE: CONFIRM_*
         else:
             date_str = st.backup_date_local or st.backup_date or t("common.unknown", lang)
@@ -1083,13 +1400,23 @@ class PortOptionsModal:
             return
         lang = get_active_language()
         st = self.cloud.get_status()
+        ust = self.updater.snapshot()
         local_info = self._local_info_cache or self.cloud.get_local_info()
         anim_tick = (pygame.time.get_ticks() // 400) % 4 if st.authorizing else 0
+        ust_key = (
+            ust.phase,
+            ust.startup_check,
+            ust.downloaded_bytes,
+            ust.total_bytes,
+            ust.release.tag_name if ust.release else "",
+            ust.error_detail,
+            self.notes_scroll,
+        )
         key = (
             win_w, win_h, self.page.value, self.focus_idx,
             self.hover_idx, self.hover_close, self.hover_refresh, self.hover_browser,
             self.get_fps(), self.get_aspect(), lang,
-            st, local_info.file_count, local_info.total_bytes, anim_tick,
+            st, ust_key, local_info.file_count, local_info.total_bytes, anim_tick,
         )
         if self._gl_tex == 0 or self._tex_key != key:
             surf = self._render_surface(win_w, win_h, lang)

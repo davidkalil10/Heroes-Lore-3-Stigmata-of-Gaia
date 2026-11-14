@@ -415,6 +415,51 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Os jogadores alternam `FPS`, `Proporção`, `Idioma` e gerenciam backups em nuvem diretamente pelo menu nativo tanto no título quanto em jogo, com UI nítida e adaptada a qualquer tamanho de tela.
   - Todo o fluxo tem cobertura automatizada (`tests/test_cloud_save.py`, `tests/test_options_menu.py` — 48/48 testes passando na suíte completa) e distribuição standalone atualizada em `dist/HeroesLore3_PC/HeroesLore3.exe`.
 
+---
+
+## ADR-021: Pipeline Determinístico `S09`/`S10`, Extensão Nativa dos Atlas `.rff`/`.pvr` e Troca Instantânea via `TextUtils` Chunk 1 + `vtable[0x3c]`
+
+- **Data**: 2026-11-13
+- **Status**: Aceito
+- **Contexto**:
+  - Os textos principais do jogo residem em `newres/texts/t_en` (`6.733` slots, `6.648` não vazios) indexados via `newres/texts/hdr` (`244` bytes) e geridos pelo singleton `TextUtils` (`0x000d8220`), além de `dat/InGame_txt_2` referenciado em `0x00048ee4` do Mach-O.
+  - A auditoria binária de `font_mainmenu`, `font_menu_medium` e `font_menu_small` revelou exatamente 5 letras do Português ausentes dos `.rff`/`.pvr` originais (`['Ã', 'Ô', 'Õ', 'ã', 'õ']`), apesar de os atlas terem espaço livre suficiente na borda inferior (`249 px`, `324 px` e `90 px` verticais respectivamente).
+  - Ademais, a análise em runtime provou que `TextUtils` divide dados em dois chunks em memória: `chunk 0` (apenas os 7 nomes de exibição de idioma de `hdr` a partir do byte `115`) e `chunk 1` (`t_en`, alocado com `max_sz = 769.296 B`), indexados por `sizes_tbl[lang_idx][chunk_idx]` em `tu + 0x14`.
+- **Decisão**:
+  1. **Base Determinística `S09`**: Manter `tools/extract_texts.py --check` comparando `reference/analysis/text_catalog_en.json` e `reference/analysis/font_metrics.json` byte a byte contra o `.ipa` verificado por hash (com correção de fronteira de quests em `6045..6056` e offset `115` de nomes em `hdr`).
+  2. **Extensão Nativa de `.rff`/`.pvr` (`assets/fonts/`)**: Compor os glifos ausentes (`Ã`, `Ô`, `Õ`, `ã`, `õ`) com traços idênticos aos caracteres base em `tools/build_ptbr_fonts.py`, preservando tabela de codepoints ordenada em UTF-16BE para busca binária `0x0000f710`.
+  3. **Tradução Validada e Isolamento em `Bundle` + `_apply_guest_language_live`**:
+     - Validar todos os 12 chunks (`localization/chunks/*.json`) via `tools/validate_ptbr_chunk.py` (prefixos líderes, `[Speaker]#`, `{`, `}`, `|`, `#`, `;`, `||`, `printf` e charset `.rff`) e compilar `assets/texts/{t_pt-br,hdr_pt-br,InGame_txt_2_pt-br}` via `tools/build_ptbr_texts.py`.
+     - Servir `assets/fonts/*` em todos os idiomas no `Bundle` e redirecionar dinamicamente `t_en`/`hdr`/`dat/InGame_txt_2` apenas quando `get_active_language() == "pt-BR"`, mantendo `"en"` no boot.
+     - Na troca ao vivo em `PCRunner._apply_guest_language_live()`, gravar o novo tamanho de blob em `[sizes_tbl[0] + chunk_idx * 4]` (chunk 1), expandir `max_tbl` se necessário, gravar `0xFF` via `Machine.wr8(tu + 0x34, 0xFF)`, chamar `TextUtils::setLanguage` (`0x0001230c(0)`) e invocar `vtable[0x3c]` nos formulários raiz de `ui_main` (`+0x40`) e `ui_hud` (`+0x44`).
+- **Consequências**:
+  - `100%` dos textos (`6.733/6.733` slots) e diálogos/menus operam em PT-BR com acentuação nativa nítida em tempo real e alternância imediata `EN` <-> `PT-BR` sem reiniciar o jogo nem modificar ou corromper saves em `data/`.
+
+---
+
+## ADR-022: Versionamento Desacoplado (`v1.0.0`), Crédito no Menu Sobre e Atualizador OTA via GitHub Releases
+
+- **Data**: 2026-11-13
+- **Status**: Aceito
+- **Contexto**:
+  - O jogo original iOS exibe `1.0.1` no menu Sobre (`form_id=114`, concatenação de `slot 6731` + `"1.0.1||"` + `slot 6632` em `TextUtils` `0x000d8220`). Misturar a numeração original com a evolução do port causaria confusão nas releases do GitHub e nas verificações OTA.
+  - Assim como nos ports anteriores (`HL1`/`HL2`/`HL Zero`/`HL5`), o port precisa exibir autoria e versão própria abaixo da versão original (`1.0.1`), manter versão única sincronizada entre código/metadados, e suportar detecção/download/instalação segura de novas releases publicadas no GitHub (`davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia`).
+  - O repositório ainda pode operar em modo privado durante a primeira validação antes de se tornar público (onde `/releases/latest` retorna HTTP `404`).
+- **Decisão**:
+  1. **Versão Canônica do Port (`tools/hl3rt/version.py` + `tools/bump_version.py` + `project.json`)**:
+     - Iniciar o port em `PORT_VERSION = "1.0.0"` independente de `ORIGINAL_GAME_VERSION = "1.0.1"`, sincronizada em `project.json` (`port_version`, `github_repository`) e validada por `python tools/bump_version.py --check`.
+  2. **Crédito em Linha Única no Menu Sobre (`form_id=114`, `slot 6632`)**:
+     - `PCRunner._patch_guest_about_credits()` aloca buffer expandido via `m.malloc()` e antepõe `"Port by David Kalil Braga (2026) - v1.0.0||"` (EN) ou `"Port por David Kalil Braga (2026) - v1.0.0||"` (PT-BR) no `slot 6632` de `TextUtils` chunk 1 (no boot e após `_apply_guest_language_live()`), ajustando `offs1[6633..6733]` para renderização completa acima da dobra inicial sem cortar texto.
+  3. **Atualizador OTA (`tools/hl3rt/updater.py` + `ModalPage.UPDATE`)**:
+     - `UpdateManager` consulta `GET https://api.github.com/repos/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/releases/latest` em thread de fundo (com preferência persistida em `config/services.json`, desligável pelo usuário em `Port Options & Cloud`), tratando HTTP `404` graciosamente sem travar ou acusar erro fatal quando o repositório estiver privado ou sem releases públicas.
+     - Filtra drafts/prereleases, valida URLs HTTPS (`github.com` / `githubusercontent.com`), verifica SHA-256 (digest da API ou checksum publicado), impede ZIP Slip em `_safe_extract_zip()` e gera script Windows staging (`build_windows_updater_script`) que aguarda o encerramento do processo, cria rollback, preserva `config/` e `data/` (saves/OAuth) e reabre `HeroesLore3.exe`.
+  4. **Empacotamento Limpo (`tools/build_standalone_pc.py`)**:
+     - Gera `dist/HeroesLore3_PC/` e `dist/heroes_lore_3_windows_x64.zip` excluindo `config/cloud_auth.json`, saves pessoais em `data/internal/Documents/` (a menos de `--include-dev-saves`), caches e artefatos temporários.
+- **Consequências**:
+  - Paridade completa com o sistema de releases/atualizações dos ports anteriores, autoria e versão claramente visíveis em EN/PT-BR no menu Sobre e zero risco de vazamento de credenciais ou perda de saves em atualizações futuras.
+
+
+
 
 
 

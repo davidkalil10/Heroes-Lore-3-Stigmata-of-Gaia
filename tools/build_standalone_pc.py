@@ -11,17 +11,27 @@ Packages the native runner into `dist/HeroesLore3_PC/` containing:
 
 from __future__ import annotations
 
+import argparse
+import json
 import os
 import shutil
 import subprocess
 import sys
+import time
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+from hl3rt.version import ASSET_WINDOWS_X64, GITHUB_REPOSITORY, ORIGINAL_GAME_VERSION, PORT_AUTHOR, PORT_VERSION, PORT_YEAR
 
-README_CONTENT = """========================================================================
-Heroes Lore 3: Stigmata of Gaia Recomp - PC Native Standalone Edition
+README_CONTENT = f"""========================================================================
+Heroes Lore 3: Stigmata of Gaia Recomp - PC Native Standalone (v{PORT_VERSION})
 ========================================================================
+
+Port Nativo Multiplataforma feito por {PORT_AUTHOR} ({PORT_YEAR})
+Versão do Port: {PORT_VERSION}  |  Jogo Original iOS: {ORIGINAL_GAME_VERSION}
+Repositório Oficial: https://github.com/{GITHUB_REPOSITORY}
 
 Esta é a versão nativa e independente para PC (Windows x64) de
 Heroes Lore 3: Stigmata of Gaia.
@@ -67,6 +77,7 @@ CONTROLES
    * Status do Personagem: Tecla P
    * Atalhos de Modo de Tela: F1 (Alternar Título/Seleção/Jogo), F2 (Forçar Jogo), F3 (Forçar Título)
    * Volume: Teclas + / = (Aumentar), - (Diminuir), M (Mudo)
+   * F7: Alternar idioma EN <-> Português (PT-BR) ao vivo sem reiniciar
    * F8: Alternar FPS alvo (30 FPS padrão / 60 FPS) com aviso na tela
    * F9: Alternar Aspect Ratio (Auto Full Wide padrão / 16:9 / Original 3:2) com aviso na tela
    * F11: Alternar Tela Cheia / Janela
@@ -98,12 +109,15 @@ Acesse o menu personalizado **PORT OPTIONS & CLOUD** em dois locais:
 Dentro desse menu você pode configurar ao vivo:
   * Taxa de Quadros (FPS): 30 FPS (padrão) ou 60 FPS
   * Proporção de Tela: Auto (Full Wide), 16:9 Widescreen ou Original (3:2)
-  * Idioma da interface do port: English (US) ou Português (BR)
+  * Idioma do port & do jogo: English (US) [padrão] ou Português (BR) em tempo real
   * Cloud Save (Google Drive):
       - Conectar Conta Google (OAuth Device Flow - abre navegador e código)
       - Enviar Backup Atual para o Google Drive ("Heroes Lore III - Stigmata of Gaia")
       - Restaurar Save da Nuvem (cria backup de segurança local automático)
       - Desconectar Conta
+  * Atualizações do Sistema (GitHub Releases OTA):
+      - Verificação opcional ao iniciar ("Buscar Atualizações ao Iniciar")
+      - Download verificado por SHA-256 e instalação automática preservando saves e configs
 
 ------------------------------------------------------------------------
 SAVES E CONFIGURAÇÕES
@@ -111,9 +125,10 @@ SAVES E CONFIGURAÇÕES
 Os arquivos de progresso e saves são salvos localmente na pasta:
   data/internal/Documents/
 
-Ajustes de áudio, exibição e autenticação da nuvem ficam em:
+Ajustes de áudio, exibição, serviços OTA e autenticação da nuvem ficam em:
   config/audio.json
   config/display.json
+  config/services.json
   config/cloud_auth.json (criado somente após conectar sua conta Google)
 
 Bom jogo!
@@ -139,13 +154,21 @@ def strip_cfg(exe_path: Path):
         pe.OPTIONAL_HEADER.DllCharacteristics &= ~0x4000
         data = pe.write()
         pe.close()
-        exe_path.write_bytes(data)
+        # Windows Defender/indexer can briefly lock a freshly written EXE right after PyInstaller finishes.
+        for attempt in range(20):
+            try:
+                exe_path.write_bytes(data)
+                break
+            except PermissionError:
+                if attempt == 19:
+                    raise
+                time.sleep(0.25)
         print("[Build] CFG bit cleared successfully!")
     else:
         pe.close()
 
 
-def build():
+def build(*, include_dev_saves: bool = False, make_zip: bool = True) -> tuple[Path, Path | None]:
     print("=" * 70)
     print("Building Heroes Lore 3 Standalone PC Distribution")
     print("=" * 70)
@@ -235,24 +258,34 @@ def build():
     # Copy project.json
     shutil.copy2(ROOT / "project.json", output_dir / "project.json")
 
-    # Copy config directory
+    # Write clean default config directory (never package secrets like cloud_auth.json)
     out_config = output_dir / "config"
     out_config.mkdir(parents=True, exist_ok=True)
-    for cfg_name in ("audio.json", "display.json"):
-        if (ROOT / "config" / cfg_name).exists():
-            shutil.copy2(ROOT / "config" / cfg_name, out_config / cfg_name)
+    default_audio = {"master_volume": 1.0, "bgm_volume": 0.65, "sfx_volume": 1.0, "muted": False}
+    (out_config / "audio.json").write_text(json.dumps(default_audio, indent=2) + "\n", encoding="utf-8", newline="\n")
+    default_display = {"aspect_mode": "auto", "target_fps": 30, "language": "en"}
+    (out_config / "display.json").write_text(json.dumps(default_display, indent=2) + "\n", encoding="utf-8", newline="\n")
+    default_services = {"check_updates_at_startup": True}
+    (out_config / "services.json").write_text(json.dumps(default_services, indent=2) + "\n", encoding="utf-8", newline="\n")
 
-    # Copy data directory (for Documents / saves)
+    # Prepare clean portable saves directory (never ship personal saves unless explicitly requested)
     out_docs = output_dir / "data" / "internal" / "Documents"
     out_docs.mkdir(parents=True, exist_ok=True)
-    src_docs = ROOT / "data" / "internal" / "Documents"
-    if src_docs.exists():
-        for item in src_docs.iterdir():
-            if item.is_file():
-                shutil.copy2(item, out_docs / item.name)
+    (out_docs / ".gitkeep").write_text("", encoding="utf-8")
+    if include_dev_saves:
+        src_docs = ROOT / "data" / "internal" / "Documents"
+        if src_docs.exists():
+            for item in src_docs.iterdir():
+                if item.is_file() and item.name != ".gitkeep":
+                    shutil.copy2(item, out_docs / item.name)
 
-    # Copy tools directory
-    shutil.copytree(ROOT / "tools", output_dir / "tools", dirs_exist_ok=True)
+    # Copy tools directory (excluding __pycache__)
+    shutil.copytree(
+        ROOT / "tools",
+        output_dir / "tools",
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "scratch_*.py"),
+    )
 
     # Copy assets directory (including icon.png and icon.ico)
     if (ROOT / "assets").exists():
@@ -261,13 +294,33 @@ def build():
     # Write README.txt
     (output_dir / "README.txt").write_text(README_CONTENT, encoding="utf-8")
 
+    zip_path: Path | None = None
+    if make_zip:
+        zip_path = dist_dir / ASSET_WINDOWS_X64
+        if zip_path.exists():
+            zip_path.unlink()
+        print(f"[Build] Creating release ZIP: {zip_path.name}...")
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+            for file_path in sorted(output_dir.rglob("*")):
+                if file_path.is_file():
+                    arcname = f"{output_dir.name}/{file_path.relative_to(output_dir).as_posix()}"
+                    zf.write(file_path, arcname)
+
     print("\n" + "=" * 70)
     print("Standalone PC Distribution Built Successfully!")
+    print(f"Port Version: v{PORT_VERSION}")
     print(f"Location: {output_dir}")
     print(f"Executable: {output_dir / 'HeroesLore3.exe'}")
+    if zip_path is not None:
+        print(f"Release ZIP: {zip_path} ({zip_path.stat().st_size:,} bytes)")
     print("=" * 70)
+    return output_dir, zip_path
 
 
 if __name__ == "__main__":
-    build()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--include-dev-saves", action="store_true", help="Include local dev save files (off by default)")
+    parser.add_argument("--no-zip", action="store_true", help="Skip creating dist/heroes_lore_3_windows_x64.zip")
+    args = parser.parse_args()
+    build(include_dev_saves=args.include_dev_saves, make_zip=not args.no_zip)
 

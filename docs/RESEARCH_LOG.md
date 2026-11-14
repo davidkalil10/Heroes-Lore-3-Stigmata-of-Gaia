@@ -269,6 +269,53 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - Criado [`tools/hl3rt/cloud_save.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/hl3rt/cloud_save.py) usando OAuth Device Flow + Drive v3 isolado em `"Heroes Lore III - Stigmata of Gaia"` / `"heroes_lore_3_save.json"`, verificação SHA-256, staging atômico + rollback em `data/save-backups/<stamp>` e reinício limpo para a tela título (`_reload_runtime_to_title()` -> `app_state=1, form_id=100`).
      - Empacotamento `tools/build_standalone_pc.py` configurado para excluir `config/cloud_auth.json` e suíte ampliada validada (`48/48` testes `OK` e `dist/HeroesLore3_PC/HeroesLore3.exe --frames 15` validado com saída `0`).
 
+---
+
+## 2026-11-13 - Sessão 14 (`S09` + `S10`): Auditoria EN, Fontes `.rff`/`.pvr` Acentuadas, Tradução Integral PT-BR e Reload em Tempo Real de `TextUtils`
+
+- **Relatório completo**: `research/sessions/2026-11-13-14.md`
+- **Descobertas verificáveis e entregas**:
+  1. **Base Determinística `S09` (`tools/extract_texts.py`)**:
+     - Verificado layout binário exato de `hdr` (`244` bytes, nomes UTF-16BE a partir do byte `115`), `t_en` (`6.733` slots, `6.648` não vazios, anomalias `[6496]`/`[6607]` resolvidas via `t_ko`), `dat/InGame_txt_2` (`27` bytes em UTF-8 no endereço Mach-O `0x00048ee4`) e métricas dos 4 pares `.rff`/`.pvr`.
+  2. **Extensão Nativa de `.rff`/`.pvr` (`tools/build_ptbr_fonts.py`)**:
+     - Adicionados os 5 glifos faltantes para Português (`Ã`, `Ô`, `Õ`, `ã`, `õ`) nos atlas de `assets/fonts/`: `font_mainmenu` (`142`, `used_y=289/512`), `font_menu_medium` (`142`, `used_y=210/512`) e `font_menu_small` (`151`, `used_y=182/256`), mantendo `sorted_codepoints == True` e `ptbr_missing == []`.
+  3. **Tradução Integral PT-BR (`6.733/6.733` slots) + Recarregamento ao Vivo**:
+     - Todos os 12 chunks (`localization/chunks/*.json`) e `InGame_txt_2` compilados via `tools/build_ptbr_texts.py` em `assets/texts/t_pt-br` (`696.466` bytes, blob `669.530` bytes), `hdr_pt-br` (`244` bytes) e `InGame_txt_2_pt-br` (`27` bytes).
+     - Descoberta crítica de memória em `TextUtils` (`0x000d8220`): `chunk_cnt = 2`, onde `chunk 0` armazena apenas os 7 nomes de idioma do cabeçalho (`max_sz=0`) e `chunk 1` armazena `t_en` (`max_sz=769.296` bytes); corrigido `_apply_guest_language_live()` para gravar em `[sizes_tbl[0] + chunk_idx * 4]` (chunk 1), limpar `tu+0x34` via `Machine.wr8` e invocar `0x0001230c(0)` + `vtable[0x3c]`, trocando textos na tela no mesmo instante (`CONTINUE` <-> `CONTINUAR`, `CONNECTION ERROR!` <-> `ERRO DE CONEXÃO!`) com integridade SHA-256 intacta em `data/`.
+  4. **Validação Completa**:
+     - `python tools/extract_texts.py --check` PASS, `python tools/build_ptbr_texts.py` PASS, `52/52` testes `OK` em `unittest` (`4` novos testes em `tests/test_s09_s10_localization.py`) e build standalone `dist/HeroesLore3_PC/HeroesLore3.exe` atualizada.
+
+---
+
+## 2026-11-13 - Sessão 15 (`S10` Fix): Recálculo ao Vivo do Banner de Diálogo (`GameWorld`) e Estabilização de `strip_cfg`
+
+- **Relatório completo**: `research/sessions/2026-11-13-15.md`
+- **Descobertas verificáveis e entregas**:
+  1. **Diagnóstico em `GameWorld` (`0x000d8270`) / `banner_init` (`0x0002787c`)**:
+     - Confirmada paridade integral de `^[Speaker]# ` e tags `#|{}^` em todos os `6.733` slots de `t_pt-br` (`slot 1798` / `tid=1799` íntegro: `'^[Guerreiro Mascarado]# Saia da frente, Bruxa Vermelha! '`).
+     - Identificado que o banner ativo em diálogo/cutscene cacheia índices de cor e quebras em `[app + 0x28]` via `0x0002787c`; sem recalcular ao trocar idioma, `0x027344`/`0x010b9c` aplicava os offsets/tags do inglês (`[0, 17, 45, 0]`) ao texto em português, omitindo o `'r'` na posição `17`, desenhando `'#'` literal e cortando na coluna `45`.
+  2. **Correção ao Vivo e Build Standalone**:
+     - Adicionado `_refresh_guest_banner_live` em [`tools/run_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/run_pc.py#L1001-L1021) com guardas para `app_state in (2, 8)`, `gw + 0x40 > 0x20`, buffers não nulos e `banner_tid >= 0`, rechamando `0x0002787c` e ajustando `gw + 0x611d` com segurança.
+     - Adicionado retry para bloqueios transitórios de Windows em `strip_cfg` ([`tools/build_standalone_pc.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/build_standalone_pc.py#L125-L155)) e adicionados `3` testes de regressão em [`tests/test_s09_s10_localization.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/test_s09_s10_localization.py) (`55/55` testes `OK`, `HeroesLore3.exe --frames 15` com saída `0`).
+
+---
+
+## 2026-11-13 - Sessão 16 (`S11` Concluída): Créditos no Menu Sobre, Atualizador OTA via GitHub Releases, Documentação e Release `v1.0.0`
+
+- **Relatório completo**: `research/sessions/2026-11-13-16.md`
+- **Descobertas verificáveis e entregas**:
+  1. **Crédito do Port e Versão no Menu Sobre (`form_id=114`, `slot 6632`)**:
+     - Descoberta da montagem do menu Sobre por concatenação de `slot 6731` (`Version: ` / `Versão: `) + `"1.0.1||"` + `slot 6632` em `TextUtils` (`0x000d8220`).
+     - Implementado `PCRunner._patch_guest_about_credits()` injetando em linha única `"Port by David Kalil Braga (2026) - v1.0.0||"` / `"Port por David Kalil Braga (2026) - v1.0.0||"` logo acima do bloco de atendimento ao cliente, ajustando `offs1[6633..6733]`, reaproveitando capacidade real do buffer em `m.alloc_sizes` (evitando estouro quando `max_tbl[1]` excede o blob EN) e validado visualmente em EN e PT-BR sem recorte no pergaminho.
+  2. **Versionamento Canônico & Atualizador OTA (`tools/hl3rt/version.py`, `tools/hl3rt/updater.py`, `tools/bump_version.py`)**:
+     - Definida versão inicial do port `v1.0.0` desacoplada da versão original `1.0.1` e sincronizada entre `version.py` e `project.json` via `bump_version.py --check`.
+     - Implementado `UpdateManager` (consulta GitHub Releases `davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia`, tratamento gracioso de HTTP `404` em repo privado, filtro de drafts/prereleases, validação HTTPS e SHA-256, proteção ZIP Slip e script staging no Windows preservando `config/` e `data/` com rollback) + página responsiva `ModalPage.UPDATE` em `options_menu.py` (`config/services.json`).
+  3. **Documentação, Standalone Clean Build e Validação**:
+     - Reescrita completa de `README.md`, atualização de `docs/FEATURE_PARITY.md`, `docs/VALIDATION.md`, `docs/ARCHITECTURE.md`, `docs/PORTING_MAP.md`, `docs/DECISIONS.md` (`ADR-022`), `docs/STATUS.json` (`S11` -> `done`) e `docs/HANDOFF.md`.
+     - `tools/build_standalone_pc.py` ajustado para excluir saves pessoais de `data/internal/Documents/` e `config/cloud_auth.json` por padrão, empacotando `dist/heroes_lore_3_windows_x64.zip`.
+     - Suíte completa com `62/62` testes `OK` (`tests/test_updater.py` + `tests/test_options_menu.py` + demais suítes).
+
+
 
 
 

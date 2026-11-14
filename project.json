@@ -2,7 +2,8 @@
   "schema_version": 1,
   "game_id": "heroes_lore_3",
   "display_name": "Heroes Lore 3: Stigmata of Gaia",
-  "project_stage": "static_inventory_complete",
+  "port_version": "1.0.0",
+  "project_stage": "pc_playable_complete",
   "original_apk": {
     "path": "Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk",
     "bytes": 61755432,
@@ -33,7 +34,7 @@
     "jar_ports_manifest": "reference/JAR_PORTS_DOCS.json"
   },
   "identifiers": {
-    "github_repository": "davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia-Recomp",
+    "github_repository": "davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia",
     "android_application_id": "com.davidbraga.heroeslore3",
     "switch_title_id": "0100F3A300030000",
     "google_oauth_client": null

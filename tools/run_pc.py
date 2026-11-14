@@ -19,6 +19,7 @@ Controls:
   * Quick Skills: U / 1, I / 2 (RB), O / 3
   * Mouse: Left Click & Drag anywhere for 1:1 direct touch input!
   * Volume Controls: + / = Increase Volume, - Decrease Volume, M Toggle Mute
+  * F7: Toggle Language live (English / Português BR) with OSD notification
   * F8: Toggle Target FPS (30 / 60) with stylized OSD notification
   * F9: Cycle Aspect Ratio (Auto Full Wide / 16:9 / Original 3:2) with OSD notification
   * F11: Toggle Fullscreen
@@ -62,6 +63,8 @@ from hl3rt.hle_uikit import Touch
 from hl3rt.cloud_save import CloudSaveManager
 from hl3rt.i18n import set_active_language, t
 from hl3rt.options_menu import ModalPage, PortOptionsModal
+from hl3rt.updater import UpdateManager
+from hl3rt.version import PORT_VERSION, about_credit_prefix
 from hl3rt.display import (
     DEFAULT_ASPECT_MODE,
     DEFAULT_FPS_TARGET,
@@ -318,7 +321,7 @@ class PCRunner:
             except Exception:
                 pass
             flags = DOUBLEBUF | OPENGL | FULLSCREEN
-        pygame.display.set_caption("Heroes Lore 3: Stigmata of Gaia Recomp (PC Native)")
+        pygame.display.set_caption(f"Heroes Lore 3: Stigmata of Gaia Recomp v{PORT_VERSION} (PC Native)")
         self.window = pygame.display.set_mode((self.win_w, self.win_h), flags)
         self._apply_win32_icon()
 
@@ -727,9 +730,11 @@ class PCRunner:
         self._injected_btn_tex_key = None
         if getattr(self, "headless_frames", 0) > 0:
             self.cloud = None
+            self.updater = None
             self.port_modal = None
             return
         self.cloud = CloudSaveManager()
+        self.updater = UpdateManager(request_quit_cb=lambda: setattr(self, "running", False))
         self.port_modal = PortOptionsModal(
             cloud=self.cloud,
             get_fps=lambda: self.target_fps,
@@ -739,6 +744,7 @@ class PCRunner:
             get_lang=lambda: self.language,
             set_lang=lambda lang: self.set_language(lang, notify=False),
             on_restore_applied=self._reload_runtime_to_title,
+            updater=self.updater,
         )
 
     @staticmethod
@@ -947,12 +953,152 @@ class PCRunner:
                 )
         print(f"[HL3 PC] Target FPS: {self.target_fps}")
 
+    def _patch_guest_about_credits(self, m) -> bool:
+        """Prepend localized port author & port version into About slot 6632 below original 1.0.1."""
+        if m is None:
+            return False
+        try:
+            tu = m.rd32(0x000d8220)
+            if not tu:
+                return False
+            buf_ptr_arr = m.rd32(tu + 0x20)
+            offs_ptr_arr = m.rd32(tu + 0x24)
+            if not buf_ptr_arr or not offs_ptr_arr:
+                return False
+            buf1 = m.rd32(buf_ptr_arr + 4)
+            offs1 = m.rd32(offs_ptr_arr + 4)
+            if not buf1 or not offs1:
+                return False
+            if getattr(self, "_about_patched_buf1", 0) == buf1:
+                return True
+
+            o0, o1 = struct.unpack("<2I", m.rdbytes(offs1 + 6632 * 4, 8))
+            total_end = m.rd32(offs1 + 6733 * 4)
+            if not (0 <= o0 <= o1 <= total_end and total_end < 4 * 1024 * 1024):
+                return False
+            cur_s = bytes(m.rdbytes(buf1 + o0, o1 - o0)).decode("utf-16-be", errors="replace")
+            if "David Kalil Braga" in cur_s:
+                self._about_patched_buf1 = buf1
+                return True
+
+            lang = getattr(self, "language", DEFAULT_LANGUAGE)
+            new_s = about_credit_prefix(lang, PORT_VERSION) + cur_s
+            new_raw = new_s.encode("utf-16-be")
+            delta = len(new_raw) - (o1 - o0)
+
+            tail_bytes = bytes(m.rdbytes(buf1 + o1, total_end - o1)) if total_end > o1 else b""
+            max_tbl = m.rd32(tu + 0x18)
+            max_sz = m.rd32(max_tbl + 4) if max_tbl else 0
+            needed = max(max_sz, total_end + delta + 1024)
+            avail = m.alloc_sizes.get(buf1, 0) if hasattr(m, "alloc_sizes") else 0
+
+            if avail >= total_end + max(0, delta):
+                m.wrbytes(buf1 + o0, new_raw)
+                if tail_bytes:
+                    m.wrbytes(buf1 + o0 + len(new_raw), tail_bytes)
+                target_buf = buf1
+            else:
+                new_buf = m.malloc(needed)
+                if o0 > 0:
+                    m.wrbytes(new_buf, m.rdbytes(buf1, o0))
+                m.wrbytes(new_buf + o0, new_raw)
+                if tail_bytes:
+                    m.wrbytes(new_buf + o0 + len(new_raw), tail_bytes)
+                m.wr32(buf_ptr_arr + 4, new_buf)
+                if max_tbl and max_sz < needed:
+                    m.wr32(max_tbl + 4, needed)
+                target_buf = new_buf
+
+            n_tail = 6734 - 6633
+            tail_offs = struct.unpack(f"<{n_tail}I", m.rdbytes(offs1 + 6633 * 4, n_tail * 4))
+            shifted = [v + delta for v in tail_offs]
+            m.wrbytes(offs1 + 6633 * 4, struct.pack(f"<{n_tail}I", *shifted))
+            self._about_patched_buf1 = target_buf
+            return True
+        except Exception:
+            return False
+
+    def _apply_guest_language_live(self):
+        """Reload guest TextUtils strings cleanly and refresh active UI trees without restarting."""
+        rt = getattr(self, "rt", None)
+        if rt is None or not hasattr(rt, "m") or not hasattr(rt, "bundle"):
+            return
+        m = rt.m
+        host_sp = getattr(rt, "host_sp", None)
+        if host_sp is None:
+            return
+        try:
+            tu = m.rd32(0x000d8220)
+            if tu:
+                t_bytes = rt.bundle.read("newres/texts/t_en")
+                blob_bytes = max(0, len(t_bytes) - 6734 * 4)
+                chunk_idx = 1 if m.rds8(tu + 0x29) > 1 else 0
+                sizes_tbl = m.rd32(tu + 0x14)
+                if sizes_tbl:
+                    lang0_sizes = m.rd32(sizes_tbl)
+                    if lang0_sizes:
+                        m.wr32(lang0_sizes + chunk_idx * 4, blob_bytes)
+                max_tbl = m.rd32(tu + 0x18)
+                if max_tbl and m.rd32(max_tbl + chunk_idx * 4) < blob_bytes:
+                    m.wr32(max_tbl + chunk_idx * 4, blob_bytes)
+                    bufs_tbl = m.rd32(tu + 0x20)
+                    if bufs_tbl:
+                        # Force loadChunk to allocate a larger slot buffer cleanly
+                        m.wr32(bufs_tbl + chunk_idx * 4, 0)
+                # Force reload even though bundle virtual slot index stays 0
+                m.wr8(tu + 0x34, 0xFF)
+                self._about_patched_buf1 = 0
+                m.call(0x0001230c, (0,), sp=host_sp)
+            self._patch_guest_about_credits(m)
+
+            app = m.rd32(0x000d7dd4)
+            if app:
+                for mgr_off in (0x40, 0x44):
+                    mgr = m.rd32(app + mgr_off)
+                    if not mgr:
+                        continue
+                    root = m.rd32(mgr + 0x90)
+                    if not root:
+                        continue
+                    vtable = m.rd32(root)
+                    if not vtable:
+                        continue
+                    vfn = m.rd32(vtable + 0x3c)
+                    if vfn:
+                        m.call(vfn, (root,), sp=host_sp)
+                self._refresh_guest_banner_live(m, app, host_sp)
+        except Exception as exc:
+            print(f"[HL3 PC] Warning during live guest language refresh: {exc}")
+
+    def _refresh_guest_banner_live(self, m, app: int, host_sp: int):
+        """Re-wrap active GameWorld dialogue/location banner so color tags match the new language."""
+        if m.rd32(app + 0x78) not in (2, 8):
+            return
+        gw = m.rd32(0x00039d30)
+        if not gw or m.rd32(gw + 0x40) <= 0x20:
+            return
+        if not (m.rd32(app + 0x1c) and m.rd32(app + 0x20) and m.rd32(app + 0x28)):
+            return
+        banner_tid = m.rds16(gw + 0x611a)
+        if banner_tid < 0:
+            return
+        prev_page = m.rd8(gw + 0x611d)
+        m.call(0x0002787c, (banner_tid, 0, 0), sp=host_sp)
+        new_lines = m.rds8(gw + 0x611c)
+        if prev_page > 0 and new_lines > 0:
+            page = prev_page
+            while page >= new_lines and page >= 3:
+                page -= 3
+            if 0 <= page < new_lines:
+                m.wr8(gw + 0x611d, page)
+
     def set_language(self, lang: str, notify: bool = False):
         self.language = set_active_language(normalize_language(lang))
         self._save_display_prefs()
         self._injected_btn_tex_key = None
         if getattr(self, "port_modal", None) is not None:
             self.port_modal.invalidate_cache()
+        self._apply_guest_language_live()
         if notify:
             self.show_osd(
                 t("osd.lang.badge", self.language),
@@ -997,6 +1143,7 @@ class PCRunner:
         self.submenu_focus_cid = 0
         self.touch_responder = 0
         self.delegate = 0
+        self._about_patched_buf1 = 0
 
         self._init_runtime()
         if hasattr(self, "rt") and hasattr(self.rt, "gl_bridge") and self.rt.gl_bridge:
@@ -1920,7 +2067,10 @@ class PCRunner:
 
             # Discrete Keydown Events
             elif event.type == KEYDOWN:
-                if event.key == K_F8:
+                if event.key == K_F7:
+                    nxt = "pt-BR" if getattr(self, "language", DEFAULT_LANGUAGE) == "en" else "en"
+                    self.set_language(nxt, notify=True)
+                elif event.key == K_F8:
                     self.set_target_fps(60 if self.target_fps == 30 else 30, notify=True)
                 elif event.key == K_F9:
                     cur = self.aspect_mode if self.aspect_mode in UI_ASPECT_CYCLE else DEFAULT_ASPECT_MODE
@@ -2240,6 +2390,19 @@ class PCRunner:
     def step_frame(self):
         self.poll_input()
         self._sync_window_size()
+        if hasattr(self, "rt") and self.rt and hasattr(self.rt, "m"):
+            self._patch_guest_about_credits(self.rt.m)
+        if getattr(self, "updater", None) is not None:
+            notice = self.updater.consume_pending_notice()
+            if notice is not None:
+                lang = getattr(self, "language", DEFAULT_LANGUAGE)
+                self.show_osd(
+                    t("osd.update.badge", lang),
+                    t("osd.update.title", lang, tag=notice.tag_name),
+                    t("osd.update.sub", lang),
+                    accent=(104, 228, 168),
+                    duration=4.5,
+                )
         st = self.get_engine_state()
         if st.get("app_state") == 1 and st.get("form_id") == 113 and not st.get("active_popup_id") and st.get("main_form"):
             self._patch_help_about_layout(st["main_form"])
@@ -2253,24 +2416,29 @@ class PCRunner:
     def run(self):
         self.running = True
         frame = 0
+        if self.headless_frames == 0 and getattr(self, "updater", None) is not None:
+            self.updater.maybe_start_startup_check()
         print(
-            f"[HL3 PC] Main loop started ({self.target_fps} FPS, Aspect={self.aspect_mode.upper()}). "
-            "F8=FPS, F9=Aspect, F11=Fullscreen, F12=Screenshot, Esc=Back/Pause."
+            f"[HL3 PC] Main loop started (Port v{PORT_VERSION}, {self.target_fps} FPS, Aspect={self.aspect_mode.upper()}). "
+            "F7=Language, F8=FPS, F9=Aspect, F11=Fullscreen, F12=Screenshot, Esc=Back/Pause."
         )
-        while self.running:
-            self.step_frame()
-            self.clock.tick(self.target_fps)
-            frame += 1
-            if self.headless_frames > 0 and frame >= self.headless_frames:
-                print(f"[HL3 PC] Reached target {self.headless_frames} frames in test mode.")
-                self.capture_screenshot()
-                break
-
-        print("[HL3 PC] Shutting down...")
-        if hasattr(self.rt, "audio_mixer"):
-            self.rt.audio_mixer.save_config()
-        self._save_display_prefs()
-        pygame.quit()
+        try:
+            while self.running:
+                self.step_frame()
+                self.clock.tick(self.target_fps)
+                frame += 1
+                if self.headless_frames > 0 and frame >= self.headless_frames:
+                    print(f"[HL3 PC] Reached target {self.headless_frames} frames in test mode.")
+                    self.capture_screenshot()
+                    break
+        finally:
+            print("[HL3 PC] Shutting down...")
+            if getattr(self, "updater", None) is not None:
+                self.updater.shutdown()
+            if hasattr(self.rt, "audio_mixer"):
+                self.rt.audio_mixer.save_config()
+            self._save_display_prefs()
+            pygame.quit()
 
 
 def main():
