@@ -165,9 +165,20 @@ def _s_with_format(rt, recv, a):
     return rt.objc.nsstring(_fmt(rt, a[0], a, 1))
 
 
-@cm("NSString", "stringWithUTF8String:")
+@cm("NSString", "stringWithUTF8String:|stringWithCString:encoding:")
 def _s_utf8(rt, recv, a):
-    return rt.objc.nsstring(rt.m.cstr(a[0]))
+    return rt.objc.nsstring(rt.m.cstr(a[0]) if a[0] else "")
+
+
+@cm("NSString", "stringWithCString:length:")
+def _s_cstr_len(rt, recv, a):
+    ptr, length = a[0], a[1]
+    if not ptr or length == 0:
+        return rt.objc.nsstring("")
+    raw = rt.m.rdbytes(ptr, min(length, 1 << 20))
+    if b"\x00" in raw:
+        raw = raw[: raw.index(b"\x00")]
+    return rt.objc.nsstring(raw.decode("utf-8", "replace"))
 
 
 @cm("NSString", "stringWithString:")
@@ -197,6 +208,11 @@ def _s_eq(rt, recv, a):
 @im("NSString", "stringByAppendingString:")
 def _s_append(rt, recv, a):
     return rt.objc.nsstring((rt.objc.pystr(recv) or "") + (rt.objc.pystr(a[0]) or ""))
+
+
+@im("NSString", "stringByAppendingFormat:")
+def _s_append_fmt(rt, recv, a):
+    return rt.objc.nsstring((rt.objc.pystr(recv) or "") + _fmt(rt, a[0], a, 1))
 
 
 @im("NSString", "stringByAppendingPathComponent:")

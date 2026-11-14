@@ -155,6 +155,11 @@ void AudioMixer::set_bgm_volume(float vol) {
     bgm_volume_ = clampf01(vol);
 }
 
+void AudioMixer::set_player_bgm_volume(float vol) {
+    std::lock_guard<std::mutex> lk(mutex_);
+    player_bgm_volume_ = clampf01(vol);
+}
+
 void AudioMixer::set_sfx_volume(float vol) {
     std::lock_guard<std::mutex> lk(mutex_);
     sfx_volume_ = clampf01(vol);
@@ -330,6 +335,11 @@ double AudioMixer::get_bgm_pos() const {
     return static_cast<double>(bgm_frame_) / static_cast<double>(kOutFreq);
 }
 
+std::string AudioMixer::current_bgm_key() const {
+    std::lock_guard<std::mutex> lk(mutex_);
+    return current_bgm_key_;
+}
+
 void SDLCALL AudioMixer::sdl_callback(void* userdata, Uint8* stream, int len) {
     auto* self = static_cast<AudioMixer*>(userdata);
     if (!self || !stream || len <= 0) return;
@@ -367,7 +377,7 @@ void AudioMixer::mix_frames(int16_t* out_stereo, size_t frame_count) {
         return;
     }
 
-    float bgm_gain = master_volume_ * bgm_volume_;
+    float bgm_gain = master_volume_ * bgm_volume_ * player_bgm_volume_;
     float sfx_base_gain = master_volume_ * sfx_volume_;
 
     for (size_t i = 0; i < frame_count; ++i) {

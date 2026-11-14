@@ -316,8 +316,16 @@ void register_hle_foundation(Runtime& rt, HleRegistry& reg) {
         GuestArgReader rd(rt.machine(), 3, false);  // after recv(0), sel(1), fmt(2)
         return ObjCRet::val(rt.objc().nsstring(format_guest_c(rt, rt.objc().get_str(a[0]), rd, true)));
     });
-    reg.add_cm("NSString", "stringWithUTF8String:", [](Runtime& rt, u32, const ObjCArgs& a) {
-        return ObjCRet::val(rt.objc().nsstring(rt.machine().cstr(a[0])));
+    reg.add_cm("NSString", "stringWithUTF8String:|stringWithCString:encoding:", [](Runtime& rt, u32, const ObjCArgs& a) {
+        return ObjCRet::val(rt.objc().nsstring(a[0] ? rt.machine().cstr(a[0]) : ""));
+    });
+    reg.add_cm("NSString", "stringWithCString:length:", [](Runtime& rt, u32, const ObjCArgs& a) {
+        u32 ptr = a[0];
+        u32 len = a[1];
+        if (!ptr || len == 0) return ObjCRet::val(rt.objc().nsstring(""));
+        Bytes raw = rt.machine().rdbytes(ptr, std::min<u32>(len, 1u << 20));
+        auto nul = std::find(raw.begin(), raw.end(), static_cast<u8>(0));
+        return ObjCRet::val(rt.objc().nsstring(std::string(raw.begin(), nul)));
     });
     reg.add_cm("NSString", "stringWithString:", [](Runtime& rt, u32, const ObjCArgs& a) {
         return ObjCRet::val(rt.objc().nsstring(rt.objc().get_str(a[0])));
@@ -348,6 +356,11 @@ void register_hle_foundation(Runtime& rt, HleRegistry& reg) {
     });
     reg.add_im("NSString", "stringByAppendingString:", [](Runtime& rt, u32 recv, const ObjCArgs& a) {
         return ObjCRet::val(rt.objc().nsstring(rt.objc().get_str(recv) + rt.objc().get_str(a[0])));
+    });
+    reg.add_im("NSString", "stringByAppendingFormat:", [](Runtime& rt, u32 recv, const ObjCArgs& a) {
+        GuestArgReader rd(rt.machine(), 3, false);  // after recv(0), sel(1), fmt(2)
+        std::string tail = format_guest_c(rt, rt.objc().get_str(a[0]), rd, true);
+        return ObjCRet::val(rt.objc().nsstring(rt.objc().get_str(recv) + tail));
     });
     reg.add_im("NSString", "stringByAppendingPathComponent:", [](Runtime& rt, u32 recv, const ObjCArgs& a) {
         return ObjCRet::val(rt.objc().nsstring(rstrip_slashes(rt.objc().get_str(recv)) + "/" + rt.objc().get_str(a[0])));

@@ -236,6 +236,15 @@ class S06AudioSubsystemTests(unittest.TestCase):
         stop_res = rt.send(player, "stop")
         self.assertEqual(stop_res, 0)
 
+    def test_nsstring_with_cstring_length_for_bgm_path(self):
+        """+[NSString stringWithCString:length:] must decode C strings used to build MP3 paths."""
+        rt = self.rt
+        m = rt.m
+        cptr = m.new_cstr("/snd/bgm0_mf.mp3")
+        ns_cls = rt.objc.by_name["NSString"]
+        s_obj = rt.send(ns_cls.addr, "stringWithCString:length:", cptr, 16)
+        self.assertEqual(rt.objc.pystr(s_obj), "/snd/bgm0_mf.mp3")
+
     def test_audio_session_get_property(self):
         """_AudioSessionGetProperty must return sane values for other audio and volume."""
         m = self.rt.m

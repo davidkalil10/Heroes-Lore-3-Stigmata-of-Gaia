@@ -222,6 +222,7 @@ void register_hle_audio(Runtime& rt, HleRegistry& reg) {
             }
         }
         if (auto* am = r.audio_mixer(); am && !raw.empty()) {
+            am->set_player_bgm_volume(info->volume);
             info->duration = am->play_bgm_data(key, raw, info->loops);
             info->playing = true;
         }
@@ -264,7 +265,7 @@ void register_hle_audio(Runtime& rt, HleRegistry& reg) {
     reg.add_im("AVAudioPlayer", "setVolume:", [](Runtime& r, u32 recv, const ObjCArgs& a) {
         float vol = a.f32(0);
         if (auto* info = r.objc().get_payload<AvPlayerState>(recv)) info->volume = vol;
-        if (auto* am = r.audio_mixer()) am->set_bgm_volume(vol);
+        if (auto* am = r.audio_mixer()) am->set_player_bgm_volume(vol);
         return ObjCRet::val(0u);
     });
 

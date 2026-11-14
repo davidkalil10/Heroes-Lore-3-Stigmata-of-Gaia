@@ -403,6 +403,60 @@ class HL3UpdaterTests(unittest.TestCase):
             self.assertEqual(len(bundle.macho), int(project["macho_executable"]["bytes"]))
             self.assertGreater(len(bundle.read("newres/texts/t_en")), 100000)
 
+    def test_bump_version_updates_all_platforms_in_sandbox(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            (t / "tools" / "hl3rt").mkdir(parents=True)
+            (t / "src" / "core").mkdir(parents=True)
+            (t / "android" / "app").mkdir(parents=True)
+            (t / ".github" / "workflows").mkdir(parents=True)
+
+            (t / "tools" / "hl3rt" / "version.py").write_text('PORT_VERSION = "1.0.3"\n', encoding="utf-8")
+            (t / "src" / "core" / "common.h").write_text(
+                'inline constexpr const char* kPortVersion = "1.0.3";\n', encoding="utf-8"
+            )
+            (t / "project.json").write_text(json.dumps({"port_version": "1.0.3"}) + "\n", encoding="utf-8")
+            (t / "android" / "app" / "build.gradle").write_text(
+                "android {\n    defaultConfig {\n        versionCode 4\n        versionName '1.0.3'\n    }\n}\n",
+                encoding="utf-8",
+            )
+            (t / ".github" / "workflows" / "build.yml").write_text(
+                "        description: 'Release tag (e.g. v1.0.3)'\n        default: 'v1.0.3'\n",
+                encoding="utf-8",
+            )
+            (t / "README.md").write_text(
+                "Runtime Nativo C++17 (`v1.0.3`)\n"
+                "https://img.shields.io/badge/Port-v1.0.3-d49b35\n"
+                "https://img.shields.io/badge/Original_iOS-v1.0.1-6b7280\n"
+                "Recursos da versão `v1.0.3`\n"
+                "**`Port by David Kalil Braga (2026) - v1.0.3`** / **`Port por David Kalil Braga (2026) - v1.0.3`**\n"
+                "mais nova que a instalada (`v1.0.3`)\n",
+                encoding="utf-8",
+            )
+
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "tools" / "bump_version.py"), "--root", str(t), "patch"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertIn("v1.0.3 -> v1.0.4", proc.stdout)
+            self.assertIn("versionCode 4 -> 5", proc.stdout)
+
+            chk = subprocess.run(
+                [sys.executable, str(ROOT / "tools" / "bump_version.py"), "--root", str(t), "--check"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(chk.returncode, 0, chk.stdout + chk.stderr)
+            self.assertIn("Android versionCode 5", chk.stdout)
+            # Original iOS version must remain untouched in README.md
+            readme_after = (t / "README.md").read_text(encoding="utf-8")
+            self.assertIn("Original_iOS-v1.0.1", readme_after)
+            self.assertNotIn("v1.0.3", readme_after)
+
 
 if __name__ == "__main__":
     unittest.main()

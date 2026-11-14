@@ -103,6 +103,7 @@ int main() {
             } else {
                 hl3::AudioMixer audio;
                 audio.init_device();
+                const float initial_bgm_vol = audio.bgm_volume();
 
                 rt.set_gl_bridge(&gl);
                 rt.set_audio_mixer(&audio);
@@ -166,6 +167,29 @@ int main() {
                                      "non_black=%d wings=(%d,%d)\n",
                                      presents, non_black, left_wing_non_black, right_wing_non_black);
                         exit_code = 7;
+                    } else if (!audio.is_bgm_playing() ||
+                               audio.current_bgm_key().find("bgm0_mf.mp3") == std::string::npos) {
+                        std::fprintf(stderr,
+                                     "Expected BGM bgm0_mf.mp3 playing after 60 frames, got playing=%d key=%s\n",
+                                     audio.is_bgm_playing() ? 1 : 0, audio.current_bgm_key().c_str());
+                        exit_code = 8;
+                    } else if (std::fabs(audio.bgm_volume() - initial_bgm_vol) > 0.001f ||
+                               audio.player_bgm_volume() <= 0.1f) {
+                        std::fprintf(stderr,
+                                     "Expected AVAudioPlayer gain independent of user bgm_volume: user=%.3f->%.3f player=%.3f\n",
+                                     initial_bgm_vol, audio.bgm_volume(), audio.player_bgm_volume());
+                        exit_code = 9;
+                    } else {
+                        std::vector<int16_t> mix_buf(4096 * 2, 0);
+                        audio.render_mix_for_test(mix_buf.data(), 4096);
+                        int non_zero_samples = 0;
+                        for (int16_t s : mix_buf) {
+                            if (s != 0) ++non_zero_samples;
+                        }
+                        if (non_zero_samples < 100) {
+                            std::fprintf(stderr, "Expected non-zero mixed BGM PCM samples, got %d\n", non_zero_samples);
+                            exit_code = 10;
+                        }
                     }
                 }
             }

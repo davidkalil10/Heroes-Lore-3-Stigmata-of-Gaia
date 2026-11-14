@@ -57,12 +57,14 @@ public:
     // Volume controls
     void set_master_volume(float vol);
     void set_bgm_volume(float vol);
+    void set_player_bgm_volume(float vol);
     void set_sfx_volume(float vol);
     void set_muted(bool muted);
     bool toggle_mute();
 
     float master_volume() const { return master_volume_; }
     float bgm_volume() const { return bgm_volume_; }
+    float player_bgm_volume() const { return player_bgm_volume_; }
     float sfx_volume() const { return sfx_volume_; }
     bool muted() const { return muted_; }
 
@@ -85,6 +87,8 @@ public:
     void stop_bgm();
     bool is_bgm_playing() const;
     double get_bgm_pos() const;
+    std::string current_bgm_key() const;
+    void render_mix_for_test(int16_t* out_stereo, size_t frame_count) { mix_frames(out_stereo, frame_count); }
 
 private:
     struct PcmTrack {
@@ -112,6 +116,7 @@ private:
 
     float master_volume_ = 1.0f;
     float bgm_volume_ = 1.0f;
+    float player_bgm_volume_ = 1.0f;
     float sfx_volume_ = 1.0f;
     bool muted_ = false;
 

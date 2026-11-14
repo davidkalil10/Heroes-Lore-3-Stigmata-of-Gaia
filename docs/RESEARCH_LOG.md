@@ -427,6 +427,20 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   - Versionado `android/app/heroes_lore_3.keystore` (`!android/app/heroes_lore_3.keystore`), tornado `signingConfig signingConfigs.release` obrigatório no build `release` de `android/app/build.gradle`, e adicionados `--require-existing-keystore` (`prepare_platform_assets.py`) e `--require-signed` / `--expected-cert-sha256` (`verify_android_package.py` via `apksigner verify --print-certs`) no workflow `build-android` (com suporte opcional a `HL3_KEYSTORE_BASE64`).
   - Validado nos APKs locais (`cert_sha256=61ca6931c36c`) e em `tests/test_multiplatform_ci.py`.
 
+---
+
+## 2026-11-14 - Sessão 26 (`S12`): Correção de BGM MP3 (`+[NSString stringWithCString:length:]`), `bump_version.py` Multiplataforma e Release `v1.0.4`
+
+- **Relatório completo**: `research/sessions/2026-11-14-07.md`
+- **Descobertas e correções verificáveis**:
+  1. **Ausência de música (BGM `.mp3`) com SFX funcionando**:
+     - Trace de execução Objective-C mostrou que o jogo chama `+[NSString stringWithCString:length:]` em `lr=0xa7b8c` para construir `"/snd/bgm0_mf.mp3"` (`len=16`). Como o seletor não estava registrado em `src/hle/hle_foundation.cpp` nem em `tools/hl3rt/hle_foundation.py`, retornava `0x0` (`nil`), levando o jogo a passar apenas o diretório raiz do bundle para `NSURL fileURLWithPath:` e `AVAudioPlayer initWithContentsOfURL:error:`.
+     - Implementados `+[NSString stringWithCString:length:]`, `+[NSString stringWithCString:encoding:]` e `-[NSString stringByAppendingFormat:]`, além de desacoplar `[AVAudioPlayer setVolume:]` (`player_bgm_volume_`) do volume do usuário (`AudioMixer::bgm_volume_`) para preservar fades internos do jogo e controle de volume do port em `config/audio.json`.
+     - Regressão coberta em `tests/cpp/test_headless_runtime.cpp` (confirma `is_bgm_playing()`, `bgm0_mf.mp3` e PCM mixado não nulo após 60 frames) e `tests/test_audio_subsystem.py`.
+  2. **Script unificado de versionamento & Release `v1.0.4`**:
+     - Expandido `tools/bump_version.py` e documentado em `docs/VERSIONING.md` para sincronizar e validar `PORT_VERSION` (`tools/hl3rt/version.py`), `kPortVersion` (`src/core/common.h`), `project.json`, `android/app/build.gradle` (`versionName` + `versionCode`), `.github/workflows/build.yml` (`release_tag`) e `README.md`.
+     - Bump aplicado via `python tools/bump_version.py patch` (`v1.0.3 -> v1.0.4`, Android `versionCode 4 -> 5`) e `docs/RELEASE_NOTES.md` atualizado para publicação da release `v1.0.4`.
+
 
 
 

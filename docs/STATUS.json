@@ -2,10 +2,10 @@
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
   "updated_at": "2026-11-14",
-  "overall_phase": "multiplatform_ci_green",
+  "overall_phase": "multiplatform_release_v1_0_4",
   "current_step": "S12",
   "next_recommended_step": "S13",
-  "summary": "S12+S13 com 4/4 alvos CI verdes e assinatura Android unificada: keystore persistente (android/app/heroes_lore_3.keystore, SHA-256 61ca6931...) rastreada no Git, --require-existing-keystore e validacao apksigner (--require-signed --expected-cert-sha256) ativos no CI para garantir updates diretos e OTA automatico, somando-se as correcoes de acelerometro, modal/OSD Hi-DPI (2.8x) e notch/widescreen 3120x1440.",
+  "summary": "Release v1.0.4 (Android versionCode 5): corrigida a reproducao das musicas .mp3 (BGM) via +[NSString stringWithCString:length:] e desacoplamento de gain AVAudioPlayer/AudioMixer, unificado o script tools/bump_version.py para todas as plataformas (documentado em docs/VERSIONING.md) e publicada nova tag v1.0.4 com assinatura Android persistente (SHA-256 61ca6931...) para teste OTA.",
   "steps": [
     {
       "id": "S00",
@@ -283,6 +283,8 @@
         "tools/prepare_platform_assets.py",
         "tools/verify_android_package.py",
         "tools/build_pc_cpp.py",
+        "tools/bump_version.py",
+        "docs/VERSIONING.md",
         "tests/test_multiplatform_ci.py",
         "tests/cpp/test_macho_boot.cpp",
         "tests/cpp/test_headless_runtime.cpp",
@@ -292,9 +294,10 @@
         "research/sessions/2026-11-14-03.md",
         "research/sessions/2026-11-14-04.md",
         "research/sessions/2026-11-14-05.md",
-        "research/sessions/2026-11-14-06.md"
+        "research/sessions/2026-11-14-06.md",
+        "research/sessions/2026-11-14-07.md"
       ],
-      "notes": "Builds CI 4/4 verdes no Actions Run 43632103622 e keystore Android persistente corrigida na Sessao 25: .gitignore liberando android/app/heroes_lore_3.keystore (SHA-256 61ca6931...), assinatura release obrigatoria em android/app/build.gradle, --require-existing-keystore em prepare_platform_assets.py e --require-signed / --expected-cert-sha256 em verify_android_package.py (com suporte opcional a HL3_KEYSTORE_BASE64). Inclui correcoes Android validadas em 3120x1440 (acelerometro, modal Hi-DPI, notch SHORT_EDGES e backdrop/gameplay widescreen)."
+      "notes": "Release v1.0.4 (Android versionCode 5): corrigida a reproducao de todas as faixas BGM .mp3 via +[NSString stringWithCString:length:] e desacoplamento player_bgm_volume_ em AudioMixer (validado com dr_mp3 no ctest headless_runtime), ampliado tools/bump_version.py + docs/VERSIONING.md cobrindo Python/C++/project.json/Android/Workflow/README, mantida keystore persistente SHA-256 61ca6931... e correcoes Android em 3120x1440."
     },
     {
       "id": "S13",

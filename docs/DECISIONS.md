@@ -560,6 +560,20 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 - **Consequências**:
   - Todos os APKs gerados localmente e no GitHub Actions passam a compartilhar exatamente o mesmo certificado de assinatura (`SHA-256: 61ca6931...`), permitindo upgrades diretos e OTA automático no Android após uma única substituição das builds efêmeras anteriores.
 
+---
+
+## ADR-028: Desacoplamento de Volume `AVAudioPlayer` e Versionamento Sincronizado Multiplataforma (`v1.0.4`)
+
+- **Data**: 2026-11-14
+- **Status**: Aceito
+- **Contexto**:
+  - Os temas `.mp3` (`snd/bgm*_mf.mp3`) não iniciavam porque `+[NSString stringWithCString:length:]` retornava `nil`, e os fades internos de `AVAudioPlayer setVolume:` sobrescreviam `AudioMixer::bgm_volume_`. Além disso, `tools/bump_version.py` ainda não atualizava `android/app/build.gradle` (`versionName`/`versionCode`), `.github/workflows/build.yml` nem `README.md`.
+- **Decisão**:
+  1. Implementar `+[NSString stringWithCString:length:]`, `+[NSString stringWithCString:encoding:]` e `-[NSString stringByAppendingFormat:]` em C++ e Python HLE, e manter `player_bgm_volume_` separado de `bgm_volume_` em [`src/audio/audio_mixer.cpp`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/audio/audio_mixer.cpp).
+  2. Consolidar em [`tools/bump_version.py`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tools/bump_version.py) e documentar em [`docs/VERSIONING.md`](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/docs/VERSIONING.md) a atualização sincronizada de versão SemVer e `versionCode` em todas as plataformas antes de tags `vX.Y.Z`.
+- **Consequências**:
+  - BGM `.mp3` e fades do jogo funcionam sem corromper `config/audio.json`, e futuros releases exigem apenas um comando (`python tools/bump_version.py patch`) antes de atualizar `docs/RELEASE_NOTES.md` e empurrar a tag.
+
 
 
 
