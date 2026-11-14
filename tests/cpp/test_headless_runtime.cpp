@@ -8,6 +8,11 @@
 #include "../../src/platform/display_config.h"
 
 #include <SDL.h>
+#ifdef _WIN32
+#include <SDL_opengl.h>
+#elif !defined(APIENTRY)
+#define APIENTRY
+#endif
 
 #include <cmath>
 #include <cstdio>
@@ -87,7 +92,13 @@ int main() {
         } else {
             hl3::GLBridge gl(&rt.machine(), 960, 640, "auto");
             if (!gl.init_gl()) {
-                std::fprintf(stderr, "GLBridge init_gl failed\n");
+                using PfnGlGetStr = const unsigned char*(APIENTRY*)(unsigned int);
+                auto get_str = reinterpret_cast<PfnGlGetStr>(SDL_GL_GetProcAddress("glGetString"));
+                const char* v = get_str ? reinterpret_cast<const char*>(get_str(0x1F00u)) : nullptr;
+                const char* r = get_str ? reinterpret_cast<const char*>(get_str(0x1F01u)) : nullptr;
+                const char* ver = get_str ? reinterpret_cast<const char*>(get_str(0x1F02u)) : nullptr;
+                std::fprintf(stderr, "GLBridge init_gl failed (vendor=%s renderer=%s version=%s)\n",
+                             v ? v : "?", r ? r : "?", ver ? ver : "?");
                 exit_code = 5;
             } else {
                 hl3::AudioMixer audio;

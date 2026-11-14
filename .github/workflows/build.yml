@@ -47,6 +47,7 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-SDL2
             mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-mesa
             mingw-w64-ucrt-x86_64-python
             mingw-w64-ucrt-x86_64-python-pillow
 
@@ -67,7 +68,10 @@ jobs:
         run: |
           cmake -B build_cpp -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build_cpp --parallel
-          ctest --test-dir build_cpp --output-on-failure
+          cp -f /ucrt64/bin/opengl32.dll /ucrt64/bin/libgallium_wgl.dll build_cpp/
+          GALLIUM_DRIVER=llvmpipe LIBGL_ALWAYS_SOFTWARE=1 SDL_AUDIODRIVER=dummy \
+            ctest --test-dir build_cpp --output-on-failure
+          rm -f build_cpp/opengl32.dll build_cpp/libgallium_wgl.dll
           python tools/bump_version.py --check
 
       - name: Package Windows Standalone Release

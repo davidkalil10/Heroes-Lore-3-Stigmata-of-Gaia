@@ -134,24 +134,24 @@ std::string format_epoch_local(double ts) {
     return std::string(buf);
 }
 
+std::time_t utc_tm_to_time_t(int y, int mo, int d, int hh, int mm, int ss) {
+    // Howard Hinnant civil-to-days formula: portable UTC epoch without timegm/_mkgmtime.
+    const int64_t yr = static_cast<int64_t>(y) - (mo <= 2 ? 1 : 0);
+    const int64_t era = (yr >= 0 ? yr : yr - 399) / 400;
+    const int64_t yoe = yr - era * 400;
+    const int64_t doy = (153 * (mo + (mo > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    const int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    const int64_t days = era * 146097 + doe - 719468;
+    return static_cast<std::time_t>(days * 86400 + hh * 3600 + mm * 60 + ss);
+}
+
 std::string format_iso_local(const std::string& iso_str) {
     std::string raw = trim_ascii(iso_str);
     if (raw.empty()) return {};
 
     int y = 0, mo = 0, d = 0, hh = 0, mm = 0, ss = 0;
     if (std::sscanf(raw.c_str(), "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &hh, &mm, &ss) >= 5) {
-        std::tm tm_utc{};
-        tm_utc.tm_year = y - 1900;
-        tm_utc.tm_mon = mo - 1;
-        tm_utc.tm_mday = d;
-        tm_utc.tm_hour = hh;
-        tm_utc.tm_min = mm;
-        tm_utc.tm_sec = ss;
-#ifdef _WIN32
-        std::time_t utc_t = _mkgmtime(&tm_utc);
-#else
-        std::time_t utc_t = timegm(&tm_utc);
-#endif
+        const std::time_t utc_t = utc_tm_to_time_t(y, mo, d, hh, mm, ss);
         if (utc_t > 0 && (!raw.empty() && raw.back() == 'Z')) {
             return format_epoch_local(static_cast<double>(utc_t));
         }

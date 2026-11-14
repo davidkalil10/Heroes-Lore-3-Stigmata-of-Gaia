@@ -517,7 +517,8 @@ HttpResponse http_execute(
     }
 
     char errbuf[CURL_ERROR_SIZE]{};
-    CurlWriteBuf wbuf{&resp.body, 64u * 1024u * 1024u, false};
+    Bytes raw_body;
+    CurlWriteBuf wbuf{&raw_body, 64u * 1024u * 1024u, false};
     std::string ua = "HeroesLore3Recomp/1.0";
     struct curl_slist* hdr_list = nullptr;
     for (const auto& h : headers) {
@@ -567,6 +568,7 @@ HttpResponse http_execute(
             resp.error = curl_easy_strerror(rc);
         }
     } else {
+        resp.body.assign(reinterpret_cast<const char*>(raw_body.data()), raw_body.size());
         long status = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
         resp.status_code = static_cast<int>(status);
