@@ -113,7 +113,6 @@ elseif(ANDROID)
     target_link_libraries(hl3_core PUBLIC log android)
 elseif(HL3_SWITCH)
     target_compile_definitions(hl3_core PUBLIC SDL_MAIN_HANDLED)
-    target_sources(hl3_core PRIVATE platforms/switch/unicorn_os.c)
     target_link_libraries(hl3_core PUBLIC
         PkgConfig::CURL
         PkgConfig::SDL2
@@ -150,6 +149,8 @@ else()
     add_executable(HeroesLore3 ${HL3_APP_SOURCES})
     hl3_configure_exe(HeroesLore3)
     if(HL3_SWITCH)
+        target_sources(HeroesLore3 PRIVATE platforms/switch/unicorn_os.c)
+        target_include_directories(HeroesLore3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/platforms/switch/compat)
         set_target_properties(HeroesLore3 PROPERTIES SUFFIX ".elf")
     endif()
 

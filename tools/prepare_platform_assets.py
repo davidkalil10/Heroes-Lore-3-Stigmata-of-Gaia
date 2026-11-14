@@ -108,6 +108,14 @@ def copy_runtime_overrides(assets_dest: Path) -> None:
             shutil.copy2(src, assets_dest / rel_file)
 
 
+def _pil_lanczos() -> int:
+    """Return Pillow's LANCZOS filter constant across Pillow <9.1 and >=9.1."""
+    from PIL import Image
+
+    resampling = getattr(Image, "Resampling", None)
+    return int(resampling.LANCZOS if resampling is not None else Image.LANCZOS)
+
+
 def generate_android_icons(res_dir: Path) -> None:
     from PIL import Image
 
@@ -124,7 +132,7 @@ def generate_android_icons(res_dir: Path) -> None:
     for folder, px in mipmaps.items():
         d = res_dir / folder
         d.mkdir(parents=True, exist_ok=True)
-        resized = icon_rgba.resize((px, px), Image.Resampling.LANCZOS)
+        resized = icon_rgba.resize((px, px), _pil_lanczos())
         resized.save(d / "ic_launcher.png")
         resized.save(d / "ic_launcher_round.png")
 
@@ -132,7 +140,7 @@ def generate_android_icons(res_dir: Path) -> None:
     drawable = res_dir / "drawable"
     drawable.mkdir(parents=True, exist_ok=True)
     fg = Image.new("RGBA", (432, 432), (24, 30, 42, 255))
-    fg.paste(icon_rgb.resize((288, 288), Image.Resampling.LANCZOS), (72, 72))
+    fg.paste(icon_rgb.resize((288, 288), _pil_lanczos()), (72, 72))
     fg.save(drawable / "ic_launcher_foreground.png")
 
     anydpi = res_dir / "mipmap-anydpi-v26"
@@ -221,7 +229,7 @@ def prepare_switch(romfs_dir: Path, icon_out: Path | None) -> None:
 
     if icon_out is not None:
         icon_out.parent.mkdir(parents=True, exist_ok=True)
-        img = Image.open(ROOT / "assets" / "icon.png").convert("RGB").resize((256, 256), Image.Resampling.LANCZOS)
+        img = Image.open(ROOT / "assets" / "icon.png").convert("RGB").resize((256, 256), _pil_lanczos())
         # Switch hbmenu requires non-progressive baseline JPEG 256x256.
         img.save(icon_out, format="JPEG", quality=95, progressive=False)
     print(f"OK: Staged Switch RomFS ({romfs_dir}) for Title ID {SWITCH_TITLE_ID}")
@@ -248,7 +256,7 @@ def prepare_linux_appdir(exe_path: Path, appdir: Path, bundle_libs: bool = True)
     write_verified_ipa(assets_dir / "game.ipa")
     copy_runtime_overrides(assets_dir)
 
-    icon_img = Image.open(ROOT / "assets" / "icon.png").convert("RGBA").resize((256, 256), Image.Resampling.LANCZOS)
+    icon_img = Image.open(ROOT / "assets" / "icon.png").convert("RGBA").resize((256, 256), _pil_lanczos())
     icon_img.save(appdir / "heroes_lore_3.png")
 
     desktop = (
