@@ -403,8 +403,12 @@ class Bundle:
 
     def __init__(self):
         project = json.loads((ROOT / "project.json").read_text(encoding="utf-8"))
-        apk = zipfile.ZipFile(ROOT / project["original_apk"]["path"])
-        ipa_bytes = apk.read("assets/game.ipa")
+        ipa_file = ROOT / "assets" / "game.ipa"
+        if ipa_file.exists():
+            ipa_bytes = ipa_file.read_bytes()
+        else:
+            apk = zipfile.ZipFile(ROOT / project["original_apk"]["path"])
+            ipa_bytes = apk.read("assets/game.ipa")
         if hashlib.sha256(ipa_bytes).hexdigest() != project["nested_ipa"]["sha256"]:
             raise ValueError("IPA hash mismatch")
         self.zf = zipfile.ZipFile(io.BytesIO(ipa_bytes))

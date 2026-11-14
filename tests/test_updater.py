@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 from pathlib import Path
 
@@ -247,7 +248,7 @@ class HL3UpdaterTests(unittest.TestCase):
             self.assertEqual(mgr.snapshot().phase, UpdatePhase.MANUAL_STAGED)
             self.assertTrue((Path(staged) / "HeroesLore3.exe").exists())
 
-            # Validate Windows PS1 updater script generation preserves config & data
+            # Validate Windows PS1 updater script generation preserves config & data + retry logic
             ps1 = build_windows_updater_script(
                 target_pid=99999,
                 staged_root=Path(staged),
@@ -256,6 +257,46 @@ class HL3UpdaterTests(unittest.TestCase):
             )
             self.assertIn("$Preserved = @('config', 'data')", ps1)
             self.assertIn("RollbackRoot", ps1)
+            self.assertIn("Invoke-WithRetry", ps1)
+
+            if sys.platform == "win32":
+                # Verify standalone Windows updater uses UTF-8 BOM and valid Popen flags (no DETACHED_PROCESS)
+                (root / "HeroesLore3.exe").write_bytes(b"MZ")
+                quit_called = []
+                popen_calls = []
+
+                class _FakeProc:
+                    pid = 4242
+
+                def fake_popen(args, **kwargs):
+                    popen_calls.append((args, kwargs))
+                    return _FakeProc()
+
+                standalone_mgr = UpdateManager(
+                    local_version="1.0.0",
+                    config_path=root / "config" / "services.json",
+                    updates_dir=upd_dir,
+                    install_root=root,
+                    is_standalone=True,
+                    target_asset=ASSET_WINDOWS_X64,
+                    request_quit_cb=lambda: quit_called.append(True),
+                )
+                standalone_mgr.state.release = st_dl.release
+                standalone_mgr.state.downloaded_path = st_dl.downloaded_path
+                with mock.patch("hl3rt.updater.subprocess.Popen", side_effect=fake_popen):
+                    ok_inst, _ = standalone_mgr.install_ready_update()
+                self.assertTrue(ok_inst)
+                self.assertEqual(standalone_mgr.snapshot().phase, UpdatePhase.INSTALLING)
+                self.assertEqual(quit_called, [True])
+                self.assertEqual(len(popen_calls), 1)
+                p_args, p_kwargs = popen_calls[0]
+                self.assertIn("-File", p_args)
+                self.assertTrue((upd_dir / "update_windows.ps1").read_bytes().startswith(b"\xef\xbb\xbf"))
+                flags = int(p_kwargs.get("creationflags", 0))
+                detached = getattr(subprocess, "DETACHED_PROCESS", 0)
+                if detached:
+                    self.assertEqual(flags & detached, 0)
+                self.assertEqual(p_kwargs.get("stdin"), subprocess.DEVNULL)
 
     def test_modal_update_page_render_and_navigation(self):
         pygame.init()
@@ -340,6 +381,27 @@ class HL3UpdaterTests(unittest.TestCase):
             if orig_cfg is not None:
                 cfg_path.write_text(orig_cfg, encoding="utf-8")
             pygame.quit()
+
+    def test_bundle_loads_standalone_game_ipa_without_apk(self):
+        import shutil
+        import hl3rt.machine as hm
+
+        project = json.loads((ROOT / "project.json").read_text(encoding="utf-8"))
+        with zipfile.ZipFile(ROOT / project["original_apk"]["path"], "r") as apk:
+            ipa_bytes = apk.read("assets/game.ipa")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            (t / "project.json").write_text(json.dumps(project), encoding="utf-8")
+            (t / "assets").mkdir()
+            (t / "assets" / "game.ipa").write_bytes(ipa_bytes)
+            shutil.copytree(ROOT / "assets" / "fonts", t / "assets" / "fonts")
+            shutil.copytree(ROOT / "assets" / "texts", t / "assets" / "texts")
+
+            with mock.patch.object(hm, "ROOT", t):
+                bundle = hm.Bundle()
+            self.assertEqual(len(bundle.macho), int(project["macho_executable"]["bytes"]))
+            self.assertGreater(len(bundle.read("newres/texts/t_en")), 100000)
 
 
 if __name__ == "__main__":

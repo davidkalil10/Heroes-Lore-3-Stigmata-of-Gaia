@@ -275,21 +275,34 @@ function Write-Log([string]$Msg) {{
     Add-Content -Path $LogPath -Value $line -Encoding UTF8 -ErrorAction SilentlyContinue
 }}
 
+function Invoke-WithRetry([scriptblock]$Action, [int]$Attempts = 15, [int]$DelayMs = 300) {{
+    for ($n = 1; $n -le $Attempts; $n++) {{
+        try {{
+            & $Action
+            return
+        }} catch {{
+            if ($n -ge $Attempts) {{ throw }}
+            Start-Sleep -Milliseconds $DelayMs
+        }}
+    }}
+}}
+
 New-Item -ItemType Directory -Force -Path (Split-Path $LogPath) | Out-Null
 Write-Log "Waiting for PID $TargetPid to exit..."
 for ($i = 0; $i -lt 240; $i++) {{
     if (-not (Get-Process -Id $TargetPid -ErrorAction SilentlyContinue)) {{ break }}
     Start-Sleep -Milliseconds 250
 }}
-Start-Sleep -Milliseconds 350
+Start-Sleep -Milliseconds 500
 
 try {{
     New-Item -ItemType Directory -Force -Path $RollbackRoot | Out-Null
     $Preserved = @('config', 'data')
     Get-ChildItem -Force $InstallRoot | ForEach-Object {{
         if ($Preserved -contains $_.Name) {{ return }}
-        $dest = Join-Path $RollbackRoot $_.Name
-        Move-Item -Force $_.FullName $dest
+        $item = $_
+        $dest = Join-Path $RollbackRoot $item.Name
+        Invoke-WithRetry {{ Move-Item -Force $item.FullName $dest }}
     }}
     Get-ChildItem -Force $StagedRoot | ForEach-Object {{
         if ($Preserved -contains $_.Name) {{ return }}
@@ -307,15 +320,22 @@ try {{
     }}
     Write-Log "Update applied cleanly; launching $ExePath"
     Remove-Item -Recurse -Force $RollbackRoot -ErrorAction SilentlyContinue
+    $StagedParent = Split-Path $StagedRoot -Parent
+    if ($StagedParent -and (Split-Path $StagedParent -Leaf) -eq 'staged') {{
+        Remove-Item -Recurse -Force $StagedParent -ErrorAction SilentlyContinue
+    }} elseif (Test-Path $StagedRoot) {{
+        Remove-Item -Recurse -Force $StagedRoot -ErrorAction SilentlyContinue
+    }}
     if (Test-Path $ExePath) {{
         Start-Process -FilePath $ExePath -WorkingDirectory $InstallRoot | Out-Null
     }}
 }} catch {{
     Write-Log ("Update failed; rolling back: " + $_.Exception.Message)
     Get-ChildItem -Force $RollbackRoot -ErrorAction SilentlyContinue | ForEach-Object {{
-        $dest = Join-Path $InstallRoot $_.Name
+        $item = $_
+        $dest = Join-Path $InstallRoot $item.Name
         if (Test-Path $dest) {{ Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue }}
-        Move-Item -Force $_.FullName $dest -ErrorAction SilentlyContinue
+        Invoke-WithRetry {{ Move-Item -Force $item.FullName $dest }} -Attempts 5 -DelayMs 200
     }}
     if (Test-Path $ExePath) {{
         Start-Process -FilePath $ExePath -WorkingDirectory $InstallRoot | Out-Null
@@ -632,9 +652,12 @@ class UpdateManager:
                         rollback_root=rollback_dir,
                         log_path=self.updates_dir / "last_update.log",
                     )
-                    script_path.write_text(script_text, encoding="utf-8")
+                    # Write UTF-8 with BOM so Windows PowerShell 5.1 handles non-ASCII paths cleanly.
+                    script_path.write_text(script_text, encoding="utf-8-sig")
+                    # Never combine DETACHED_PROCESS with CREATE_NO_WINDOW; PowerShell exits
+                    # immediately without running -File when DETACHED_PROCESS is set.
                     creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(
-                        subprocess, "DETACHED_PROCESS", 0
+                        subprocess, "CREATE_NEW_PROCESS_GROUP", 0
                     )
                     subprocess.Popen(
                         [
@@ -648,6 +671,10 @@ class UpdateManager:
                             str(script_path),
                         ],
                         cwd=str(self.updates_dir),
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        close_fds=True,
                         creationflags=creation_flags,
                     )
                     with self._lock:

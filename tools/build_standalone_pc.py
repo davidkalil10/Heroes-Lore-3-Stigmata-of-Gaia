@@ -220,15 +220,8 @@ def build(*, include_dev_saves: bool = False, make_zip: bool = True) -> tuple[Pa
         "--hidden-import",
         "webbrowser",
         "--add-data",
-        f"{ROOT / 'tools'};tools",
-        "--add-data",
         f"{ROOT / 'project.json'};.",
     ]
-
-    for cfg_name in ("audio.json", "display.json"):
-        cfg_file = ROOT / "config" / cfg_name
-        if cfg_file.exists():
-            cmd.extend(["--add-data", f"{cfg_file};config"])
 
     if (ROOT / "assets").exists():
         cmd.extend(["--add-data", f"{ROOT / 'assets'};assets"])
@@ -251,9 +244,22 @@ def build(*, include_dev_saves: bool = False, make_zip: bool = True) -> tuple[Pa
 
     print(f"[Build] Copying game assets into standalone package...")
 
-    # Copy pristine original APK containing assets/game.ipa
-    apk_name = "Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version_1_0_1_apkports.apk"
-    shutil.copy2(ROOT / apk_name, output_dir / apk_name)
+    # Extract nested iOS assets/game.ipa directly (avoids shipping 18+ MB of unused Android APK wrapper)
+    import hashlib
+    project_meta = json.loads((ROOT / "project.json").read_text(encoding="utf-8"))
+    apk_path = ROOT / project_meta["original_apk"]["path"]
+    with zipfile.ZipFile(apk_path, "r") as apk_zf:
+        ipa_bytes = apk_zf.read("assets/game.ipa")
+    if hashlib.sha256(ipa_bytes).hexdigest() != project_meta["nested_ipa"]["sha256"]:
+        raise ValueError("Nested game.ipa SHA-256 mismatch while packaging standalone build")
+
+    # Copy assets directory (including icon.png and icon.ico) and bundle game.ipa
+    out_assets = output_dir / "assets"
+    if (ROOT / "assets").exists():
+        shutil.copytree(ROOT / "assets", out_assets, dirs_exist_ok=True)
+    else:
+        out_assets.mkdir(parents=True, exist_ok=True)
+    (out_assets / "game.ipa").write_bytes(ipa_bytes)
 
     # Copy project.json
     shutil.copy2(ROOT / "project.json", output_dir / "project.json")
@@ -279,17 +285,13 @@ def build(*, include_dev_saves: bool = False, make_zip: bool = True) -> tuple[Pa
                 if item.is_file() and item.name != ".gitkeep":
                     shutil.copy2(item, out_docs / item.name)
 
-    # Copy tools directory (excluding __pycache__)
+    # Copy tools directory (excluding __pycache__ and scratch scripts)
     shutil.copytree(
         ROOT / "tools",
         output_dir / "tools",
         dirs_exist_ok=True,
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "scratch_*.py"),
     )
-
-    # Copy assets directory (including icon.png and icon.ico)
-    if (ROOT / "assets").exists():
-        shutil.copytree(ROOT / "assets", output_dir / "assets", dirs_exist_ok=True)
 
     # Write README.txt
     (output_dir / "README.txt").write_text(README_CONTENT, encoding="utf-8")

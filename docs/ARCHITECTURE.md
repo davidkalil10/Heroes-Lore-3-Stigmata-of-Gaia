@@ -14,7 +14,7 @@ A análise determinística de `Port_Heroes_Lore_III_Stigmata_Of_Gaia_iOS_Version
 
 ## 2. Arquitetura Atual do Runtime PC (`tools/hl3rt/` + `tools/run_pc.py`)
 
-O port operante no Windows x64 (`v1.0.1`) executa o binário Mach-O original diretamente em memória sobre uma arquitetura modular:
+O port operante no Windows x64 (`v1.0.2`) executa o binário Mach-O original diretamente em memória sobre uma arquitetura modular:
 
 1. **Núcleo ARMv6 & Mach-O (`tools/hl3rt/machine.py`, `runtime.py`, `objc.py`, `aot_blocks.py`)**:
    - Mapeia segmentos Mach-O, inicializa `__mod_init_func`, resolve `__nl_symbol_ptr`/`__la_symbol_ptr` para stubs HLE na região `0x7F000000` e prepara seletores/ivars Objective-C.

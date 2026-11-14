@@ -45,14 +45,14 @@ python tools/build_ptbr_texts.py
 python -m unittest discover -s tests -v
 ```
 
-Cobertura atual da suíte (`62` testes):
+Cobertura atual da suíte (`63` testes):
 - `tests/test_runtime_boot.py`: loader Mach-O, runtime ObjC, boot, New Game, combate e save/load local.
 - `tests/test_audio_and_aot.py`: mixer OpenAL/WAV + MP3 fora do callback SDL, guarda de opcodes e blocos AOT.
 - `tests/test_viewport_aspect.py`: projeção ortográfica OpenGL, True Widescreen (`Auto`, `16:9`, `Original`), centralização de popups/menus e ancoragem de HUD.
 - `tests/test_s09_s10_localization.py`: catálogo EN (`6.733` slots), extensão de glifos `.rff`/`.pvr`, integridade dos 12 chunks PT-BR, reload live via `TextUtils` + `GameWorld` banner e linha de crédito no menu `About` (`slot 6632`).
 - `tests/test_cloud_save.py`: autenticação Google Drive OAuth, isolamento de pasta/arquivo HL3, backups de segurança e detecção de corrupção.
 - `tests/test_options_menu.py`: navegação, hitboxes responsivas (paisagem e retrato), 6 linhas de opções, páginas Cloud Save e Updates.
-- `tests/test_updater.py`: parser SemVer e API do GitHub Releases, filtro HTTPS/domínio, verificação de versão sincronizada, download streaming com SHA-256, proteção ZIP Slip e geração de script Windows com preservação de `config/`/`data/`.
+- `tests/test_updater.py`: parser SemVer e API do GitHub Releases, filtro HTTPS/domínio, verificação de versão sincronizada, download streaming com SHA-256, proteção ZIP Slip, geração de script Windows (UTF-8 BOM, `CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW`, `Invoke-WithRetry`) e boot standalone via `assets/game.ipa` sem APK (`8` testes).
 
 ## 5. Validação de Build Standalone (Windows x64)
 

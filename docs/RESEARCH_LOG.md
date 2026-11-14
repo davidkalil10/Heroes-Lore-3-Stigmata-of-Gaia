@@ -324,6 +324,14 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   - Executado `python tools/bump_version.py patch`, avançando a versão sincronizada do port de `1.0.0` para `1.0.1` em `tools/hl3rt/version.py` e `project.json`.
   - Atualizados `README.md`, `docs/` e recompilado o pacote standalone `dist/heroes_lore_3_windows_x64.zip` com `v1.0.1` para habilitar teste ponta a ponta de detecção, download, verificação SHA-256 e auto-instalação a partir de instalações `v1.0.0` (requer repositório público no GitHub para consulta não autenticada).
 
+## 2026-11-13 - Sessão 18 (Release `v1.0.2`): Correção do Auto-Updater Windows e Remoção do APK Redundante
+
+- **Relatório completo**: `research/sessions/2026-11-13-18.md`
+- **Entregas e validações**:
+  - Diagnosticada e corrigida falha silenciosa no auto-updater Windows (`tools/hl3rt/updater.py`): `CREATE_NO_WINDOW | DETACHED_PROCESS` no `Popen` fazia o `powershell.exe` encerrar imediatamente com código `0` antes de executar `update_windows.ps1`. Alterado para `CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW` com `stdin=DEVNULL`/`stdout=DEVNULL`/`stderr=DEVNULL`/`close_fds=True`, escrita em UTF-8 BOM (`utf-8-sig`), retries (`Invoke-WithRetry`, 15x300 ms) na troca/rollback de arquivos e limpeza de `staged/` após sucesso.
+  - Removido o `.apk` redundante (`61,75 MB`) do pacote Windows x64 (`tools/hl3rt/machine.py` + `tools/build_standalone_pc.py`), extraindo diretamente `assets/game.ipa` (`43.686.130` bytes) com verificação SHA-256 e evitando empacotar `tools/`/`config/*.json` em `_internal/`.
+  - Executado `python tools/bump_version.py patch` (`v1.0.1 -> v1.0.2`), ampliada a suíte em `tests/test_updater.py` (`8` testes, total `63` na suíte) e publicada release `v1.0.2` (Build 3) para download e posterior teste OTA contra uma 4ª build (`v1.0.3`).
+
 
 
 
