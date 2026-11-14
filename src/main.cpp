@@ -233,6 +233,8 @@ private:
             if (fn) fn(L"DavidBraga.HeroesLore3.Recomp.PC");
         }
 #endif
+        SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
+        SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");
 #ifdef __ANDROID__
         SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
         SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
@@ -518,6 +520,7 @@ private:
 
         rt_->present_hook = [this]() {
             if (gl_ && rt_) {
+                gl_->present_widescreen_backdrop();
                 input_.draw_injected_port_buttons(*gl_, *rt_, cfg_.language);
                 if (!modal_ || !modal_->is_open()) {
                     input_.draw_menu_cursor(*gl_, *rt_);
@@ -762,11 +765,14 @@ private:
         while (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_APP_WILLENTERBACKGROUND) {
                 app_backgrounded_ = true;
+                if (rt_) {
+                    input_.release_all_touches(*rt_);
+                    rt_->flush_open_files();
+                }
                 if (audio_) {
                     audio_->set_paused(true);
                     audio_->save_config();
                 }
-                if (rt_) rt_->flush_open_files();
                 save_prefs_if_interactive();
                 continue;
             }

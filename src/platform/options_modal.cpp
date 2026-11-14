@@ -23,6 +23,10 @@ std::string fmt_kb(size_t bytes) {
     return std::string(buf);
 }
 
+int px_s(float base, float scale, int min_v = 1) {
+    return std::max(min_v, static_cast<int>(std::lround(base * scale)));
+}
+
 struct CloudButtonSpec {
     std::string label;
     std::string action;
@@ -111,10 +115,17 @@ std::string PortOptionsModal::lang() const {
 }
 
 UiRect PortOptionsModal::compute_box(int win_w, int win_h) const {
-    int bw = std::max(460, std::min(980, static_cast<int>(win_w * 0.92)));
-    int bh = std::max(340, std::min(620, static_cast<int>(win_h * 0.90)));
-    int bx = (win_w - bw) / 2;
-    int by = (win_h - bh) / 2;
+    int safe_w = std::max(1, win_w);
+    int safe_h = std::max(1, win_h);
+    int min_bh = std::min(safe_h, 340);
+    int max_bh = std::max(min_bh, safe_h - 16);
+    int bh = std::clamp(static_cast<int>(std::lround(safe_h * 0.88)), min_bh, max_bh);
+    int min_bw = std::min(safe_w, 460);
+    int max_bw = std::max(min_bw, safe_w - 16);
+    int desired_bw = static_cast<int>(std::lround(std::min(safe_w * 0.90, bh * 1.68)));
+    int bw = std::clamp(desired_bw, min_bw, max_bw);
+    int bx = (safe_w - bw) / 2;
+    int by = (safe_h - bh) / 2;
     return {bx, by, bw, bh};
 }
 
@@ -462,15 +473,18 @@ void PortOptionsModal::draw_pill_button(RgbaCanvas& c, const UiRect& r, const st
         border = {245, 204, 82, 255};
     }
 
+    int stroke_w = selected ? px_s(2.0f, scale, 2) : px_s(1.0f, scale, 1);
     c.fill_rounded_rect(r.x, r.y, r.w, r.h, rad, bg);
-    c.stroke_rounded_rect(r.x, r.y, r.w, r.h, rad, selected ? 2 : 1, border);
+    c.stroke_rounded_rect(r.x, r.y, r.w, r.h, rad, stroke_w, border);
 
     auto& fs = UiFontSystem::instance();
-    int fs_px = std::max(12, static_cast<int>(std::round(15.0f * scale)));
-    while (fs_px > 10 && fs.measure_width(label, fs_px, true) > r.w - 14) --fs_px;
+    int min_fs = px_s(10.0f, scale, 10);
+    int fs_px = px_s(15.0f, scale, 12);
+    int inset = px_s(14.0f, scale, 10);
+    while (fs_px > min_fs && fs.measure_width(label, fs_px, true) > r.w - inset) --fs_px;
     int tw = fs.measure_width(label, fs_px, true);
     int th = fs.line_height(fs_px, true);
-    fs.draw_text_shadow(c, label, r.x + (r.w - tw) / 2, r.y + (r.h - th) / 2 - 1, fs_px, true, fg);
+    fs.draw_text_shadow(c, label, r.x + (r.w - tw) / 2, r.y + (r.h - th) / 2 - px_s(1.0f, scale), fs_px, true, fg);
 
     if (enabled) hitboxes_.push_back({r, action, idx});
 }
@@ -487,13 +501,13 @@ void PortOptionsModal::draw_options_page(RgbaCanvas& c, int w, int h, float scal
 
     fs.draw_text_shadow(c, tr("options.title", l), pad_x, top_y, f_title, true, {248, 236, 184, 255});
     fs.draw_text(c, tr_fmt("options.subtitle", {{"version", kPortVersion}}, l), pad_x,
-                 top_y + fs.line_height(f_title, true) + 4, f_sub, false, {168, 198, 238, 240});
+                 top_y + fs.line_height(f_title, true) + px_s(4.0f, scale), f_sub, false, {168, 198, 238, 240});
 
-    int list_y = top_y + static_cast<int>(std::round(58.0f * scale));
-    int footer_h = static_cast<int>(std::round(74.0f * scale));
+    int list_y = top_y + px_s(58.0f, scale);
+    int footer_h = px_s(74.0f, scale);
     int avail_h = h - list_y - footer_h;
-    int row_gap = std::max(6, static_cast<int>(std::round(7.0f * scale)));
-    int row_h = std::max(36, (avail_h - row_gap * 5) / 6);
+    int row_gap = px_s(7.0f, scale, 6);
+    int row_h = std::max(px_s(36.0f, scale, 34), (avail_h - row_gap * 5) / 6);
 
     int cur_fps = cb_.get_fps ? cb_.get_fps() : kDefaultFpsTarget;
     std::string cur_aspect = cb_.get_aspect ? cb_.get_aspect() : kDefaultAspectMode;
@@ -531,33 +545,39 @@ void PortOptionsModal::draw_options_page(RgbaCanvas& c, int w, int h, float scal
     };
 
     int row_w = w - pad_x * 2;
-    int rad = std::max(6, static_cast<int>(std::round(9.0f * scale)));
+    int rad = px_s(9.0f, scale, 6);
+    int row_stroke = px_s(1.0f, scale, 1);
+    int sel_stroke = px_s(2.0f, scale, 2);
+    int pill_rad = px_s(6.0f, scale, 4);
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         int ry = list_y + i * (row_h + row_gap);
         bool sel = (selected_ == i);
         RgbaColor rbg = sel ? RgbaColor{30, 56, 102, 240} : RgbaColor{18, 30, 58, 220};
         RgbaColor rbr = sel ? RgbaColor{245, 204, 82, 255} : RgbaColor{64, 100, 158, 175};
         c.fill_rounded_rect(pad_x, ry, row_w, row_h, rad, rbg);
-        c.stroke_rounded_rect(pad_x, ry, row_w, row_h, rad, sel ? 2 : 1, rbr);
+        c.stroke_rounded_rect(pad_x, ry, row_w, row_h, rad, sel ? sel_stroke : row_stroke, rbr);
 
-        int tx = pad_x + static_cast<int>(std::round(14.0f * scale));
-        int ty = ry + std::max(4, (row_h - fs.line_height(f_row, true) - fs.line_height(f_desc, false) - 2) / 2);
+        int tx = pad_x + px_s(14.0f, scale);
+        int text_gap = px_s(2.0f, scale);
+        int ty = ry + std::max(px_s(4.0f, scale),
+                               (row_h - fs.line_height(f_row, true) - fs.line_height(f_desc, false) - text_gap) / 2);
         fs.draw_text_shadow(c, rows[i].title, tx, ty, f_row, true,
                             sel ? RgbaColor{255, 246, 206, 255} : RgbaColor{236, 242, 255, 255});
-        fs.draw_text(c, rows[i].desc, tx, ty + fs.line_height(f_row, true) + 2, f_desc, false, {158, 186, 226, 225});
+        fs.draw_text(c, rows[i].desc, tx, ty + fs.line_height(f_row, true) + text_gap, f_desc, false,
+                     {158, 186, 226, 225});
 
         int vw = fs.measure_width(rows[i].val, f_row, true);
-        int pill_w = std::max(static_cast<int>(std::round(140.0f * scale)), vw + static_cast<int>(std::round(28.0f * scale)));
-        int pill_h = std::min(row_h - 10, static_cast<int>(std::round(30.0f * scale)));
-        int px = pad_x + row_w - pill_w - static_cast<int>(std::round(12.0f * scale));
+        int pill_w = std::max(px_s(140.0f, scale), vw + px_s(28.0f, scale));
+        int pill_h = std::min(row_h - px_s(10.0f, scale, 6), px_s(30.0f, scale));
+        int px = pad_x + row_w - pill_w - px_s(12.0f, scale);
         int py = ry + (row_h - pill_h) / 2;
         RgbaColor pbg = rows[i].accent_green ? RgbaColor{24, 92, 68, 245} : RgbaColor{26, 46, 86, 240};
         RgbaColor pfg = rows[i].accent_green ? RgbaColor{146, 248, 198, 255} : RgbaColor{245, 214, 114, 255};
-        c.fill_rounded_rect(px, py, pill_w, pill_h, 6, pbg);
-        c.stroke_rounded_rect(px, py, pill_w, pill_h, 6, 1,
+        c.fill_rounded_rect(px, py, pill_w, pill_h, pill_rad, pbg);
+        c.stroke_rounded_rect(px, py, pill_w, pill_h, pill_rad, row_stroke,
                               rows[i].accent_green ? RgbaColor{88, 220, 158, 210} : RgbaColor{98, 146, 214, 190});
-        fs.draw_text(c, rows[i].val, px + (pill_w - vw) / 2, py + (pill_h - fs.line_height(f_row, true)) / 2 - 1,
-                     f_row, true, pfg);
+        fs.draw_text(c, rows[i].val, px + (pill_w - vw) / 2,
+                     py + (pill_h - fs.line_height(f_row, true)) / 2 - px_s(1.0f, scale), f_row, true, pfg);
 
         hitboxes_.push_back({{pad_x, ry, row_w, row_h}, "opt_" + std::to_string(i), i});
     }
@@ -585,7 +605,8 @@ void PortOptionsModal::draw_cloud_page(RgbaCanvas& c, int w, int h, float scale)
     int f_body = std::max(12, static_cast<int>(std::round(14.0f * scale)));
 
     fs.draw_text_shadow(c, tr("cloud.title", l), pad_x, top_y, f_title, true, {248, 236, 184, 255});
-    fs.draw_text(c, tr("cloud.subtitle", l), pad_x, top_y + fs.line_height(f_title, true) + 4, f_sub, false, {168, 198, 238, 240});
+    fs.draw_text(c, tr("cloud.subtitle", l), pad_x, top_y + fs.line_height(f_title, true) + px_s(4.0f, scale), f_sub,
+                 false, {168, 198, 238, 240});
 
     // Status pill top right
     std::string status_txt = tr(st.authorizing ? "cloud.status.authorizing"
@@ -594,71 +615,78 @@ void PortOptionsModal::draw_cloud_page(RgbaCanvas& c, int w, int h, float scale)
                                 l);
     RgbaColor sc = st.connected ? RgbaColor{104, 228, 168, 255}
                                 : (st.authorizing || st.busy ? RgbaColor{245, 204, 82, 255} : RgbaColor{180, 198, 226, 255});
-    int sw = fs.measure_width(status_txt, f_sub, true) + 22;
-    int sh = static_cast<int>(std::round(28.0f * scale));
-    c.fill_rounded_rect(w - pad_x - sw, top_y + 2, sw, sh, 12, {20, 36, 68, 235});
-    c.stroke_rounded_rect(w - pad_x - sw, top_y + 2, sw, sh, 12, 1, sc);
-    fs.draw_text(c, status_txt, w - pad_x - sw + 11, top_y + 2 + (sh - fs.line_height(f_sub, true)) / 2 - 1,
+    int spill_pad = px_s(11.0f, scale);
+    int spill_rad = px_s(12.0f, scale, 8);
+    int stroke_1 = px_s(1.0f, scale, 1);
+    int sw = fs.measure_width(status_txt, f_sub, true) + spill_pad * 2;
+    int sh = px_s(28.0f, scale);
+    c.fill_rounded_rect(w - pad_x - sw, top_y + px_s(2.0f, scale), sw, sh, spill_rad, {20, 36, 68, 235});
+    c.stroke_rounded_rect(w - pad_x - sw, top_y + px_s(2.0f, scale), sw, sh, spill_rad, stroke_1, sc);
+    fs.draw_text(c, status_txt, w - pad_x - sw + spill_pad,
+                 top_y + px_s(2.0f, scale) + (sh - fs.line_height(f_sub, true)) / 2 - px_s(1.0f, scale),
                  f_sub, true, sc);
 
-    int card_y = top_y + static_cast<int>(std::round(62.0f * scale));
-    int card_h = std::max(140, h - card_y - static_cast<int>(std::round(138.0f * scale)));
-    int gap = static_cast<int>(std::round(16.0f * scale));
+    int card_y = top_y + px_s(62.0f, scale);
+    int card_h = std::max(px_s(140.0f, scale), h - card_y - px_s(138.0f, scale));
+    int gap = px_s(16.0f, scale);
     int card_w = (w - pad_x * 2 - gap) / 2;
+    int card_rad = px_s(10.0f, scale, 8);
+    int card_pad_x = px_s(14.0f, scale);
+    int card_pad_y = px_s(12.0f, scale);
 
     // Left Card: Remote Backup or OAuth Code
-    c.fill_rounded_rect(pad_x, card_y, card_w, card_h, 10, {16, 28, 54, 235});
-    c.stroke_rounded_rect(pad_x, card_y, card_w, card_h, 10, 1, {74, 118, 186, 190});
-    int cx = pad_x + 14;
-    int cy = card_y + 12;
+    c.fill_rounded_rect(pad_x, card_y, card_w, card_h, card_rad, {16, 28, 54, 235});
+    c.stroke_rounded_rect(pad_x, card_y, card_w, card_h, card_rad, stroke_1, {74, 118, 186, 190});
+    int cx = pad_x + card_pad_x;
+    int cy = card_y + card_pad_y;
     fs.draw_text_shadow(c, tr("cloud.card.remote.title", l), cx, cy, f_card, true, {138, 198, 255, 255});
-    cy += fs.line_height(f_card, true) + 10;
+    cy += fs.line_height(f_card, true) + px_s(10.0f, scale);
 
     if (st.authorizing && !st.user_code.empty()) {
         fs.draw_text(c, tr("cloud.auth.step", l), cx, cy, f_sub, false, {194, 214, 242, 240});
-        cy += fs.line_height(f_sub, false) + 2;
+        cy += fs.line_height(f_sub, false) + px_s(2.0f, scale);
         fs.draw_text(c, st.verification_url, cx, cy, f_body, true, {245, 204, 82, 255});
-        cy += fs.line_height(f_body, true) + 8;
+        cy += fs.line_height(f_body, true) + px_s(8.0f, scale);
         fs.draw_text(c, tr("cloud.auth.code_label", l), cx, cy, f_sub, false, {194, 214, 242, 240});
-        cy += fs.line_height(f_sub, false) + 4;
-        int f_code = std::max(18, static_cast<int>(std::round(24.0f * scale)));
+        cy += fs.line_height(f_sub, false) + px_s(4.0f, scale);
+        int f_code = px_s(24.0f, scale, 18);
         fs.draw_text_shadow(c, st.user_code, cx, cy, f_code, true, {128, 245, 192, 255});
     } else if (!st.connected) {
-        for (const auto& line : fs.wrap_text(tr("cloud.card.remote.unknown", l), f_body, false, card_w - 28)) {
+        for (const auto& line : fs.wrap_text(tr("cloud.card.remote.unknown", l), f_body, false, card_w - card_pad_x * 2)) {
             fs.draw_text(c, line, cx, cy, f_body, false, {182, 198, 224, 225});
-            cy += fs.line_height(f_body, false) + 3;
+            cy += fs.line_height(f_body, false) + px_s(3.0f, scale);
         }
     } else if (!st.backup_exists) {
         fs.draw_text(c, tr("cloud.card.remote.none", l), cx, cy, f_body, false, {182, 198, 224, 225});
     } else {
         fs.draw_text(c, tr("cloud.field.date", l) + ": " + (st.backup_date_local.empty() ? st.backup_date : st.backup_date_local),
                      cx, cy, f_body, false, {240, 246, 255, 255});
-        cy += fs.line_height(f_body, false) + 6;
+        cy += fs.line_height(f_body, false) + px_s(6.0f, scale);
         if (!st.backup_platform.empty()) {
             fs.draw_text(c, tr("cloud.field.platform", l) + ": " + st.backup_platform, cx, cy, f_body, false, {184, 214, 248, 255});
-            cy += fs.line_height(f_body, false) + 6;
+            cy += fs.line_height(f_body, false) + px_s(6.0f, scale);
         }
-        for (const auto& line : fs.wrap_text(tr("cloud.field.summary", l) + ": " + st.backup_summary, f_sub, false, card_w - 28)) {
+        for (const auto& line : fs.wrap_text(tr("cloud.field.summary", l) + ": " + st.backup_summary, f_sub, false, card_w - card_pad_x * 2)) {
             fs.draw_text(c, line, cx, cy, f_sub, false, {182, 206, 236, 235});
-            cy += fs.line_height(f_sub, false) + 2;
+            cy += fs.line_height(f_sub, false) + px_s(2.0f, scale);
         }
     }
 
     // Right Card: Local Save
     int rx = pad_x + card_w + gap;
-    c.fill_rounded_rect(rx, card_y, card_w, card_h, 10, {16, 28, 54, 235});
-    c.stroke_rounded_rect(rx, card_y, card_w, card_h, 10, 1, {74, 118, 186, 190});
-    int rtx = rx + 14;
-    int rty = card_y + 12;
+    c.fill_rounded_rect(rx, card_y, card_w, card_h, card_rad, {16, 28, 54, 235});
+    c.stroke_rounded_rect(rx, card_y, card_w, card_h, card_rad, stroke_1, {74, 118, 186, 190});
+    int rtx = rx + card_pad_x;
+    int rty = card_y + card_pad_y;
     fs.draw_text_shadow(c, tr("cloud.card.local.title", l), rtx, rty, f_card, true, {138, 198, 255, 255});
-    rty += fs.line_height(f_card, true) + 10;
+    rty += fs.line_height(f_card, true) + px_s(10.0f, scale);
 
     if (!loc.exists) {
         fs.draw_text(c, tr("cloud.card.local.none", l), rtx, rty, f_body, false, {182, 198, 224, 225});
     } else {
         fs.draw_text(c, tr("cloud.field.date", l) + ": " + (loc.updated_local.empty() ? tr("common.unknown", l) : loc.updated_local),
                      rtx, rty, f_body, false, {240, 246, 255, 255});
-        rty += fs.line_height(f_body, false) + 6;
+        rty += fs.line_height(f_body, false) + px_s(6.0f, scale);
         std::string sum = (loc.slot_count > 0)
                               ? tr_fmt("cloud.summary.slots",
                                        {{"slots", std::to_string(loc.slot_count)},
@@ -669,9 +697,9 @@ void PortOptionsModal::draw_cloud_page(RgbaCanvas& c, int w, int h, float scale)
                                        {{"files", std::to_string(loc.file_count)},
                                         {"kb", fmt_kb(loc.total_bytes)}},
                                        l);
-        for (const auto& line : fs.wrap_text(sum, f_body, false, card_w - 28)) {
+        for (const auto& line : fs.wrap_text(sum, f_body, false, card_w - card_pad_x * 2)) {
             fs.draw_text(c, line, rtx, rty, f_body, false, {182, 224, 206, 255});
-            rty += fs.line_height(f_body, false) + 3;
+            rty += fs.line_height(f_body, false) + px_s(3.0f, scale);
         }
     }
 
@@ -714,65 +742,72 @@ void PortOptionsModal::draw_update_page(RgbaCanvas& c, int w, int h, float scale
     fs.draw_text_shadow(c, tr("update.title", l), pad_x, top_y, f_title, true, {248, 236, 184, 255});
     fs.draw_text(c, tr_fmt("update.subtitle",
                            {{"version", ust.local_version}, {"original", ust.original_version}, {"repo", ust.repo}}, l),
-                 pad_x, top_y + fs.line_height(f_title, true) + 4, f_sub, false, {168, 198, 238, 240});
+                 pad_x, top_y + fs.line_height(f_title, true) + px_s(4.0f, scale), f_sub, false, {168, 198, 238, 240});
 
-    int card_y = top_y + static_cast<int>(std::round(62.0f * scale));
-    int card_h = std::max(140, h - card_y - static_cast<int>(std::round(138.0f * scale)));
-    int gap = static_cast<int>(std::round(16.0f * scale));
+    int card_y = top_y + px_s(62.0f, scale);
+    int card_h = std::max(px_s(140.0f, scale), h - card_y - px_s(138.0f, scale));
+    int gap = px_s(16.0f, scale);
     int left_w = static_cast<int>(std::round((w - pad_x * 2 - gap) * 0.48f));
     int right_w = w - pad_x * 2 - gap - left_w;
+    int card_rad = px_s(10.0f, scale, 8);
+    int stroke_1 = px_s(1.0f, scale, 1);
+    int card_pad_x = px_s(14.0f, scale);
+    int card_pad_y = px_s(12.0f, scale);
 
     // Left Card: Version status & download progress
-    c.fill_rounded_rect(pad_x, card_y, left_w, card_h, 10, {16, 28, 54, 235});
-    c.stroke_rounded_rect(pad_x, card_y, left_w, card_h, 10, 1, {74, 118, 186, 190});
-    int lx = pad_x + 14;
-    int ly = card_y + 12;
+    c.fill_rounded_rect(pad_x, card_y, left_w, card_h, card_rad, {16, 28, 54, 235});
+    c.stroke_rounded_rect(pad_x, card_y, left_w, card_h, card_rad, stroke_1, {74, 118, 186, 190});
+    int lx = pad_x + card_pad_x;
+    int ly = card_y + card_pad_y;
     fs.draw_text_shadow(c, tr("update.card.version_title", l), lx, ly, f_card, true, {138, 198, 255, 255});
-    ly += fs.line_height(f_card, true) + 10;
+    ly += fs.line_height(f_card, true) + px_s(10.0f, scale);
 
     for (const auto& line : fs.wrap_text(tr_fmt("update.field.installed", {{"version", ust.local_version}}, l),
-                                         f_body, false, left_w - 28)) {
+                                         f_body, false, left_w - card_pad_x * 2)) {
         fs.draw_text(c, line, lx, ly, f_body, false, {240, 246, 255, 255});
-        ly += fs.line_height(f_body, false) + 4;
+        ly += fs.line_height(f_body, false) + px_s(4.0f, scale);
     }
     if (ust.has_release) {
         fs.draw_text(c, tr_fmt("update.field.remote", {{"tag", ust.release.tag_name}}, l),
                      lx, ly, f_body, true, {146, 248, 198, 255});
-        ly += fs.line_height(f_body, true) + 4;
+        ly += fs.line_height(f_body, true) + px_s(4.0f, scale);
         fs.draw_text(c, tr_fmt("update.field.asset", {{"name", ust.release.asset_name}}, l),
                      lx, ly, f_sub, false, {186, 212, 246, 240});
-        ly += fs.line_height(f_sub, false) + 8;
+        ly += fs.line_height(f_sub, false) + px_s(8.0f, scale);
     } else {
         fs.draw_text(c, tr("update.field.none", l), lx, ly, f_sub, false, {182, 198, 224, 225});
-        ly += fs.line_height(f_sub, false) + 8;
+        ly += fs.line_height(f_sub, false) + px_s(8.0f, scale);
     }
 
     if (ust.phase == UpdatePhase::Downloading) {
-        int bar_w = left_w - 28;
-        int bar_h = static_cast<int>(std::round(14.0f * scale));
-        c.fill_rounded_rect(lx, ly + 4, bar_w, bar_h, 6, {24, 40, 74, 255});
+        int bar_w = left_w - card_pad_x * 2;
+        int bar_h = px_s(14.0f, scale);
+        int bar_rad = px_s(6.0f, scale, 4);
+        int bar_y = ly + px_s(4.0f, scale);
+        c.fill_rounded_rect(lx, bar_y, bar_w, bar_h, bar_rad, {24, 40, 74, 255});
         float frac = (ust.total_bytes > 0)
                          ? std::clamp(float(ust.downloaded_bytes) / float(ust.total_bytes), 0.0f, 1.0f)
                          : 0.35f;
-        int fill_w = std::max(8, static_cast<int>(std::round(bar_w * frac)));
-        c.fill_rounded_rect(lx, ly + 4, fill_w, bar_h, 6, {92, 226, 168, 255});
+        int fill_w = std::max(px_s(8.0f, scale), static_cast<int>(std::round(bar_w * frac)));
+        c.fill_rounded_rect(lx, bar_y, fill_w, bar_h, bar_rad, {92, 226, 168, 255});
     }
 
     // Right Card: Release notes (clipped cleanly inside card!)
     int rx = pad_x + left_w + gap;
-    c.fill_rounded_rect(rx, card_y, right_w, card_h, 10, {16, 28, 54, 235});
-    c.stroke_rounded_rect(rx, card_y, right_w, card_h, 10, 1, {74, 118, 186, 190});
-    int rtx = rx + 14;
-    int rty = card_y + 12;
+    c.fill_rounded_rect(rx, card_y, right_w, card_h, card_rad, {16, 28, 54, 235});
+    c.stroke_rounded_rect(rx, card_y, right_w, card_h, card_rad, stroke_1, {74, 118, 186, 190});
+    int rtx = rx + card_pad_x;
+    int rty = card_y + card_pad_y;
     fs.draw_text_shadow(c, tr("update.card.notes_title", l), rtx, rty, f_card, true, {138, 198, 255, 255});
-    rty += fs.line_height(f_card, true) + 8;
+    rty += fs.line_height(f_card, true) + px_s(8.0f, scale);
 
     std::string notes = (ust.has_release && !ust.release.body.empty()) ? ust.release.body : tr("update.notes.empty", l);
-    c.set_clip({rx + 8, rty, right_w - 16, card_y + card_h - rty - 10});
-    for (const auto& line : fs.wrap_text(notes, f_sub, false, right_w - 28)) {
-        if (rty + fs.line_height(f_sub, false) > card_y + card_h - 8) break;
+    int clip_pad = px_s(8.0f, scale);
+    c.set_clip({rx + clip_pad, rty, right_w - clip_pad * 2, card_y + card_h - rty - px_s(10.0f, scale)});
+    for (const auto& line : fs.wrap_text(notes, f_sub, false, right_w - card_pad_x * 2)) {
+        if (rty + fs.line_height(f_sub, false) > card_y + card_h - clip_pad) break;
         fs.draw_text(c, line, rtx, rty, f_sub, false, {212, 226, 246, 240});
-        rty += fs.line_height(f_sub, false) + 2;
+        rty += fs.line_height(f_sub, false) + px_s(2.0f, scale);
     }
     c.clear_clip();
 
@@ -866,29 +901,35 @@ void PortOptionsModal::draw_confirm_page(RgbaCanvas& c, int w, int h, float scal
     int f_body = std::max(14, static_cast<int>(std::round(16.0f * scale)));
     int y = h / 4;
     fs.draw_text_shadow(c, title, pad_x, y, f_title, true, {248, 236, 184, 255});
-    y += fs.line_height(f_title, true) + 18;
+    y += fs.line_height(f_title, true) + px_s(18.0f, scale);
     for (const auto& line : fs.wrap_text(body, f_body, false, w - pad_x * 2)) {
         fs.draw_text(c, line, pad_x, y, f_body, false, {222, 234, 252, 255});
-        y += fs.line_height(f_body, false) + 5;
+        y += fs.line_height(f_body, false) + px_s(5.0f, scale);
     }
 
-    int bw = static_cast<int>(std::round(180.0f * scale));
-    int bh = static_cast<int>(std::round(42.0f * scale));
-    int by = h - static_cast<int>(std::round(82.0f * scale));
-    draw_pill_button(c, {w / 2 - bw - 14, by, bw, bh}, act_lbl, confirm_focus_ == 0, true, scale,
+    int bw = px_s(180.0f, scale);
+    int bh = px_s(42.0f, scale);
+    int by = h - px_s(82.0f, scale);
+    int b_half_gap = px_s(14.0f, scale);
+    draw_pill_button(c, {w / 2 - bw - b_half_gap, by, bw, bh}, act_lbl, confirm_focus_ == 0, true, scale,
                      "confirm_yes", 0, !danger, danger);
-    draw_pill_button(c, {w / 2 + 14, by, bw, bh}, tr("common.cancel", l), confirm_focus_ == 1, true, scale,
+    draw_pill_button(c, {w / 2 + b_half_gap, by, bw, bh}, tr("common.cancel", l), confirm_focus_ == 1, true, scale,
                      "confirm_no", 1, false, false);
 }
 
 void PortOptionsModal::rebuild_canvas(GLBridge& gl, int box_w, int box_h) {
     hitboxes_.clear();
-    float scale = std::clamp(float(box_h) / 560.0f, 0.72f, 1.35f);
+    float scale = std::clamp(std::min(static_cast<float>(box_w) / 860.0f, static_cast<float>(box_h) / 550.0f),
+                             0.72f, 2.8f);
     RgbaCanvas c(box_w, box_h, {0, 0, 0, 0});
-    int rad = std::max(10, static_cast<int>(std::round(14.0f * scale)));
+    int rad = px_s(14.0f, scale, 10);
+    int inner_off = px_s(2.0f, scale, 2);
+    int inner_stroke = px_s(1.0f, scale, 1);
+    int outer_stroke = px_s(2.0f, scale, 2);
     c.fill_rounded_gradient_v(0, 0, box_w, box_h, rad, {18, 32, 64, 246}, {10, 18, 38, 248});
-    c.stroke_rounded_rect(2, 2, box_w - 4, box_h - 4, std::max(8, rad - 2), 1, {126, 178, 245, 115});
-    c.stroke_rounded_rect(0, 0, box_w, box_h, rad, 2, {245, 204, 82, 235});
+    c.stroke_rounded_rect(inner_off, inner_off, box_w - inner_off * 2, box_h - inner_off * 2,
+                          std::max(8, rad - inner_off), inner_stroke, {126, 178, 245, 115});
+    c.stroke_rounded_rect(0, 0, box_w, box_h, rad, outer_stroke, {245, 204, 82, 235});
 
     if (page_ == ModalPage::Options) draw_options_page(c, box_w, box_h, scale);
     else if (page_ == ModalPage::Cloud) draw_cloud_page(c, box_w, box_h, scale);

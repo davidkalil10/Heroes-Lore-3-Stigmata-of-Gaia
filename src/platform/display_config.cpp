@@ -84,6 +84,26 @@ RectI fit_aspect_rect(int win_w, int win_h, double target_aspect) {
     return {vx, vy, vw, vh};
 }
 
+RectI compute_target_aspect_rect(const std::string& aspect_mode, int win_w, int win_h) {
+    int w = std::max(1, win_w);
+    int h = std::max(1, win_h);
+    std::string mode = normalize_aspect_mode(aspect_mode);
+    double win_aspect = static_cast<double>(w) / static_cast<double>(h);
+    if (mode == "original") {
+        return fit_aspect_rect(w, h, aspect_preset_ratio("original"));
+    }
+    if (mode == "auto") {
+        double max_aspect = static_cast<double>(kMaxPatchDim) / static_cast<double>(kBaseH);
+        double min_aspect = static_cast<double>(kBaseW) / static_cast<double>(kMaxPatchDim);
+        double clamped = std::max(min_aspect, std::min(max_aspect, win_aspect));
+        if (std::fabs(win_aspect - clamped) < 1e-4) {
+            return {0, 0, w, h};
+        }
+        return fit_aspect_rect(w, h, clamped);
+    }
+    return fit_aspect_rect(w, h, aspect_preset_ratio(mode));
+}
+
 ViewportLayout compute_viewport_layout(const std::string& aspect_mode, int win_w, int win_h, bool world_active) {
     int w = std::max(1, win_w);
     int h = std::max(1, win_h);

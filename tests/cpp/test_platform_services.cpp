@@ -1,8 +1,11 @@
 #include "core/bundle.h"
 #include "core/common.h"
 #include "platform/cloud_save.h"
+#include "platform/display_config.h"
 #include "platform/i18n.h"
+#include "platform/input_controller.h"
 #include "platform/net_http.h"
+#include "platform/options_modal.h"
 #include "platform/png_codec.h"
 #include "platform/ui_renderer.h"
 #include "platform/updater.h"
@@ -184,6 +187,44 @@ void test_png_and_ui(const std::filesystem::path& root, const std::filesystem::p
     check(btn.width() == rw && btn.height() == rh && !btn.empty(), "build_injected_button_canvas dims");
 }
 
+void test_android_port_regressions() {
+    // 1. Sensor / accelerometer / zero-button virtual joysticks must be filtered out cleanly.
+    check(hl3::InputController::should_ignore_joystick_device("Android Accelerometer", 0, 0),
+          "ignore Android Accelerometer 0-btn");
+    check(hl3::InputController::should_ignore_joystick_device("Goldfish 3-axis Accelerometer", 2, 0),
+          "ignore Accelerometer by name");
+    check(hl3::InputController::should_ignore_joystick_device("Bosch Gyroscope Sensor", 0, 0),
+          "ignore Gyroscope sensor");
+    check(hl3::InputController::should_ignore_joystick_device("uinput-fpc", 1, 0),
+          "ignore fingerprint virtual device");
+    check(hl3::InputController::should_ignore_joystick_device("Unnamed Axis", 0, 0),
+          "ignore 0-button 0-hat device");
+    check(!hl3::InputController::should_ignore_joystick_device("Xbox Wireless Controller", 15, 1),
+          "accept Xbox Wireless Controller");
+    check(!hl3::InputController::should_ignore_joystick_device("Generic USB Joystick", 10, 0),
+          "accept USB joystick with buttons");
+
+    // 2. Options modal fills high-DPI mobile screens proportionally instead of a tiny 980x620 box.
+    hl3::PortOptionsModal modal(nullptr, nullptr, {});
+    hl3::UiRect phone_qhd = modal.compute_box(3120, 1440);
+    check(phone_qhd.h >= 1200 && phone_qhd.w >= 1900, "QHD+ phone modal scales cleanly");
+    check(phone_qhd.x == (3120 - phone_qhd.w) / 2 && phone_qhd.y == (1440 - phone_qhd.h) / 2,
+          "QHD+ phone modal centered");
+    hl3::UiRect phone_fhd = modal.compute_box(2400, 1080);
+    check(phone_fhd.h >= 900 && phone_fhd.w >= 1450, "20:9 FHD+ phone modal scales cleanly");
+    hl3::UiRect desktop = modal.compute_box(960, 640);
+    check(desktop.w >= 800 && desktop.w <= 944 && desktop.h >= 540 && desktop.h <= 624,
+          "Desktop 960x640 modal stays well-proportioned");
+
+    // 3. Target aspect rect fills entire viewport for Auto/16:9 (used by pre-game backdrop + gameplay).
+    hl3::RectI t_auto = hl3::compute_target_aspect_rect("auto", 3120, 1440);
+    check(t_auto == (hl3::RectI{0, 0, 3120, 1440}), "auto target rect covers full 3120x1440");
+    hl3::RectI t_169 = hl3::compute_target_aspect_rect("16:9", 3120, 1440);
+    check(t_169.h == 1440 && t_169.w == 2560 && t_169.x == 280, "16:9 target rect on 3120x1440");
+    hl3::RectI t_orig = hl3::compute_target_aspect_rect("original", 3120, 1440);
+    check(t_orig.h == 1440 && t_orig.w == 2160 && t_orig.x == 480, "original target rect on 3120x1440");
+}
+
 }  // namespace
 
 int main() {
@@ -198,6 +239,7 @@ int main() {
     test_updater(tmp_root);
     test_cloud_save(tmp_root);
     test_png_and_ui(root, tmp_root);
+    test_android_port_regressions();
 
     std::filesystem::remove_all(tmp_root, ec);
 

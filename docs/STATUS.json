@@ -5,7 +5,7 @@
   "overall_phase": "multiplatform_ci_green",
   "current_step": "S12",
   "next_recommended_step": "S13",
-  "summary": "S12+S13 builds 4/4 verdes no GitHub Actions Run 43626533694 (commit 8757fab, v1.0.3): Windows x64, Linux x86_64 AppImage, Android ARMv8/Universal APKs e Nintendo Switch .nro (0100F3A300030000) compilados com sucesso e publicados individualmente sem .zip extra (upload-artifact@v7 archive:false). Crash de inicializacao Android (UnsatisfiedLinkError HIDDeviceRegisterCallback) corrigido com SDL_HIDAPI=ON e validado ao vivo no emulador Pixel_6_Pro_API_35 (boot, tela de titulo e toque ativos). Validacao local: 68/68 Python unittest, CTest 3/3, verify_android_package e verify_workspace aprovados.",
+  "summary": "S12+S13 com 4/4 alvos CI configurados (Windows x64, Linux AppImage, Android arm64/universal APKs, Switch .nro) e correções pós-teste em aparelho Android aplicadas e validadas ao vivo no emulador Pixel_6_Pro_API_35 (3120x1440 edge-to-edge sem notch, filtro de acelerômetro contra auto-navegação, PortOptionsModal/OSD Hi-DPI até 2.8x, e backdrop widescreen no pré-jogo + gameplay nativo em 3120x1440). Pronto para novo push/CI e testes em hardware físico.",
   "steps": [
     {
       "id": "S00",
@@ -290,9 +290,10 @@
         "research/sessions/2026-11-14-01.md",
         "research/sessions/2026-11-14-02.md",
         "research/sessions/2026-11-14-03.md",
-        "research/sessions/2026-11-14-04.md"
+        "research/sessions/2026-11-14-04.md",
+        "research/sessions/2026-11-14-05.md"
       ],
-      "notes": "Builds CI 4/4 verdes no Actions Run 43626533694 (8757fab) com artefatos individuais sem zip extra (upload-artifact@v7 archive:false): Windows x64 (HeroesLore3.exe 6.752.256 B + ZIP 45.497.323 B), Linux AppImage (53.352.952 B), Android arm64 APK (50.497.979 B CI / 50.497.707 B local SHA-256 a7f4075f...) e universal APK (60.178.568 B CI / 60.174.184 B local SHA-256 85c4c294...). Crash Android (HIDDeviceRegisterCallback) corrigido via SDL_HIDAPI=ON e validado ao vivo no emulador Pixel_6_Pro_API_35. CTest 3/3 e unittest 68/68 aprovados."
+      "notes": "Builds CI 4/4 verdes anteriormente no Actions Run 43626533694 (8757fab, upload-artifact@v7 archive:false). Sessao 24 corrigiu as 3 regressoes de Android apontadas pelo usuario e validou ao vivo no emulador Pixel_6_Pro_API_35 (3120x1440 edge-to-edge sem notch): (1) SDL_HINT_ACCELEROMETER_AS_JOYSTICK/SDL_HINT_TV_REMOTE_AS_JOYSTICK=0 + filtro should_ignore_joystick_device + release_all_touches eliminando auto-navegacao em loop; (2) PortOptionsModal::compute_box proporcional (~88% altura) e escala ate 2.8x no modal e OSD; (3) LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES em HeroesLore3Activity.java + GLBridge::present_widescreen_backdrop() em 16:9/Auto no pre-jogo e gameplay nativo em 3120x1440. CTest 3/3 e verify_android_package PASS para arm64 e universal."
     },
     {
       "id": "S13",

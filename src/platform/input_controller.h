@@ -103,10 +103,12 @@ public:
     void reset_gl(GLBridge& gl);
 
     // Joystick / GameController management
+    static bool should_ignore_joystick_device(const char* name, int num_buttons, int num_hats);
     void init_controllers();
     void shutdown_controllers();
     void handle_controller_added(int device_index);
     void handle_controller_removed(SDL_JoystickID instance_id);
+    void release_all_touches(Runtime& rt);
 
     // State queries
     EngineState get_engine_state(Runtime& rt) const;

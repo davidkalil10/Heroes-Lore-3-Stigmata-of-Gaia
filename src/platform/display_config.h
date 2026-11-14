@@ -55,6 +55,7 @@ int normalize_fps(int fps);
 std::string normalize_language(const std::string& lang);
 int ceil_mult4(double val, int minimum, int maximum = kMaxPatchDim);
 RectI fit_aspect_rect(int win_w, int win_h, double target_aspect);
+RectI compute_target_aspect_rect(const std::string& aspect_mode, int win_w, int win_h);
 ViewportLayout compute_viewport_layout(const std::string& aspect_mode, int win_w, int win_h, bool world_active = true);
 
 std::filesystem::path default_display_config_path();

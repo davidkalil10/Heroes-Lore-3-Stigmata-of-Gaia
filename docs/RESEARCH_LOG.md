@@ -402,6 +402,22 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
      - **GitHub Actions Run `43626533694`** (`8757fab`): **4/4 jobs aprovados** (`Windows x64`, `Linux x86_64 AppImage`, `Android APK`, `Nintendo Switch .nro`), com os 6 artefatos enviados diretamente sem `.zip` extra.
      - **Validação local**: `ctest --test-dir build_cpp --output-on-failure` (`3/3`), `verify_android_package.py` nos 2 APKs reconstruídos (`arm64-v8a` e `arm64-v8a,armeabi-v7a,x86_64`), e `unittest discover` (`68/68` em `36,115 s`).
 
+---
+
+## 2026-11-14 - Sessão 24 (`S12`): Correção de Loop por Acelerômetro no Android, Escala Hi-DPI do Modal e Edge-to-Edge Widescreen (`ADR-026`)
+
+- **Relatório completo**: `research/sessions/2026-11-14-05.md`
+- **Descobertas e correções verificáveis**:
+  1. **Sensores Android como Joystick & Toques Presos (`src/main.cpp`, `src/platform/input_controller.*`)**:
+     - Desativados hints `SDL_HINT_ACCELEROMETER_AS_JOYSTICK` / `SDL_HINT_TV_REMOTE_AS_JOYSTICK`, filtrado joystick sem botões/hats ou de sensor via `InputController::should_ignore_joystick_device`, e adicionado `release_all_touches` ao perder foco ou entrar em background.
+  2. **Modal Hi-DPI (`src/platform/options_modal.*`, `src/platform/input_controller.cpp`)**:
+     - `PortOptionsModal::compute_box` adaptado proporcionalmente à tela segura e escala máxima elevada para `2.8f` no modal e no OSD (`draw_osd`).
+  3. **Cutout Edge-to-Edge & Widescreen Pré-Jogo (`HeroesLore3Activity.java`, `src/platform/display_config.*`, `src/hle/gl_bridge.*`)**:
+     - Ativado `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES` (`3120x1440` integral confirmado via `SDL Surface`), e implementado `GLBridge::present_widescreen_backdrop()` com backdrop opaco nas bordas quando `!world_active_` em `16:9` / `Auto`, sem esticar menus ou HUD.
+  4. **Validações**:
+     - `ctest --test-dir build_cpp --output-on-failure` (`3/3`), `verify_android_package.py` nos APKs locais (`arm64` e `universal`) e verificação visual completa ao vivo no emulador `Pixel_6_Pro_API_35` (`3120x1440` no título, `PortOptionsModal`, alternância `Auto`/`16:9`/`Original`, idioma `PT-BR` e cutscene/gameplay).
+
+
 
 
 

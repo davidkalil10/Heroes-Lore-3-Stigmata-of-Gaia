@@ -114,6 +114,7 @@ public:
     WidescreenController* widescreen() { return widescreen_.get(); }
 
     void begin_frame();
+    void present_widescreen_backdrop();
 
     // Guest GLES 1.1 bridge
     std::vector<u32> gen_textures(int n);

@@ -65,7 +65,7 @@ int main() {
         "HL3 Headless Test",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        960,
+        1138,
         640,
         SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
     if (!win) {
@@ -90,7 +90,7 @@ int main() {
             std::fprintf(stderr, "Runtime init failed: %s\n", err.c_str());
             exit_code = 4;
         } else {
-            hl3::GLBridge gl(&rt.machine(), 960, 640, "auto");
+            hl3::GLBridge gl(&rt.machine(), 1138, 640, "auto");
             if (!gl.init_gl()) {
                 using PfnGlGetStr = const unsigned char*(APIENTRY*)(unsigned int);
                 auto get_str = reinterpret_cast<PfnGlGetStr>(SDL_GL_GetProcAddress("glGetString"));
@@ -110,6 +110,7 @@ int main() {
                 int presents = 0;
                 rt.present_hook = [&]() {
                     ++presents;
+                    gl.present_widescreen_backdrop();
                     SDL_GL_SwapWindow(win);
                 };
 
@@ -130,23 +131,40 @@ int main() {
 
                     // Render one more frame clean into backbuffer before reading pixels (SwapWindow swaps front/back).
                     gl.begin_frame();
-                    rt.present_hook = [&]() { ++presents; };
+                    rt.present_hook = [&]() {
+                        ++presents;
+                        gl.present_widescreen_backdrop();
+                    };
                     rt.send(rt.delegate_obj(), "onTimer:", {0u});
 
                     int rw = 0, rh = 0;
                     hl3::Bytes rgba;
                     gl.read_framebuffer_rgba(rw, rh, rgba);
                     int non_black = 0;
-                    for (size_t i = 0; i + 3 < rgba.size(); i += 4) {
-                        if (rgba[i] > 8 || rgba[i + 1] > 8 || rgba[i + 2] > 8) ++non_black;
+                    int left_wing_non_black = 0;
+                    int right_wing_non_black = 0;
+                    for (int y = 0; y < rh; ++y) {
+                        for (int x = 0; x < rw; ++x) {
+                            size_t i = (static_cast<size_t>(y) * static_cast<size_t>(rw) + static_cast<size_t>(x)) * 4u;
+                            if (rgba[i] > 8 || rgba[i + 1] > 8 || rgba[i + 2] > 8) {
+                                ++non_black;
+                                if (x < gl.viewport_rect().x) ++left_wing_non_black;
+                                if (x >= gl.viewport_rect().x + gl.viewport_rect().w) ++right_wing_non_black;
+                            }
+                        }
                     }
-                    std::printf("Headless 60-frame complete: presents=%d fb=%dx%d non_black_pixels=%d touch=%s unimpl=%zu\n",
-                                presents, rw, rh, non_black,
-                                hl3::hex32(rt.touch_responder).c_str(),
-                                rt.machine().unimplemented_counts().size());
-                    if (presents < 50 || non_black < 1000) {
-                        std::fprintf(stderr, "Expected active rendered frames, got presents=%d non_black=%d\n",
-                                     presents, non_black);
+                    std::printf(
+                        "Headless 60-frame complete: presents=%d fb=%dx%d non_black_pixels=%d "
+                        "wings=(%d,%d) touch=%s unimpl=%zu\n",
+                        presents, rw, rh, non_black, left_wing_non_black, right_wing_non_black,
+                        hl3::hex32(rt.touch_responder).c_str(),
+                        rt.machine().unimplemented_counts().size());
+                    if (presents < 50 || non_black < 1000 || left_wing_non_black < 500 ||
+                        right_wing_non_black < 500) {
+                        std::fprintf(stderr,
+                                     "Expected active rendered frames and widescreen wings, got presents=%d "
+                                     "non_black=%d wings=(%d,%d)\n",
+                                     presents, non_black, left_wing_non_black, right_wing_non_black);
                         exit_code = 7;
                     }
                 }

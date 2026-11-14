@@ -528,6 +528,25 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
   - Execução [`43626533694`](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43626533694) aprovada nos 4 builds (`Windows`, `Linux`, `Android`, `Switch`) com os 6 arquivos publicados diretamente sem `.zip` extra.
   - APK universal validado ao vivo no emulador `Pixel_6_Pro_API_35` (`emulator-5554`), abrindo na tela de título e mantendo-se ativo após entrada touch.
 
+---
+
+## ADR-026: Filtro de Sensores-Joystick Android, Escala Hi-DPI de Modal e Cutout Edge-to-Edge + Backdrop Widescreen (`S12`)
+
+- **Data**: 2026-11-14
+- **Status**: Aceito
+- **Contexto**:
+  - Testes em dispositivo físico Android e reprodução no emulador `Pixel_6_Pro_API_35` (`3120x1440`) revelaram 3 problemas de usabilidade:
+    1. O SDL2 expõe o acelerômetro/sensores do aparelho como joysticks, gerando navegação automática contínua em loop.
+    2. O modal `PortOptionsModal` tinha limites fixos (`980x620`, `scale <= 1.35f`), tornando janela e fontes minúsculas em resoluções móveis Hi-DPI.
+    3. A atividade Android era recortada pelo notch (`2975x1440`), e telas pré-jogo (`world_active == false`) exibiam faixas pretas sem reação visual ao trocar entre `Original (3:2)`, `16:9` e `Auto`.
+- **Decisão**:
+  1. Desativar `SDL_HINT_ACCELEROMETER_AS_JOYSTICK` / `SDL_HINT_TV_REMOTE_AS_JOYSTICK` antes de `SDL_Init`, filtrar dispositivos sem botões/hats ou de sensores em `InputController::should_ignore_joystick_device`, e liberar toques presos via `InputController::release_all_touches` em background/perda de foco.
+  2. Tornar `PortOptionsModal::compute_box` proporcional (`~88%` da altura segura) e elevar o teto de escala para `2.8f` no modal e no OSD (`draw_osd`).
+  3. Ativar `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES` e controle imersivo em [HeroesLore3Activity.java](file:///c:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/android/app/src/main/java/com/davidbraga/heroeslore3/HeroesLore3Activity.java), e adicionar `hl3::compute_target_aspect_rect` + `GLBridge::present_widescreen_backdrop()` para preencher com efeito ambientado opaco as bordas de telas pré-jogo nos modos `16:9` e `Auto`, preservando a HUD central sem esticar.
+- **Consequências**:
+  - Validado ao vivo no emulador `emulator-5554` em `3120x1440` edge-to-edge (estabilidade com acelerômetro ativo, modal legível em alta resolução, alternância visível de proporção/idioma em tempo real e gameplay nativo em `3120x1440`).
+
+
 
 
 

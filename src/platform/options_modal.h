@@ -43,6 +43,7 @@ public:
 
     bool is_open() const { return is_open_; }
     ModalPage page() const { return page_; }
+    UiRect compute_box(int win_w, int win_h) const;
 
     void open(ModalPage start_page = ModalPage::Options);
     void close();
@@ -68,7 +69,6 @@ private:
 
     void mark_dirty();
     std::string lang() const;
-    UiRect compute_box(int win_w, int win_h) const;
 
     void activate_options_row(int delta);
     void activate_action(const std::string& action);

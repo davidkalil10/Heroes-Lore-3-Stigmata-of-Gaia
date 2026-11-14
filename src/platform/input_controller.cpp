@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -268,6 +269,32 @@ void InputController::shutdown_controllers() {
     raw_joysticks_.clear();
 }
 
+bool InputController::should_ignore_joystick_device(const char* name, int num_buttons, int num_hats) {
+    if (num_buttons <= 0 && num_hats <= 0) {
+        return true;
+    }
+    if (!name || name[0] == '\0') {
+        return false;
+    }
+    std::string lower;
+    lower.reserve(std::char_traits<char>::length(name));
+    for (const unsigned char* p = reinterpret_cast<const unsigned char*>(name); *p != 0; ++p) {
+        lower.push_back(static_cast<char>(std::tolower(*p)));
+    }
+    static constexpr const char* kIgnoredSubstrings[] = {
+        "accelerometer", "gyro",     "magnetometer", "gravity",      "compass",
+        "rotation",      "sensor",   "orientation",  "proximity",    "pressure",
+        "temperature",   "light",    "fingerprint",  "uinput-fpc",   "gf3208",
+        "gf_key",        "touchscreen", "virtual-search", "gpio-keys",
+    };
+    for (const char* token : kIgnoredSubstrings) {
+        if (lower.find(token) != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void InputController::handle_controller_added(int device_index) {
     SDL_JoystickID jid = SDL_JoystickGetDeviceInstanceID(device_index);
     if (jid >= 0 && (controllers_.count(jid) || raw_joysticks_.count(jid))) {
@@ -285,12 +312,35 @@ void InputController::handle_controller_added(int device_index) {
     } else {
         SDL_Joystick* js = SDL_JoystickOpen(device_index);
         if (js) {
+            const char* name = SDL_JoystickName(js);
+            int num_buttons = SDL_JoystickNumButtons(js);
+            int num_hats = SDL_JoystickNumHats(js);
+            if (should_ignore_joystick_device(name, num_buttons, num_hats)) {
+                std::printf("[HL3 PC] Ignoring non-gamepad input device: %s (buttons=%d hats=%d)\n",
+                            name ? name : "Unknown", num_buttons, num_hats);
+                SDL_JoystickClose(js);
+                return;
+            }
             SDL_JoystickID id = SDL_JoystickInstanceID(js);
             raw_joysticks_[id] = js;
-            const char* name = SDL_JoystickName(js);
             std::printf("[HL3 PC] Initialized joystick: %s\n", name ? name : "Unknown Joystick");
         }
     }
+}
+
+void InputController::release_all_touches(Runtime& rt) {
+    std::vector<std::string> tags;
+    tags.reserve(active_touches_.size());
+    for (const auto& [tag, _] : active_touches_) {
+        tags.push_back(tag);
+    }
+    for (const std::string& tag : tags) {
+        touch_up(rt, tag);
+    }
+    pending_tap_ups_.clear();
+    modal_consumed_click_ = false;
+    modal_consumed_fingers_.clear();
+    nav_cooldown_ = 0;
 }
 
 void InputController::handle_controller_removed(SDL_JoystickID instance_id) {
@@ -1456,6 +1506,9 @@ bool InputController::process_sdl_event(const SDL_Event& ev, Runtime& rt, PortOp
         } else if (ev.window.event == SDL_WINDOWEVENT_MAXIMIZED ||
                    ev.window.event == SDL_WINDOWEVENT_RESTORED) {
             if (actions_.on_window_sync_check) actions_.on_window_sync_check();
+        } else if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
+                   ev.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+            release_all_touches(rt);
         }
         return true;
 
@@ -1975,7 +2028,7 @@ void InputController::draw_osd(GLBridge& gl, int win_w, int win_h) {
     float alpha = static_cast<float>(std::max(0.0, std::min(1.0, t_in * t_out)));
     if (alpha <= 0.01f) return;
 
-    float ui_scale = std::max(1.0f, std::min(2.4f, static_cast<float>(win_h) / 420.0f));
+    float ui_scale = std::max(1.0f, std::min(2.8f, static_cast<float>(win_h) / 420.0f));
     std::string key = make_osd_key(osd_badge_, osd_title_, osd_subtitle_, osd_accent_, ui_scale);
     if (osd_tex_ == 0 || osd_tex_key_ != key) {
         RgbaCanvas c = build_osd_canvas(osd_badge_, osd_title_, osd_subtitle_, osd_accent_, ui_scale);

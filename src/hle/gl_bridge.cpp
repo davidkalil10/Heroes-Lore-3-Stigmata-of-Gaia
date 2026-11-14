@@ -640,6 +640,7 @@ struct GLBridge::GlImpl {
     using PfnBindTexture = void(APIENTRY*)(u32, u32);
     using PfnTexImage2D = void(APIENTRY*)(u32, int, int, int, int, int, u32, u32, const void*);
     using PfnTexSubImage2D = void(APIENTRY*)(u32, int, int, int, int, int, u32, u32, const void*);
+    using PfnCopyTexSubImage2D = void(APIENTRY*)(u32, int, int, int, int, int, int, int);
     using PfnTexParameteri = void(APIENTRY*)(u32, u32, int);
     using PfnTexParameterf = void(APIENTRY*)(u32, u32, float);
     using PfnPixelStorei = void(APIENTRY*)(u32, int);
@@ -685,6 +686,7 @@ struct GLBridge::GlImpl {
     PfnBindTexture bind_texture = nullptr;
     PfnTexImage2D tex_image_2d = nullptr;
     PfnTexSubImage2D tex_sub_image_2d = nullptr;
+    PfnCopyTexSubImage2D copy_tex_sub_image_2d = nullptr;
     PfnTexParameteri tex_parameteri = nullptr;
     PfnTexParameterf tex_parameterf = nullptr;
     PfnPixelStorei pixel_storei = nullptr;
@@ -727,6 +729,9 @@ struct GLBridge::GlImpl {
 
     u32 program = 0;
     u32 vbo = 0;
+    u32 backdrop_tex = 0;
+    int backdrop_w = 0;
+    int backdrop_h = 0;
     int u_mvp = -1;
     int u_tex = -1;
     int u_use_tex = -1;
@@ -735,6 +740,7 @@ struct GLBridge::GlImpl {
     int u_alpha_ref = -1;
 
     bool overlay_active = false;
+    int overlay_tex_mode = -1;
     Mat4 overlay_proj = Mat4::identity();
     bool overlay_prev_blend = false;
     bool overlay_prev_alpha = false;
@@ -753,6 +759,7 @@ struct GLBridge::GlImpl {
         ok &= load(bind_texture, "glBindTexture");
         ok &= load(tex_image_2d, "glTexImage2D");
         ok &= load(tex_sub_image_2d, "glTexSubImage2D");
+        load(copy_tex_sub_image_2d, "glCopyTexSubImage2D");
         ok &= load(tex_parameteri, "glTexParameteri");
         load(tex_parameterf, "glTexParameterf");
         ok &= load(pixel_storei, "glPixelStorei");
@@ -874,7 +881,7 @@ bool GLBridge::init_gl() {
         "  vec4 c = v_col;\n"
         "  if (u_use_tex != 0) {\n"
         "    vec4 t = texture2D(u_tex, v_uv);\n"
-        "    c = (u_tex_mode == 1) ? t : (t * v_col);\n"
+        "    c = (u_tex_mode == 2) ? vec4(t.rgb * v_col.rgb, v_col.a) : ((u_tex_mode == 1) ? t : (t * v_col));\n"
         "  }\n"
         "  if (u_alpha_mode >= 0) {\n"
         "    if (u_alpha_mode == 0) discard;\n"
@@ -900,7 +907,7 @@ bool GLBridge::init_gl() {
         "  vec4 c = v_col;\n"
         "  if (u_use_tex != 0) {\n"
         "    vec4 t = texture2D(u_tex, v_uv);\n"
-        "    c = (u_tex_mode == 1) ? t : (t * v_col);\n"
+        "    c = (u_tex_mode == 2) ? vec4(t.rgb * v_col.rgb, v_col.a) : ((u_tex_mode == 1) ? t : (t * v_col));\n"
         "  }\n"
         "  if (u_alpha_mode >= 0) {\n"
         "    if (u_alpha_mode == 0) discard;\n"
@@ -956,6 +963,12 @@ bool GLBridge::init_gl() {
 
 void GLBridge::shutdown_gl() {
     if (!gl_ready_) return;
+    if (impl_->backdrop_tex) {
+        impl_->delete_textures(1, &impl_->backdrop_tex);
+        impl_->backdrop_tex = 0;
+        impl_->backdrop_w = 0;
+        impl_->backdrop_h = 0;
+    }
     if (impl_->vbo) {
         impl_->delete_buffers(1, &impl_->vbo);
         impl_->vbo = 0;
@@ -1069,6 +1082,131 @@ void GLBridge::begin_frame() {
         impl_->clear(kGlColorBufferBit | kGlDepthBufferBit);
     }
     impl_->viewport(viewport_rect_.x, viewport_rect_.y, viewport_rect_.w, viewport_rect_.h);
+}
+
+void GLBridge::present_widescreen_backdrop() {
+    if (!gl_ready_ || world_active_ || !impl_->copy_tex_sub_image_2d) return;
+    if (viewport_rect_.w <= 0 || viewport_rect_.h <= 0 || win_w_ <= 0 || win_h_ <= 0) return;
+
+    RectI target = compute_target_aspect_rect(aspect_name_, win_w_, win_h_);
+    int vp_right = viewport_rect_.x + viewport_rect_.w;
+    int vp_top_gl = viewport_rect_.y + viewport_rect_.h;
+    int tgt_right = target.x + target.w;
+    int tgt_top_gl = target.y + target.h;
+    bool need_lr = (target.x < viewport_rect_.x - 1) || (tgt_right > vp_right + 1);
+    bool need_tb = (target.y < viewport_rect_.y - 1) || (tgt_top_gl > vp_top_gl + 1);
+    if (!need_lr && !need_tb) return;
+
+    if (!impl_->backdrop_tex) {
+        impl_->gen_textures(1, &impl_->backdrop_tex);
+        if (!impl_->backdrop_tex) return;
+        impl_->backdrop_w = 0;
+        impl_->backdrop_h = 0;
+    }
+
+    impl_->bind_texture(kGlTexture2D, impl_->backdrop_tex);
+    bound_tex_ = impl_->backdrop_tex;
+    impl_->tex_parameteri(kGlTexture2D, kGlTextureMinFilter, static_cast<int>(kGlLinear));
+    impl_->tex_parameteri(kGlTexture2D, kGlTextureMagFilter, static_cast<int>(kGlLinear));
+    impl_->tex_parameteri(kGlTexture2D, kGlTextureWrapS, static_cast<int>(kGlClampToEdge));
+    impl_->tex_parameteri(kGlTexture2D, kGlTextureWrapT, static_cast<int>(kGlClampToEdge));
+    impl_->pixel_storei(kGlUnpackAlignment, 1);
+
+    if (impl_->backdrop_w != viewport_rect_.w || impl_->backdrop_h != viewport_rect_.h) {
+        impl_->tex_image_2d(kGlTexture2D, 0, static_cast<int>(kGlRgba), viewport_rect_.w, viewport_rect_.h, 0,
+                            kGlRgba, kGlUnsignedByte, nullptr);
+        impl_->backdrop_w = viewport_rect_.w;
+        impl_->backdrop_h = viewport_rect_.h;
+    }
+    impl_->copy_tex_sub_image_2d(kGlTexture2D, 0, 0, 0, viewport_rect_.x, viewport_rect_.y,
+                                 viewport_rect_.w, viewport_rect_.h);
+
+    overlay_begin_window(win_w_, win_h_);
+    impl_->overlay_tex_mode = 2;
+
+    auto draw_wing_grad = [&](float x0, float y0, float w, float h,
+                              float u_tl, float v_tl, float u_tr, float v_tr,
+                              float u_br, float v_br, float u_bl, float v_bl,
+                              float r0, float g0, float b0, float r1, float g1, float b1,
+                              bool horiz_fade, bool seam_on_left) {
+        auto c_at = [&](bool is_right, bool is_bottom) -> std::array<float, 3> {
+            bool is_inner = horiz_fade ? (seam_on_left ? !is_right : is_right)
+                                         : (seam_on_left ? !is_bottom : is_bottom);
+            return is_inner ? std::array<float, 3>{r0, g0, b0} : std::array<float, 3>{r1, g1, b1};
+        };
+        auto c_tl = c_at(false, false);
+        auto c_tr = c_at(true, false);
+        auto c_br = c_at(true, true);
+        auto c_bl = c_at(false, true);
+        const Vertex v[4] = {
+            {x0, y0, 0.0f, u_tl, v_tl, c_tl[0], c_tl[1], c_tl[2], 1.0f},
+            {x0 + w, y0, 0.0f, u_tr, v_tr, c_tr[0], c_tr[1], c_tr[2], 1.0f},
+            {x0 + w, y0 + h, 0.0f, u_br, v_br, c_br[0], c_br[1], c_br[2], 1.0f},
+            {x0, y0 + h, 0.0f, u_bl, v_bl, c_bl[0], c_bl[1], c_bl[2], 1.0f},
+        };
+        draw_vertices(kGlTriangleFan, v, 4, true, impl_->backdrop_tex);
+    };
+
+    static constexpr float kTaps[4][2] = {
+        {-0.018f, -0.022f}, {0.018f, -0.022f}, {-0.018f, 0.022f}, {0.018f, 0.022f},
+    };
+
+    auto draw_frosted_wing = [&](int sx, int sy_top, int sw, int sh,
+                                 float u_l, float u_r, float v_t, float v_b,
+                                 bool horiz_fade, bool seam_on_low) {
+        if (sw <= 0 || sh <= 0) return;
+        overlay_set_scissor_topdown(sx, sy_top, sw, sh);
+
+        impl_->disable(kGlBlend);
+        draw_wing_grad(float(sx), float(sy_top), float(sw), float(sh),
+                       u_l, v_t, u_r, v_t, u_r, v_b, u_l, v_b,
+                       0.22f, 0.23f, 0.26f, 0.11f, 0.12f, 0.14f,
+                       horiz_fade, seam_on_low);
+
+        impl_->enable(kGlBlend);
+        impl_->blend_func(kGlOne, kGlOne);
+        for (int t = 0; t < 4; ++t) {
+            float du = kTaps[t][0];
+            float dv = kTaps[t][1];
+            float ul = std::clamp(u_l + du, 0.0f, 1.0f);
+            float ur = std::clamp(u_r + du, 0.0f, 1.0f);
+            float vt = std::clamp(v_t + dv, 0.0f, 1.0f);
+            float vb = std::clamp(v_b + dv, 0.0f, 1.0f);
+            draw_wing_grad(float(sx), float(sy_top), float(sw), float(sh),
+                           ul, vt, ur, vt, ur, vb, ul, vb,
+                           0.095f, 0.098f, 0.112f, 0.045f, 0.048f, 0.058f,
+                           horiz_fade, seam_on_low);
+        }
+        impl_->blend_func(0x0302u, 0x0303u);
+    };
+
+    int tgt_top_screen = win_h_ - (target.y + target.h);
+    if (viewport_rect_.x > target.x) {
+        draw_frosted_wing(target.x, tgt_top_screen, viewport_rect_.x - target.x, target.h,
+                          0.20f, 0.008f, 1.0f, 0.0f, true, false);
+    }
+    if (tgt_right > vp_right) {
+        draw_frosted_wing(vp_right, tgt_top_screen, tgt_right - vp_right, target.h,
+                          0.992f, 0.80f, 1.0f, 0.0f, true, true);
+    }
+    int vp_top_screen = win_h_ - (viewport_rect_.y + viewport_rect_.h);
+    int tgt_bot_screen = tgt_top_screen + target.h;
+    int vp_bot_screen = vp_top_screen + viewport_rect_.h;
+    if (vp_top_screen > tgt_top_screen) {
+        draw_frosted_wing(target.x, tgt_top_screen, target.w, vp_top_screen - tgt_top_screen,
+                          0.0f, 1.0f, 0.80f, 0.992f, false, false);
+    }
+    if (tgt_bot_screen > vp_bot_screen) {
+        draw_frosted_wing(target.x, vp_bot_screen, target.w, tgt_bot_screen - vp_bot_screen,
+                          0.0f, 1.0f, 0.008f, 0.20f, false, true);
+    }
+
+    impl_->overlay_tex_mode = -1;
+    overlay_clear_scissor();
+    overlay_end();
+    blend_s_ = 0x0302u;
+    blend_d_ = 0x0303u;
+    bound_tex_ = 0;
 }
 
 std::vector<u32> GLBridge::gen_textures(int n) {
@@ -1397,7 +1535,9 @@ void GLBridge::draw_vertices(u32 mode, const Vertex* verts, size_t count, bool u
     Mat4 mvp = impl_->overlay_active ? impl_->overlay_proj : current_mvp();
     impl_->uniform_matrix4fv(impl_->u_mvp, 1, 0, mvp.m.data());
     impl_->uniform1i(impl_->u_use_tex, (use_tex && tex_id != 0) ? 1 : 0);
-    impl_->uniform1i(impl_->u_tex_mode, tex_replace_ ? 1 : 0);
+    int tex_mode = (impl_->overlay_active && impl_->overlay_tex_mode >= 0) ? impl_->overlay_tex_mode
+                                                                          : (tex_replace_ ? 1 : 0);
+    impl_->uniform1i(impl_->u_tex_mode, tex_mode);
     if (impl_->overlay_active) {
         impl_->uniform1i(impl_->u_alpha_mode, -1);
     } else {
