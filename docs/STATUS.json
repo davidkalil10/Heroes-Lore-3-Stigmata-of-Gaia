@@ -2,10 +2,10 @@
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
   "updated_at": "2026-11-15",
-  "overall_phase": "multiplatform_release_v1_0_7",
+  "overall_phase": "multiplatform_release_v1_0_8",
   "current_step": "S13",
   "next_recommended_step": "S14",
-  "summary": "Release v1.0.7 (Android versionCode 8): auto-instalador OTA .nro completo no Nintendo Switch (copia stdio sem copy_file, Sha256Hasher streaming, validacao NRO0 antes do romfsExit(), swap atomico com rollback, envSetNextLoad no caminho de argv[0] e relancamento automatico).",
+  "summary": "Release v1.0.8 (Android versionCode 9): bump de versionamento para validacao ao vivo do auto-updater .nro (install_portable_nro_update + romfsExit + envSetNextLoad) a partir da v1.0.7 no Nintendo Switch, além de paridade multiplataforma Windows/Linux/Android.",
   "steps": [
     {
       "id": "S00",
@@ -334,7 +334,7 @@
         "research/sessions/2026-11-15-01.md",
         "research/sessions/2026-11-15-02.md"
       ],
-      "notes": "v1.0.7 para Nintendo Switch (HL3_TCI / HL3_SWITCH com HL3_USE_FAST_CPU=1): alem das otimizacoes Pack A + ArmFastCpu (2.37x steady-state) e layout Switch A<->B / X<->Y + slots completos da v1.0.6, implementa auto-instalacao OTA de .nro via install_portable_nro_update (fread/fwrite + Sha256Hasher + NRO0 + romfsExit() ordenado + swap atomico + envSetNextLoad em argv[0] + saida limpa para relancamento pelo hbmenu), coberta por test_switch_nro_installer."
+      "notes": "v1.0.8 (Android versionCode 9) publicada para validar em hardware Switch fisico o auto-updater OTA completo da v1.0.7 (download, validacao NRO0 + Sha256Hasher, romfsExit() ordenado, swap atomico com rollback, envSetNextLoad em argv[0] e relancamento automatico pelo Homebrew Loader), mantendo Pack A + ArmFastCpu (2.37x steady-state) e layout Switch A<->B / X<->Y + slots completos."
     },
     {
       "id": "S14",

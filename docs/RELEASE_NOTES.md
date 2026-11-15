@@ -1,3 +1,9 @@
+## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.8`
+
+### What's New in `v1.0.8` (`Android versionCode 9`)
+- **Version Bump for Switch OTA Verification Release**:
+  - Clean multiplatform verification release (`v1.0.8`, `Android versionCode 9`) following `v1.0.7`, enabling live end-to-end auto-update & `envSetNextLoad` relaunch testing directly from the Nintendo Switch `v1.0.7` homebrew build (as well as Windows, Linux, and Android).
+
 ## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.7`
 
 ### What's New in `v1.0.7` (`Android versionCode 8`)

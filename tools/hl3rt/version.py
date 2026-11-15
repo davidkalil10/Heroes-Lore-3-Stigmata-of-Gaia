@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-PORT_VERSION = "1.0.7"
+PORT_VERSION = "1.0.8"
 ORIGINAL_GAME_VERSION = "1.0.1"
 PORT_AUTHOR = "David Kalil Braga"
 PORT_YEAR = "2026"
