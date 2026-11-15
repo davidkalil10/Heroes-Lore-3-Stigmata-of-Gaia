@@ -610,3 +610,11 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 - **Consequências**:
   - Switch atualizado a partir da `v1.0.7+` instala o novo `.nro` no caminho exato de execução (`argv[0]`) e reinicia automaticamente no Homebrew Loader após o usuário confirmar a instalação.
   - Coberto por `test_switch_nro_installer` em `tests/cpp/test_platform_services.cpp`.
+
+
+## ADR-031: Build experimental dedicada para Nintendo Switch 2
+
+- Data: 2026-11-15. Status: experimental, pendente de validacao em hardware.
+- Decisao: adicionar `HL3_SWITCH2` sobre o runtime Horizon existente, usando toolchain oficial ounce-devkit 20261115 e OpenGL ES do OunceVK. Manter TCI/ArmFastCpu e o formato dos saves, sem introduzir JIT ou modificar offsets do jogo.
+- O patch adicional altera somente as specs/libdir dos probes de configuracao da Unicorn para libounce. As demais plataformas preservam seu caminho de build.
+- Usar nome de NRO exclusivo no empacotamento e OTA para impedir download acidental do arquivo Switch 1. Manter pipeline experimental separado da main ate o teste em console.

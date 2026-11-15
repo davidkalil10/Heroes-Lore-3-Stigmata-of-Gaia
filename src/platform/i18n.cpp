@@ -317,6 +317,8 @@ std::string get_target_asset_name() {
     return kAssetWindowsX64;
 #elif defined(__ANDROID__)
     return kAssetAndroidApk;
+#elif defined(__SWITCH2__)
+    return "heroes_lore_3_switch2.nro";
 #elif defined(__SWITCH__)
     return kAssetSwitchNro;
 #else

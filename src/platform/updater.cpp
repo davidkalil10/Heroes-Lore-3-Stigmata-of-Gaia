@@ -933,8 +933,13 @@ bool UpdateManager::install_ready_update(std::string* out_msg) {
         std::string target_nro = normalize_switch_nro_path(self_exe_path_);
         if (target_nro.empty()) {
             static const char* kSwitchFallbacks[] = {
+#ifdef __SWITCH2__
+                "sdmc:/switch/heroes_lore_3/heroes_lore_3_switch2.nro",
+                "sdmc:/switch/heroes_lore_3_switch2.nro",
+#else
                 "sdmc:/switch/heroes_lore_3/heroes_lore_3.nro",
                 "sdmc:/switch/heroes_lore_3.nro",
+#endif
             };
             for (const char* cand : kSwitchFallbacks) {
                 if (std::filesystem::exists(cand, ec)) {

@@ -14,3 +14,12 @@
 python tools/project_status.py show
 python tools/verify_workspace.py
 ```
+
+## Experimento Switch 2 (2026-11-15)
+
+- Branch `codex/switch2-action`, isolada da main e da pasta de desenvolvimento original.
+- Novo workflow de NRO com SDK ounce-devkit 20261115 fixado; toolchain oficial CMake, OunceVK OpenGL ES, Unicorn TCI com limite de 32 MiB.
+- Atualizador seleciona somente `heroes_lore_3_switch2.nro`; caminhos/formato de saves e Google Drive mantidos.
+- Verificacao inicial encontrou header ignorado do snapshot HL5 ausente no checkout. Hidratado apenas na copia local com o arquivo identico de `src/vendor` (hash do manifesto conferido); sem alterar snapshots versionados.
+- Testes locais: `verify_workspace.py`, `bump_version.py --check`, 6 testes `test_multiplatform_ci.py`. Build remota e teste em hardware pendentes.
+- Retomada: abrir workflow Nintendo Switch 2 NRO, baixar o artefato e enviar ao Netloader. Depois de aprovacao em console, integrar ao workflow multiplataforma e publicar. Ver `docs/SWITCH2.md`.

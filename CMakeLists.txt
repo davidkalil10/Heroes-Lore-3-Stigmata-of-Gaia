@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(HL3_SWITCH2 "Build for Nintendo Switch 2 (ounce-devkit + OunceVK)" OFF)
+if(HL3_SWITCH2)
+    set(HL3_SWITCH ON CACHE BOOL "Build Horizon runtime" FORCE)
+endif()
+
 option(HL3_SWITCH "Build for Nintendo Switch (devkitA64 + libnx + Unicorn TCI)" OFF)
 option(HL3_TCI "Use Unicorn TCI interpreter backend" ${HL3_SWITCH})
 

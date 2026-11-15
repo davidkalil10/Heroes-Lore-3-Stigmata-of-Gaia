@@ -1,0 +1,155 @@
+name: Nintendo Switch 2 NRO
+
+on:
+  workflow_call:
+  push:
+    branches: [codex/switch2-action]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hl3-switch2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-switch2:
+    name: Build Nintendo Switch 2 NRO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    container:
+      image: devkitpro/devkita64:20260219
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITA64: /opt/devkitpro/devkitA64
+      OUNCE_DEVKIT_COMMIT: 0f38ba80d7ee768c5749278f127749d14ece2036
+      OUNCE_DEVKIT_VERSION: '20261115'
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Prepare pinned Switch 2 SDK
+        run: |
+          set -euo pipefail
+          sdk="$RUNNER_TEMP/ounce-devkit"
+          git init "$sdk"
+          git -C "$sdk" fetch --depth=1 https://github.com/ouncebrew/ounce-devkit.git "$OUNCE_DEVKIT_COMMIT"
+          git -C "$sdk" checkout --detach FETCH_HEAD
+          test "$(git -C "$sdk" rev-parse HEAD)" = "$OUNCE_DEVKIT_COMMIT"
+          bash "$sdk/install.sh" "$OUNCE_DEVKIT_VERSION"
+          test -f "$DEVKITPRO/libounce/switch2_rules"
+          test -f "$DEVKITPRO/portlibs/switch2/lib/libEGL.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libSDL2.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libSDL2_mixer.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libcurl.a"
+          cat "$DEVKITPRO/ounce-devkit-version.txt"
+          "$DEVKITA64/bin/aarch64-none-elf-g++" --version > switch2-packages.txt
+          if command -v dkp-pacman >/dev/null 2>&1; then
+            dkp-pacman -Q >> switch2-packages.txt
+          elif command -v pacman >/dev/null 2>&1; then
+            pacman -Q >> switch2-packages.txt
+          fi
+
+      - name: Install build utilities
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y cmake ninja-build gcc python3 python3-pil pkg-config
+
+      - name: Fetch and patch Unicorn TCI
+        run: |
+          set -euo pipefail
+          python3 tools/fetch_build_deps.py --switch
+          python3 tools/patch_unicorn_switch2.py third_party/unicorn-tci/unicorn-engine-sys-tci
+          mkdir -p build_switch2
+          gcc -Wall -Wextra -Werror -Iplatforms/switch/compat \
+            tests/switch_memory_contract.c platforms/switch/unicorn_os.c \
+            -o build_switch2/test_switch_mem
+          ./build_switch2/test_switch_mem
+
+      - name: Compile Switch 2 ELF
+        run: |
+          set -eo pipefail
+          source "$DEVKITPRO/switch2vars.sh"
+          cmake -S . -B build_switch2 -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE=platforms/switch2/toolchain.cmake \
+            -DHL3_SWITCH2=ON -DHL3_TCI=ON -DCMAKE_BUILD_TYPE=Release \
+            2>&1 | tee switch2-build.log
+          cmake --build build_switch2 --parallel 2 2>&1 | tee -a switch2-build.log
+
+      - name: Package embedded assets
+        run: |
+          set -euo pipefail
+          export PATH="$DEVKITPRO/tools/bin:$PATH"
+          mkdir -p dist
+          python3 tools/prepare_platform_assets.py switch \
+            --romfs build_switch2/romfs --icon-out build_switch2/icon.jpg
+          PORT_VER=$(python3 -c 'import sys; sys.path.insert(0, "tools"); from hl3rt.version import PORT_VERSION; print(PORT_VERSION)')
+          TITLE_ID=$(python3 -c 'import sys; sys.path.insert(0, "tools"); from hl3rt.version import SWITCH_TITLE_ID; print(SWITCH_TITLE_ID)')
+          nacptool --create "Heroes Lore 3 (Switch 2)" "David Kalil Braga" "$PORT_VER" \
+            build_switch2/hl3.nacp --titleid="$TITLE_ID"
+          elf2nro build_switch2/HeroesLore3.elf heroes_lore_3_switch2.nro \
+            --icon=build_switch2/icon.jpg --nacp=build_switch2/hl3.nacp \
+            --romfsdir=build_switch2/romfs
+
+      - name: Inspect NRO and record build
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 tools/verify_switch_package.py heroes_lore_3_switch2.nro
+          python3 - <<'PY'
+          import hashlib, json, os, struct
+          from pathlib import Path
+          nro = Path('heroes_lore_3_switch2.nro')
+          data = nro.read_bytes()
+          assert data[0x10:0x14] == b'NRO0'
+          asset_start = struct.unpack_from('<I', data, 0x18)[0]
+          assert data[asset_start:asset_start+4] == b'ASET'
+          for at in (0x08, 0x18, 0x28):
+              offset, size = struct.unpack_from('<QQ', data, asset_start+at)
+              assert size > 0 and asset_start+offset+size <= len(data)
+          report = dict(platform='switch2', experimental=True, sourceCommit=os.environ['SOURCE_COMMIT'],
+                        sdkVersion=os.environ['OUNCE_DEVKIT_VERSION'], sdkCommit=os.environ['OUNCE_DEVKIT_COMMIT'],
+                        sha256=hashlib.sha256(data).hexdigest(), bytes=len(data),
+                        embeddedRomfs=True, consoleValidated=False,
+                        saves='Existing HL3 native save format and Google Drive backup/restore retained; requires console validation')
+          Path('switch2-build.json').write_text(json.dumps(report, indent=2)+'\n')
+          Path(nro.name+'.sha256').write_text(report['sha256']+'  '+nro.name+'\n')
+          PY
+          echo '### Switch 2 build' >> "$GITHUB_STEP_SUMMARY"
+          echo 'NRO compiled and embedded assets verified. Console, controls, audio, save and Google Drive restore tests remain pending.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Switch 2 NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_3_switch2_nro
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            heroes_lore_3_switch2.nro
+            heroes_lore_3_switch2.nro.sha256
+            switch2-build.json
+            docs/SWITCH2.md
+
+      - name: Preserve build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_3_switch2_logs
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            switch2-build.log
+            switch2-build.json
+            switch2-packages.txt
+            build_switch2/CMakeCache.txt
+            build_switch2/CMakeFiles/CMakeConfigureLog.yaml
+            build_switch2/unicorn-build/config.log
