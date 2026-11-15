@@ -6,9 +6,9 @@
 
 ### Recompilação / Runtime Nativo · Mach-O ARMv6 + iOS HLE + OpenGL ES 1.1
 
-**Windows x64 · Linux x86_64 (`AppImage`) · Android (`Global` & `ARMv8`) · Nintendo Switch (`.nro`) · Runtime Nativo C++17 (`v1.0.5`)**
+**Windows x64 · Linux x86_64 (`AppImage`) · Android (`Global` & `ARMv8`) · Nintendo Switch (`.nro`) · Runtime Nativo C++17 (`v1.0.6`)**
 
-[![Port Version](https://img.shields.io/badge/Port-v1.0.5-d49b35)](#-downloads-e-plataformas)
+[![Port Version](https://img.shields.io/badge/Port-v1.0.6-d49b35)](#-downloads-e-plataformas)
 [![Original Game](https://img.shields.io/badge/Original_iOS-v1.0.1-6b7280)](#-arquitetura-técnica)
 [![Idiomas](https://img.shields.io/badge/Idiomas-English%20%7C%20PT--BR-2ea043)](#-idioma-em-tempo-real-en--pt-br)
 [![Multiplatform CI](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/workflows/build.yml/badge.svg)](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/workflows/build.yml)
@@ -36,7 +36,7 @@ Os pacotes compilados ficam publicados em **[Releases](https://github.com/davidk
 
 ---
 
-## ✨ Recursos da versão `v1.0.5`
+## ✨ Recursos da versão `v1.0.6`
 
 - 🖥️ **True Widescreen (`Auto` / `16:9` / `Original 3:2`)**: expansão real da projeção ortográfica OpenGL ES 1.1 (`480×320` nativo até `1020 px` de largura lógica) preservando a proporção de sprites, menus e botões do HUD sem esticar a imagem.
 - ⚡ **Seleção de FPS (`30` / `60`) em tempo real**: alternância pelo menu do port ou tecla `F8`, com aviso estilizado na tela (OSD).
@@ -48,7 +48,7 @@ Os pacotes compilados ficam publicados em **[Releases](https://github.com/davidk
 - ☁️ **Cloud Save no Google Drive**: autenticação OAuth Device Code no próprio menu, envio e restauração da pasta isolada **`Heroes Lore III - Stigmata of Gaia`** (`heroes_lore_3_save.json`), backup automático em `data/save-backups/` antes de restaurar e recarga limpa para a tela de título.
 - 🔄 **Atualizador OTA pelo GitHub Releases**: verificação opcional no boot (configurável em `config/services.json` e no menu) + consulta manual, visualização de *Release Notes*, validação de HTTPS e **SHA-256**, proteção contra ZIP Slip e script de substituição que preserva `config/` e `data/` com rollback em caso de falha.
 - 🎵 **Subsistema de Áudio fora do callback SDL**: pré-decodificação e mixagem separada para os **20 temas `.mp3`** (`bgm0_mf.mp3`..`bgm16_mf.mp3`) e **28 efeitos `.wav`** via OpenAL HLE, com controle de volume e mudo persistidos em `config/audio.json`.
-- 🏷️ **Créditos e Versão no Menu Sobre**: logo abaixo da versão original do jogo (`1.0.1`), o menu **About** exibe em tempo real o crédito **`Port by David Kalil Braga (2026) - v1.0.5`** (EN) / **`Port por David Kalil Braga (2026) - v1.0.5`** (PT-BR).
+- 🏷️ **Créditos e Versão no Menu Sobre**: logo abaixo da versão original do jogo (`1.0.1`), o menu **About** exibe em tempo real o crédito **`Port by David Kalil Braga (2026) - v1.0.6`** (EN) / **`Port por David Kalil Braga (2026) - v1.0.6`** (PT-BR).
 
 ---
 
@@ -102,7 +102,7 @@ O sistema de backup na nuvem utiliza exatamente o mesmo fluxo seguro dos ports a
 
 - Por padrão, ao iniciar em modo interativo, o `UpdateManager` consulta de forma assíncrona o endpoint oficial de releases públicas de **`davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia`** (pode ser ligado/desligado em **Port Options & Cloud → Startup Update Check**).
 - Em **Port Options & Cloud → System Updates (GitHub)** você pode:
-  1. Consultar manualmente se há versão SemVer mais nova que a instalada (`v1.0.5`).
+  1. Consultar manualmente se há versão SemVer mais nova que a instalada (`v1.0.6`).
   2. Baixar o pacote `.zip` com barra de progresso em tempo real e validação obrigatória de URL HTTPS confiável + checksum SHA-256 (quando publicado pela release).
   3. Clicar em **Install Update**: no Windows, o atualizador staging cria backup de rollback em `data/updates/`, preserva `config/` e `data/`, substitui os binários após o encerramento seguro do processo atual e reabre `HeroesLore3.exe` automaticamente.
 
@@ -120,25 +120,26 @@ O sistema de backup na nuvem utiliza exatamente o mesmo fluxo seguro dos ports a
 
 ## 🎮 Controles
 
-| Ação | Teclado | Gamepad (Xbox / Padrão) | Mouse / Toque |
-| --- | --- | --- | --- |
-| **Mover / Navegar** | `WASD` ou `Setas` | `D-pad` ou `Analógico Esquerdo` | Toque/arraste no direcional virtual ou clique nos itens |
-| **Confirmar / Falar / Interagir** | `Enter`, `Espaço`, `E`, `Z` | `A` | Clique / toque |
-| **Cancelar / Voltar / Fechar** | `Esc`, `Backspace` (`P`/`C` em submenus) | `B` (ou `Start` em submenus) | Botão voltar na tela |
-| **Atacar (Primário / Secundário)** | `J` / `L`, `H` | `X` (em combate) / `Y` | Botões de ataque na tela |
-| **Habilidades 1 / 2 / 3** | `U` / `3`, `I` / `4`, `O` / `5` | `X` (fora de combate) | Ícones de habilidade na HUD |
-| **Poções 1 / 2** | `Q` / `1`, `K` / `2` | `LB` / `RB` | Ícones de frasco na HUD |
-| **Pular Cutscene** | `S` (ou `M` / `Tab`) | `Y` ou `Start` | Toque em Skip |
-| **Menu do Personagem / Pausa** | `P`, `C` | `Start` | Retrato no canto inferior |
-| **Minimapa** | `M` | `Select` | Ícone da bússola na HUD |
-| **Alternar Abas (Submenus)** | `Tab`, `PageUp`/`PageDown`, `[` / `]` | `LB` / `RB` | Clique nas abas |
-| **Volume / Mudo** | `+` / `-` e `N` (ou `M` fora de mapa) | — | — |
-| **Trocar Idioma (`EN` ↔ `PT-BR`)** | **`F7`** | — | **Port Options & Cloud** |
-| **Alternar FPS (`30` ↔ `60`)** | **`F8`** | — | **Port Options & Cloud** |
-| **Alternar Proporção (`Auto`/`16:9`/`3:2`)** | **`F9`** | — | **Port Options & Cloud** |
-| **Abrir Opções do Port & Cloud** | — | — | `Help & About` / `System → Port Options & Cloud` |
-| **Tela Cheia / Janela** | **`F11`** | — | Botão maximizar da janela |
-| **Capturar Screenshot** | **`F12`** | — | — |
+| Ação | Teclado | Gamepad (Xbox) | Nintendo Switch | Mouse / Toque |
+| --- | --- | --- | --- | --- |
+| **Mover / Navegar** | `WASD` ou `Setas` | `D-pad` / `Analógico Esq.` | `D-pad` / `Analógico Esq.` | Toque/arraste no direcional virtual ou clique nos itens |
+| **Confirmar / Falar / Interagir** | `Enter`, `Espaço`, `E`, `Z` | `A` | `A` *(invertido do Xbox)* | Clique / toque |
+| **Cancelar / Voltar / Fechar** | `Esc`, `Backspace` (`P`/`C` em submenus) | `B` (ou `Start` em submenus) | `B` (ou `+` em submenus) | Botão voltar na tela |
+| **Ataque Primário** | `J` | `X` | `X` *(invertido do Xbox)* | Botão de ataque principal |
+| **Ataque Secundário** | `L`, `H` | `Y` | `Y` *(invertido do Xbox)* | Botão secundário na HUD |
+| **Habilidades 1 / 2 / 3** | `U`/`3`, `I`/`4`, `O`/`5` | `LT` / `RT` / `R3` *(clique analógico dir.)* | `ZL` / `ZR` / `R3` *(clique analógico dir.)* | Ícones de habilidade na HUD |
+| **Poções 1 / 2** | `Q`/`1`, `K`/`2` | `LB` / `RB` | `L` / `R` | Ícones de frasco na HUD |
+| **Pular Cutscene** | `S` (ou `M` / `Tab`) | `Y` ou `Start` | `Y` ou `+` | Toque em Skip |
+| **Menu do Personagem / Pausa** | `P`, `C` | `Start` | `+` | Retrato no canto inferior |
+| **Minimapa** | `M` | `Back` / `Select` | `-` | Ícone da bússola na HUD |
+| **Alternar Abas (Submenus)** | `Tab`, `PgUp`/`PgDn`, `[` / `]` | `LB` / `RB` | `L` / `R` | Clique nas abas |
+| **Abrir Opções do Port & Cloud** | — | `L3` *(clique analógico esq.)* | `L3` *(clique analógico esq.)* | `Help & About` / `System → Port Options & Cloud` |
+| **Volume / Mudo** | `+` / `-` e `N` (ou `M` fora de mapa) | — | — | — |
+| **Trocar Idioma (`EN` ↔ `PT-BR`)** | **`F7`** | — | — | **Port Options & Cloud** |
+| **Alternar FPS (`30` ↔ `60`)** | **`F8`** | — | — | **Port Options & Cloud** |
+| **Alternar Proporção (`Auto`/`16:9`/`3:2`)** | **`F9`** | — | — | **Port Options & Cloud** |
+| **Tela Cheia / Janela** | **`F11`** | — | — | Botão maximizar da janela |
+| **Capturar Screenshot** | **`F12`** | — | — | — |
 
 ---
 

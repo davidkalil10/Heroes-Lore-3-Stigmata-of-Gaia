@@ -208,12 +208,18 @@ public:
                 }
                 if (next_tick > now) {
                     auto rem_ms = std::chrono::duration_cast<std::chrono::milliseconds>(next_tick - now).count();
+#ifdef __SWITCH__
+                    if (rem_ms > 0) {
+                        SDL_Delay(static_cast<Uint32>(rem_ms));
+                    }
+#else
                     if (rem_ms > 2) {
                         SDL_Delay(static_cast<Uint32>(rem_ms - 1));
                     }
                     while (clock::now() < next_tick) {
                         std::this_thread::yield();
                     }
+#endif
                 } else {
                     next_tick = now;
                 }
@@ -529,6 +535,7 @@ private:
                 if (modal_ && modal_->is_open()) {
                     modal_->draw_gl(*gl_, win_w_, win_h_);
                 }
+                gl_->flush_batch();
             }
             if (screenshot_requested_) {
                 screenshot_requested_ = false;

@@ -74,6 +74,7 @@ add_library(hl3_core STATIC
     src/core/bundle.cpp
     src/core/macho_loader.cpp
     src/core/machine.cpp
+    src/core/arm_fast_cpu.cpp
     src/core/objc.cpp
     src/core/runtime.cpp
     src/platform/display_config.cpp
@@ -105,6 +106,9 @@ target_link_libraries(hl3_core PUBLIC
     ${HL3_SDL2_TARGET}
     Threads::Threads
 )
+if(HL3_TCI OR HL3_SWITCH)
+    target_compile_definitions(hl3_core PUBLIC HL3_USE_FAST_CPU=1)
+endif()
 
 if(WIN32)
     target_compile_definitions(hl3_core PUBLIC NOMINMAX _CRT_SECURE_NO_WARNINGS SDL_MAIN_HANDLED)

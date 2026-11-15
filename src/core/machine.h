@@ -5,8 +5,10 @@
 
 #include <unicorn/unicorn.h>
 
+#include <array>
 #include <condition_variable>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <map>
 #include <mutex>
@@ -41,6 +43,7 @@ public:
 };
 
 class Machine;
+class ArmFastCpu;
 
 struct TrapResult {
     bool has_value = false;
@@ -92,6 +95,13 @@ private:
 
 class Machine {
 public:
+    struct MemRegion {
+        u32 base = 0;
+        u32 end = 0;
+        u8* host = nullptr;
+        size_t size = 0;
+    };
+
     explicit Machine(bool native_fast_traps = true);
     ~Machine();
 
@@ -101,21 +111,82 @@ public:
     uc_engine* uc() const { return uc_; }
     const MachOImage& image() const { return image_; }
 
-    // Memory access
-    u32 rd32(u32 addr) const;
-    u16 rd16(u32 addr) const;
-    i32 rds16(u32 addr) const;
-    u8 rd8(u32 addr) const;
-    i32 rds8(u32 addr) const;
-    float rdf32(u32 addr) const;
+    // Direct host backing pointers for mapped guest regions
+    const u8* guest_rptr(u32 addr, size_t len) const {
+        for (const auto& r : regions_) {
+            if (addr >= r.base && addr < r.end && len <= static_cast<size_t>(r.end - addr)) {
+                return r.host + (addr - r.base);
+            }
+        }
+        return nullptr;
+    }
+    u8* guest_wptr(u32 addr, size_t len) {
+        for (const auto& r : regions_) {
+            if (addr >= r.base && addr < r.end && len <= static_cast<size_t>(r.end - addr)) {
+                return r.host + (addr - r.base);
+            }
+        }
+        return nullptr;
+    }
+    const char* guest_cstr_ptr(u32 addr, size_t* max_avail = nullptr) const {
+        for (const auto& r : regions_) {
+            if (addr >= r.base && addr < r.end) {
+                if (max_avail) *max_avail = static_cast<size_t>(r.end - addr);
+                return reinterpret_cast<const char*>(r.host + (addr - r.base));
+            }
+        }
+        if (max_avail) *max_avail = 0;
+        return nullptr;
+    }
+
+    // Memory access (fast inline host pointer path with strict bounds checks)
+    u32 rd32(u32 addr) const {
+        if (const u8* p = guest_rptr(addr, 4)) return read_u32_le(p);
+        throw GuestFault("rd32 failed at " + hex32(addr));
+    }
+    u16 rd16(u32 addr) const {
+        if (const u8* p = guest_rptr(addr, 2)) return read_u16_le(p);
+        throw GuestFault("rd16 failed at " + hex32(addr));
+    }
+    i32 rds16(u32 addr) const {
+        u16 v = rd16(addr);
+        return (v & 0x8000u) ? i32(u32(v) | 0xFFFF0000u) : i32(v);
+    }
+    u8 rd8(u32 addr) const {
+        if (const u8* p = guest_rptr(addr, 1)) return *p;
+        throw GuestFault("rd8 failed at " + hex32(addr));
+    }
+    i32 rds8(u32 addr) const {
+        u8 v = rd8(addr);
+        return (v & 0x80u) ? i32(u32(v) | 0xFFFFFF00u) : i32(v);
+    }
+    float rdf32(u32 addr) const { return bits_to_f32(rd32(addr)); }
     Bytes rdbytes(u32 addr, size_t len) const;
     bool rdbytes(u32 addr, size_t len, void* dst) const;
     std::string cstr(u32 addr) const;
 
-    void wr32(u32 addr, u32 val);
-    void wr16(u32 addr, u16 val);
-    void wr8(u32 addr, u8 val);
-    void wrf32(u32 addr, float val);
+    void wr32(u32 addr, u32 val) {
+        if (u8* p = guest_wptr(addr, 4)) {
+            write_u32_le(p, val);
+            return;
+        }
+        throw GuestFault("wr32 failed at " + hex32(addr));
+    }
+    void wr16(u32 addr, u16 val) {
+        if (u8* p = guest_wptr(addr, 2)) {
+            write_u16_le(p, val);
+            return;
+        }
+        throw GuestFault("wr16 failed at " + hex32(addr));
+    }
+    void wr8(u32 addr, u8 val) {
+        if (u8* p = guest_wptr(addr, 1)) {
+            *p = val;
+            return;
+        }
+        throw GuestFault("wr8 failed at " + hex32(addr));
+    }
+    void wrf32(u32 addr, float val) { wr32(addr, f32_to_bits(val)); }
     void wrbytes(u32 addr, const void* data, size_t len);
     void wrbytes(u32 addr, const Bytes& data) { wrbytes(addr, data.data(), data.size()); }
 
@@ -155,20 +226,28 @@ public:
     // Host -> Guest execution
     u32 call(u32 addr, const std::vector<u32>& args = {}, u32 sp_override = 0, u64 max_insn = 0,
              u64 timeout_us = 0);
+    void request_stop();
     bool last_timed_out() const { return last_timed_out_; }
 
     // Code hook registration
     void add_code_hook(u32 begin, u32 end, CodeHookFn fn);
     void remove_all_user_hooks();
 
+    // Fast ARMv6 CPU executor & cache invalidation
+    void set_fast_cpu(bool enabled);
+    bool fast_cpu_enabled() const { return use_fast_cpu_; }
+    ArmFastCpu* fast_cpu() { return fast_cpu_.get(); }
+    const ArmFastCpu* fast_cpu() const { return fast_cpu_.get(); }
+    void invalidate_code_word(u32 va);
+
     // Diagnostics & stats
-    void set_phase(const std::string& p) { phase_ = p; }
+    void set_phase(const std::string& p);
     const std::string& phase() const { return phase_; }
     void record_unimplemented(const std::string& key);
     void log(const std::string& msg);
     void set_trace(bool on) { trace_enabled_ = on; }
     bool trace_enabled() const { return trace_enabled_; }
-    const std::unordered_map<std::string, u64>& trap_counts(const std::string& p) const;
+    std::unordered_map<std::string, u64> trap_counts(const std::string& p) const;
     const std::unordered_map<std::string, u64>& unimplemented_counts() const { return unimplemented_; }
 
     std::string stop_reason;
@@ -176,11 +255,22 @@ public:
 private:
     struct CodeHookEntry {
         uc_hook handle = 0;
+        u32 begin = 0;
+        u32 end = 0;
         CodeHookFn fn;
         Machine* machine = nullptr;
     };
 
+    friend class ArmFastCpu;
+
+    u32 dispatch_fast_trap(u32 trap_addr);
+    bool has_user_hook_at(u32 addr) const;
+    void run_user_hooks_at(u32 addr, u32 size);
+    void set_in_unicorn_fallback(bool v) { in_unicorn_fallback_ = v; }
+    bool use_fast_regs() const { return use_fast_cpu_ && fast_cpu_ && !in_unicorn_fallback_; }
+
     void map_memory();
+    void free_memory();
     void install_native_fast_stubs();
     void enable_vfp();
 
@@ -191,8 +281,16 @@ private:
 
     uc_engine* uc_ = nullptr;
     EmulationWatchdog* watchdog_ = nullptr;
+    std::unique_ptr<ArmFastCpu> fast_cpu_;
+#if defined(HL3_USE_FAST_CPU)
+    bool use_fast_cpu_ = true;
+#else
+    bool use_fast_cpu_ = false;
+#endif
+    bool in_unicorn_fallback_ = false;
     bool native_fast_traps_ = true;
     MachOImage image_;
+    std::array<MemRegion, 6> regions_{};
 
     u32 heap_ptr_ = kHeapBase + 0x1000u;
     std::unordered_map<u32, u32> alloc_sizes_;
@@ -210,8 +308,8 @@ private:
     uc_hook fault_hook_ = 0;
 
     std::string phase_ = "boot";
-    std::unordered_map<std::string, std::unordered_map<std::string, u64>> counters_;
-    std::unordered_map<std::string, u64> empty_counter_;
+    std::unordered_map<std::string, std::vector<u64>> phase_trap_counts_;
+    std::vector<u64>* active_trap_counts_ = nullptr;
     std::unordered_map<std::string, u64> unimplemented_;
     std::vector<std::string> log_lines_;
     bool trace_enabled_ = false;

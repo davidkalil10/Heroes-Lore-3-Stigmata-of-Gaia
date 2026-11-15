@@ -1,32 +1,24 @@
-# Handoff - Heroes Lore 3 Recomp
+# HANDOFF - Heroes Lore 3 Recomp
 
-## Estado Atual
-
-- **Última entrega concluída**: **Release `v1.0.5` (`Android versionCode 6`) — correção dos artefatos quadriculados (GLES2 `highp` UV precision) e do travamento visual na tela de Cloud Save (`PortOptionsModal::poll` + `CloudSaveManager::launch_worker`)**, validada localmente com `ctest` (`3/3`), `unittest`, `bump_version.py --check` e `verify_workspace.py`, com commit e tag `v1.0.5` enviados ao GitHub para disparar o workflow multiplataforma.
-- **Próxima etapa recomendada**: Testar atualização OTA de `v1.0.4` para `v1.0.5` no Android (validando ausência de linhas quadriculadas e resposta imediata na tela de Cloud Save) e testar `.nro` no Nintendo Switch físico.
-- **Versão atual no repositório**: `v1.0.5` (`versionCode 6` no Android)
-- **Idioma padrão no boot**: Inglês (`en`), alternável em tempo real para Português (`pt-BR`) via `F7` ou `Port Options & Cloud` sem reiniciar nem alterar saves
-
-## O que foi feito e validado na Sessão 27
-
-1. **Artefatos quadriculados intermitentes em menus e no mapa (`src/hle/gl_bridge.cpp`)**:
-   - **Causa raiz**: No backend OpenGL ES 2.0 (`is_gles`), o *fragment shader* declarava `"precision mediump float;\n"` enquanto as principais texturas de interface e HUD (`user_interface_with_alpha.pvr`, `hud.pvr`, `menu_bkg.pvr`) têm `1024x1024`. Em FP16 (`mediump`), coordenadas UV em `[0.5, 1.0)` têm passo de `1/2048` (`0.5` texel), causando sangramento de borda (linhas `+` nos slots 9-slice e junções de tiles) sob escala fracionária mobile. Além disso, `tex_parameter_f` não delegava filtros para `tex_parameter_i`.
-   - **Correção**: Atualizados `vs_src` e `fs_src` GLES2 para `precision highp float;` (`#ifdef GL_FRAGMENT_PRECISION_HIGH` no FS com fallback compatível) e roteado `GLBridge::tex_parameter_f` para `tex_parameter_i` preservando `GL_NEAREST`.
-   - **Validação**: Coberto em `tests/test_viewport_aspect.py` (`test_gles2_shaders_request_highp_for_atlas_uvs`) e `tests/cpp/test_platform_services.cpp`.
-2. **Feedback congelado na tela de Cloud Save / Updater (`src/platform/options_modal.h`, `src/platform/options_modal.cpp`, `src/platform/cloud_save.h`, `src/platform/cloud_save.cpp`)**:
-   - **Causa raiz**: `PortOptionsModal::poll()` só marcava `dirty_ = true` enquanto `live` era `true` (`busy || authorizing`). Quando o worker em segundo plano concluía o refresh ou upload (`busy: true -> false`), `live` virava `false` naquele mesmo frame, deixando a textura em cache congelada em `"Verificando save na nuvem..."` ou `"Fazendo backup..."` até o usuário sair e entrar novamente no menu.
-   - **Correção**: Implementado `build_live_state_signature(...)` + `was_live_` em `PortOptionsModal` para disparar `dirty_ = true` imediatamente em qualquer mudança de estado ou transição `live -> idle`. Em `CloudSaveManager::launch_worker`, a mensagem inicial (`cloud.msg.checking`, `cloud.msg.uploading`, `cloud.msg.downloading`) passou a ser definida atomicamente sob mutex antes do retorno, com `BusyResetGuard` RAII.
-   - **Validação**: Novo teste `test_modal_live_poll_redraws` em `tests/cpp/test_platform_services.cpp` cobrindo refresh e upload assíncronos após limpeza de `dirty_`.
+## Estado atual
+- **Etapa ativa**: `S13` (Port Nintendo Switch `.nro` e validação de hardware/memória) — próxima recomendada `S14`.
+- **Versão atual**: `v1.0.6` (`Android versionCode 7`), publicada via tag `v1.0.6`.
+- **O que foi feito e validado nesta sessão (`v1.0.6`)**:
+  1. **Nintendo Switch Button Swap (`A <-> B`, `X <-> Y`)**: implementado em [src/platform/input_controller.h](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/platform/input_controller.h) e [src/platform/input_controller.cpp](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/platform/input_controller.cpp) para Switch nativo (`#ifdef __SWITCH__`) e controles Switch em PC/Android.
+  2. **Mapeamento completo de slots HUD + sincronia no `README.md`**: `LT`/`ZL` (Skill 1), `RT`/`ZR` (Skill 2), `R3` (Right Stick Click — Skill 3), `LB`/`RB` (Poções 1/2 e Abas), `L3` (Left Stick Click — Port Options & Cloud), `X` (Ataque Primário) e `Y` (Ataque Secundário / Skip), validado por `test_gamepad_switch_and_slots` em [tests/cpp/test_platform_services.cpp](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/tests/cpp/test_platform_services.cpp).
+  3. **Otimizações Pack A + Pack B (`ArmFastCpu`) para Nintendo Switch / Unicorn-TCI**:
+     - Pack A: acesso direto à RAM host em `Machine`, caminhos zero-copy em `hle_libc.cpp`, cache ObjC em `src/core/objc.{h,cpp}`, batching de quads via VBO em `gl_bridge.{h,cpp}` e ajuste de VSync/Sleep em `src/main.cpp`.
+     - Pack B: [src/core/arm_fast_cpu.h](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/core/arm_fast_cpu.h) e [src/core/arm_fast_cpu.cpp](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/src/core/arm_fast_cpu.cpp) (`HL3_USE_FAST_CPU=1` em `HL3_TCI` / `HL3_SWITCH`), validado lockstep contra Unicorn (`fast=0` vs `fast=1`) em `macho_boot` e bit/pixel-a-pixel em `headless_runtime`.
+     - Benchmark Unicorn-TCI (`--headless`): `120` frames `4.969s` -> `3.7743s`; `360` frames `7.293s` -> `4.7552s`; delta steady-state (`360f - 120f`) acelerado **2.37x** (`2.324s` -> `0.981s`, `9.68 -> 4.09 ms/frame`).
+  4. **Versionamento e documentação**: `python tools/bump_version.py patch` (`1.0.5` -> `1.0.6`, `versionCode 6 -> 7`), `docs/DECISIONS.md` (`ADR-029`), `docs/RESEARCH_LOG.md` (Sessão 28), [research/sessions/2026-11-15-01.md](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/research/sessions/2026-11-15-01.md) e `docs/RELEASE_NOTES.md`.
 
 ## O que ficou pendente
+- Testar o novo `heroes_lore_3.nro` (`v1.0.6`) no Nintendo Switch físico (botões `A/B`/`X/Y`, slots `LT/RT/R3/LB/RB/L3` e ganho de fluidez em jogo).
+- Concluir validação pós-release da `v1.0.6` e avançar para `S14` (auditoria final de paridade).
 
-- Acompanhar o workflow `Build Multiplatform & Release` da tag `v1.0.5` no GitHub Actions, validar a atualização OTA de `v1.0.4` -> `v1.0.5` no Android (ausência de linhas quadriculadas + atualização imediata da tela de Cloud Save) e testar `.nro` em Nintendo Switch físico.
-
-## Próximo passo concreto ao retomar
-
-Verificar a execução do workflow da tag `v1.0.5` e validar os pacotes/testes locais caso novas alterações sejam feitas:
-
+## Próximo passo concreto e comando de retomada
+Acompanhar o workflow `Build & Release Multi-Platform` da tag `v1.0.6` no GitHub Actions e, após download/atualização no Switch, executar em sessão futura:
 ```powershell
-python tools/bump_version.py --check
+python tools/project_status.py show
 python tools/verify_workspace.py
 ```

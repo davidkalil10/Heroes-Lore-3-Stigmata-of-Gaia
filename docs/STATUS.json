@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
-  "updated_at": "2026-11-14",
-  "overall_phase": "multiplatform_release_v1_0_5",
-  "current_step": "S12",
-  "next_recommended_step": "S13",
-  "summary": "Release v1.0.5 (Android versionCode 6): eliminadas linhas quadriculadas em GLES2 via precisao highp float nos shaders de atlas 1024x1024 + tex_parameter_f -> GL_NEAREST, e corrigido travamento visual na tela de Cloud Save/Updater garantindo redesenho imediato ao concluir workers assincronos.",
+  "updated_at": "2026-11-15",
+  "overall_phase": "multiplatform_release_v1_0_6",
+  "current_step": "S13",
+  "next_recommended_step": "S14",
+  "summary": "Release v1.0.6 (Android versionCode 7): layout Nintendo Switch (A<->B e X<->Y), mapeamento completo de slots (LT/ZL Skill 1, RT/ZR Skill 2, R3 Skill 3, L3 Opcoes do Port, LB/RB Pocoes/Abas) sincronizado no README, Pack A (RAM host direta, libc zero-copy, cache ObjC, VBO quad batching GLES2) e Pack B (ArmFastCpu pre-decodificado ARMv6+VFPv2 com fallback Unicorn RAII), reduzindo o custo steady-state em Unicorn-TCI em 2.37x (9.68 -> 4.09 ms/frame).",
   "steps": [
     {
       "id": "S00",
@@ -267,7 +267,12 @@
         "CMakeLists.txt",
         "src/core/runtime.cpp",
         "src/core/machine.cpp",
+        "src/core/arm_fast_cpu.h",
+        "src/core/arm_fast_cpu.cpp",
+        "src/core/objc.cpp",
         "src/hle/gl_bridge.cpp",
+        "src/hle/hle_libc.cpp",
+        "src/hle/hle_uikit.cpp",
         "src/audio/audio_mixer.cpp",
         "src/platform/net_http.cpp",
         "src/platform/cloud_save.cpp",
@@ -296,9 +301,10 @@
         "research/sessions/2026-11-14-05.md",
         "research/sessions/2026-11-14-06.md",
         "research/sessions/2026-11-14-07.md",
-        "research/sessions/2026-11-14-08.md"
+        "research/sessions/2026-11-14-08.md",
+        "research/sessions/2026-11-15-01.md"
       ],
-      "notes": "Release v1.0.5 (Android versionCode 6) com correcoes pos-playtest Android: (1) GLES2 vertex/fragment shaders elevados para highp float (eliminando quantizacao FP16 de UVs em atlas 1024x1024 e seams quadriculados nos menus/mapa) + tex_parameter_f roteado para GL_NEAREST; (2) PortOptionsModal::poll() passa a detectar mudanca de assinatura de estado e transicao live->idle (busy: true->false) para atualizar na hora a tela Cloud Save / Updater apos check/upload; (3) CloudSaveManager::launch_worker define mensagem inicial atomicamente e usa BusyResetGuard RAII."
+      "notes": "Release v1.0.6 (Android versionCode 7): inclui Pack A (RAM host direta em Machine, memcpy/memset zero-copy em hle_libc, cache ObjC, VBO quad batching GLES2 e ajuste VSync/Sleep no main.cpp), swap Nintendo A<->B / X<->Y em controles Switch, mapeamento completo de slots (LT/ZL Skill 1, RT/ZR Skill 2, R3 Skill 3, L3 Port Options, LB/RB Pocoes/Abas) + test_gamepad_switch_and_slots, mantendo paridade completa em todos os testes C++ e Python."
     },
     {
       "id": "S13",
@@ -315,10 +321,16 @@
         "tools/verify_switch_package.py",
         "tests/switch_memory_contract.c",
         ".github/workflows/build.yml",
+        "src/core/arm_fast_cpu.h",
+        "src/core/arm_fast_cpu.cpp",
+        "src/core/machine.cpp",
+        "src/core/runtime.cpp",
+        "src/platform/input_controller.cpp",
         "research/sessions/2026-11-14-03.md",
-        "research/sessions/2026-11-14-04.md"
+        "research/sessions/2026-11-14-04.md",
+        "research/sessions/2026-11-15-01.md"
       ],
-      "notes": "Toolchain devkitA64/libnx (0100F3A300030000), Unicorn-TCI (-DUNICORN_INTERPRETER=ON, buffer 32 MiB) e ordem de linkagem unicorn_os.c corrigida (direto em HeroesLore3) compilando com sucesso no Actions Run 43626533694 (heroes_lore_3.nro 55.908.565 B, archive:false, verify_switch_package OK); aguardando teste em hardware Switch fisico."
+      "notes": "v1.0.6 otimizada para Nintendo Switch (HL3_TCI / HL3_SWITCH com HL3_USE_FAST_CPU=1): (1) layout nativo Switch A<->B e X<->Y + 3 slots de skill (LT/ZL, RT/ZR, R3) + L3 Port Options + LB/RB Pocoes/Abas; (2) Pack A + ArmFastCpu (Pack B) executor C++ pre-decodificado ARMv6+VFPv2 validado bit/pixel-a-pixel contra Unicorn Oracle (`fast=0` vs `fast=1`), acelerando Unicorn-TCI em 2.37x em steady-state (`2.324s` -> `0.981s` em 240 frames). Aguardando validacao em hardware Switch fisico com o .nro da v1.0.6."
     },
     {
       "id": "S14",

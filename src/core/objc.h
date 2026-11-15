@@ -138,6 +138,17 @@ public:
     void set_msg_trace(bool on) { msg_trace_ = on; }
 
 private:
+    struct DispatchCacheEntry {
+        u32 isa = 0;
+        u32 sel_ptr = 0;
+        HClass* cls = nullptr;
+        bool is_class = false;
+        const HMethodEntry* method = nullptr;
+    };
+
+    const std::string& sel_name_ref(u32 ptr);
+    u32 resolve_send_slot(bool stret, bool super_);
+
     Machine& m_;
     const HleRegistry& reg_;
     std::unordered_map<std::string, std::unique_ptr<HClass>> owned_;
@@ -147,6 +158,10 @@ private:
     std::unordered_map<u32, std::any> hobj_;
     std::unordered_map<u32, std::string> sel_cache_;
     std::unordered_set<std::string> logged_unimpl_;
+    std::vector<DispatchCacheEntry> dispatch_cache_;
+    u32 slot_msg_send_ = 0xFFFFFFFFu;
+    u32 slot_msg_send_stret_ = 0xFFFFFFFFu;
+    u32 slot_msg_send_super2_ = 0xFFFFFFFFu;
     bool msg_trace_ = false;
 };
 

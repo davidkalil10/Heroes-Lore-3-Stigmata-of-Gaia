@@ -103,7 +103,25 @@ public:
     void reset_gl(GLBridge& gl);
 
     // Joystick / GameController management
+    enum GamepadButtonCode {
+        kGamepadConfirm = 0,
+        kGamepadCancel = 1,
+        kGamepadAttackPrimary = 2,
+        kGamepadAttackSecondary = 3,
+        kGamepadPotion1 = 4,
+        kGamepadPotion2 = 5,
+        kGamepadMinimap = 6,
+        kGamepadStart = 7,
+        kGamepadSkill3 = 8,
+        kGamepadPortOptions = 9,
+        kGamepadSkill1 = 10,
+        kGamepadSkill2 = 11,
+    };
+
     static bool should_ignore_joystick_device(const char* name, int num_buttons, int num_hats);
+    static int map_controller_button(SDL_GameControllerButton button, bool nintendo_layout);
+    static bool update_trigger_axis_state(bool& was_pressed, Sint16 value);
+    bool is_nintendo_controller(SDL_JoystickID instance_id) const;
     void init_controllers();
     void shutdown_controllers();
     void handle_controller_added(int device_index);
@@ -230,6 +248,7 @@ private:
     // SDL controllers & joysticks
     std::unordered_map<SDL_JoystickID, SDL_GameController*> controllers_;
     std::unordered_map<SDL_JoystickID, SDL_Joystick*> raw_joysticks_;
+    std::unordered_map<SDL_JoystickID, std::pair<bool, bool>> trigger_pressed_;
 };
 
 }  // namespace hl3

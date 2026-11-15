@@ -319,6 +319,59 @@ void test_modal_live_poll_redraws(const std::filesystem::path& tmp_root) {
     cloud.wait_idle();
 }
 
+void test_gamepad_switch_and_slots() {
+    using IC = hl3::InputController;
+
+    // 1. Xbox / PC standard layout
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_A, false) == IC::kGamepadConfirm,
+          "Xbox A maps to confirm");
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_B, false) == IC::kGamepadCancel,
+          "Xbox B maps to cancel");
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_X, false) == IC::kGamepadAttackPrimary,
+          "Xbox X maps to primary attack");
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_Y, false) == IC::kGamepadAttackSecondary,
+          "Xbox Y maps to secondary attack");
+
+    // 2. Nintendo Switch swapped layout (A<->B, X<->Y)
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_A, true) == IC::kGamepadCancel,
+          "Switch SDL A (bottom) swaps to cancel");
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_B, true) == IC::kGamepadConfirm,
+          "Switch SDL B (right) swaps to confirm");
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_X, true) == IC::kGamepadAttackSecondary,
+          "Switch SDL X (left) swaps to secondary attack");
+    check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_Y, true) == IC::kGamepadAttackPrimary,
+          "Switch SDL Y (top) swaps to primary attack");
+
+    // 3. Dedicated skill/potion/modal slots on both layouts
+    for (bool nin : {false, true}) {
+        check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_RIGHTSTICK, nin) == IC::kGamepadSkill3,
+              "R3 right-stick click maps to skill slot 3");
+        check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_LEFTSTICK, nin) == IC::kGamepadPortOptions,
+              "L3 left-stick click maps to Port Options & Cloud");
+        check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_LEFTSHOULDER, nin) == IC::kGamepadPotion1,
+              "LB/L maps to prev tab / potion 1");
+        check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, nin) == IC::kGamepadPotion2,
+              "RB/R maps to next tab / potion 2");
+        check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_START, nin) == IC::kGamepadStart,
+              "Start/+ maps to Pause/Menu");
+        check(IC::map_controller_button(SDL_CONTROLLER_BUTTON_BACK, nin) == IC::kGamepadMinimap,
+              "Back/- maps to Minimap");
+    }
+
+    // 4. Analog trigger (LT/RT -> Skill 1/Skill 2) hysteresis
+    bool pressed = false;
+    check(!IC::update_trigger_axis_state(pressed, 10000) && !pressed,
+          "Trigger below press threshold stays unpressed");
+    check(IC::update_trigger_axis_state(pressed, 16384) && pressed,
+          "Trigger at press threshold emits press event");
+    check(!IC::update_trigger_axis_state(pressed, 12000) && pressed,
+          "Trigger inside hysteresis deadband remains pressed");
+    check(!IC::update_trigger_axis_state(pressed, 8192) && !pressed,
+          "Trigger at release threshold releases pressed state");
+    check(!IC::update_trigger_axis_state(pressed, 10000) && !pressed,
+          "Trigger after release remains unpressed below high threshold");
+}
+
 }  // namespace
 
 int main() {
@@ -335,6 +388,7 @@ int main() {
     test_png_and_ui(root, tmp_root);
     test_android_port_regressions();
     test_modal_live_poll_redraws(tmp_root);
+    test_gamepad_switch_and_slots();
 
     std::filesystem::remove_all(tmp_root, ec);
 

@@ -65,7 +65,7 @@ void register_hle_uikit(Runtime& rt, HleRegistry& reg) {
             rt.objc().get_str(m.reg(3)),
         });
         m.stop_reason.clear();
-        uc_emu_stop(m.uc());
+        m.request_stop();
         return TrapResult::val(0u);
     });
 

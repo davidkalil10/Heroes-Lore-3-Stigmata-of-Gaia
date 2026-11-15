@@ -314,7 +314,15 @@ void register_hle_libc(Runtime& rt, HleRegistry& reg) {
 
     reg.add_func("_memcpy|_memmove", [](Machine& m) {
         u32 dst = m.reg(0), src = m.reg(1), n = m.reg(2);
-        if (n > 0) m.wrbytes(dst, m.rdbytes(src, n));
+        if (n > 0 && dst != src) {
+            u8* d = m.guest_wptr(dst, n);
+            const u8* s = m.guest_rptr(src, n);
+            if (d && s) {
+                std::memmove(d, s, n);
+            } else {
+                m.wrbytes(dst, m.rdbytes(src, n));
+            }
+        }
         return TrapResult::val(dst);
     });
     reg.add_func("_memset", [](Machine& m) {
@@ -322,49 +330,127 @@ void register_hle_libc(Runtime& rt, HleRegistry& reg) {
         u8 c = static_cast<u8>(m.reg(1) & 0xFFu);
         u32 n = m.reg(2);
         if (n > 0) {
-            Bytes b(n, c);
-            m.wrbytes(dst, b);
+            if (u8* d = m.guest_wptr(dst, n)) {
+                std::memset(d, c, n);
+            } else {
+                Bytes b(n, c);
+                m.wrbytes(dst, b);
+            }
         }
         return TrapResult::val(dst);
     });
     reg.add_func("_memcmp", [](Machine& m) {
-        Bytes a = m.rdbytes(m.reg(0), m.reg(2));
-        Bytes b = m.rdbytes(m.reg(1), m.reg(2));
-        int cmp = (a == b) ? 0 : (a < b ? -1 : 1);
+        u32 p0 = m.reg(0), p1 = m.reg(1), n = m.reg(2);
+        if (n == 0 || p0 == p1) return TrapResult::val(0u);
+        const u8* a = m.guest_rptr(p0, n);
+        const u8* b = m.guest_rptr(p1, n);
+        if (a && b) {
+            int cmp = std::memcmp(a, b, n);
+            return TrapResult::val(static_cast<u32>(cmp < 0 ? -1 : (cmp > 0 ? 1 : 0)));
+        }
+        Bytes va = m.rdbytes(p0, n);
+        Bytes vb = m.rdbytes(p1, n);
+        int cmp = (va == vb) ? 0 : (va < vb ? -1 : 1);
         return TrapResult::val(static_cast<u32>(cmp));
     });
 
     reg.add_func("_strlen", [](Machine& m) {
-        return TrapResult::val(static_cast<u32>(m.cstr(m.reg(0)).size()));
+        u32 addr = m.reg(0);
+        if (addr == 0) return TrapResult::val(0u);
+        size_t avail = 0;
+        if (const char* p = m.guest_cstr_ptr(addr, &avail)) {
+            size_t limit = std::min<size_t>(avail, 1u << 20);
+            const void* nul = std::memchr(p, '\0', limit);
+            size_t len = nul ? static_cast<size_t>(static_cast<const char*>(nul) - p) : limit;
+            return TrapResult::val(static_cast<u32>(len));
+        }
+        return TrapResult::val(static_cast<u32>(m.cstr(addr).size()));
     });
     reg.add_func("_strcmp", [](Machine& m) {
-        std::string a = m.cstr(m.reg(0));
-        std::string b = m.cstr(m.reg(1));
+        u32 p0 = m.reg(0), p1 = m.reg(1);
+        if (p0 == p1) return TrapResult::val(0u);
+        size_t av0 = 0, av1 = 0;
+        const char* s0 = m.guest_cstr_ptr(p0, &av0);
+        const char* s1 = m.guest_cstr_ptr(p1, &av1);
+        if (s0 && s1) {
+            size_t lim = std::min(av0, av1);
+            for (size_t i = 0; i < lim; ++i) {
+                unsigned char c0 = static_cast<unsigned char>(s0[i]);
+                unsigned char c1 = static_cast<unsigned char>(s1[i]);
+                if (c0 != c1) return TrapResult::val(static_cast<u32>(c0 < c1 ? -1 : 1));
+                if (c0 == 0) return TrapResult::val(0u);
+            }
+        }
+        std::string a = m.cstr(p0);
+        std::string b = m.cstr(p1);
         int cmp = (a == b) ? 0 : (a < b ? -1 : 1);
         return TrapResult::val(static_cast<u32>(cmp));
     });
     reg.add_func("_strncmp", [](Machine& m) {
-        u32 n = m.reg(2);
-        std::string a = m.cstr(m.reg(0)).substr(0, n);
-        std::string b = m.cstr(m.reg(1)).substr(0, n);
+        u32 p0 = m.reg(0), p1 = m.reg(1), n = m.reg(2);
+        if (n == 0 || p0 == p1) return TrapResult::val(0u);
+        size_t av0 = 0, av1 = 0;
+        const char* s0 = m.guest_cstr_ptr(p0, &av0);
+        const char* s1 = m.guest_cstr_ptr(p1, &av1);
+        if (s0 && s1 && av0 >= n && av1 >= n) {
+            for (u32 i = 0; i < n; ++i) {
+                unsigned char c0 = static_cast<unsigned char>(s0[i]);
+                unsigned char c1 = static_cast<unsigned char>(s1[i]);
+                if (c0 != c1) return TrapResult::val(static_cast<u32>(c0 < c1 ? -1 : 1));
+                if (c0 == 0) return TrapResult::val(0u);
+            }
+            return TrapResult::val(0u);
+        }
+        std::string a = m.cstr(p0).substr(0, n);
+        std::string b = m.cstr(p1).substr(0, n);
         int cmp = (a == b) ? 0 : (a < b ? -1 : 1);
         return TrapResult::val(static_cast<u32>(cmp));
     });
     reg.add_func("_strcpy", [](Machine& m) {
-        std::string s = m.cstr(m.reg(1));
-        Bytes b(s.begin(), s.end());
+        u32 dst = m.reg(0), src = m.reg(1);
+        size_t av_s = 0;
+        const char* s = m.guest_cstr_ptr(src, &av_s);
+        if (s) {
+            const void* nul = std::memchr(s, '\0', std::min<size_t>(av_s, 1u << 20));
+            if (nul) {
+                size_t len = static_cast<size_t>(static_cast<const char*>(nul) - s) + 1u;
+                if (u8* d = m.guest_wptr(dst, len)) {
+                    std::memmove(d, s, len);
+                    return TrapResult::val(dst);
+                }
+            }
+        }
+        std::string str = m.cstr(src);
+        Bytes b(str.begin(), str.end());
         b.push_back(0);
-        m.wrbytes(m.reg(0), b);
-        return TrapResult::val(m.reg(0));
+        m.wrbytes(dst, b);
+        return TrapResult::val(dst);
     });
     reg.add_func("_strncpy", [](Machine& m) {
-        u32 n = m.reg(2);
-        std::string s = m.cstr(m.reg(1));
-        if (s.size() > n) s.resize(n);
-        Bytes b(n, 0);
-        std::memcpy(b.data(), s.data(), s.size());
-        m.wrbytes(m.reg(0), b);
-        return TrapResult::val(m.reg(0));
+        u32 dst = m.reg(0), src = m.reg(1), n = m.reg(2);
+        if (n > 0) {
+            size_t av_s = 0;
+            const char* s = m.guest_cstr_ptr(src, &av_s);
+            u8* d = m.guest_wptr(dst, n);
+            if (s && d) {
+                size_t copy_len = 0;
+                size_t lim = std::min<size_t>(n, av_s);
+                while (copy_len < lim && s[copy_len] != '\0') ++copy_len;
+                if (copy_len == lim && lim < n) {
+                    // Fallback across segment edge
+                } else {
+                    if (copy_len > 0) std::memcpy(d, s, copy_len);
+                    if (copy_len < n) std::memset(d + copy_len, 0, n - copy_len);
+                    return TrapResult::val(dst);
+                }
+            }
+            std::string str = m.cstr(src);
+            if (str.size() > n) str.resize(n);
+            Bytes b(n, 0);
+            std::memcpy(b.data(), str.data(), str.size());
+            m.wrbytes(dst, b);
+        }
+        return TrapResult::val(dst);
     });
     reg.add_func("_strcat", [](Machine& m) {
         std::string d = m.cstr(m.reg(0));
@@ -580,9 +666,15 @@ void register_hle_libc(Runtime& rt, HleRegistry& reg) {
         if (it == rt.files.end()) return TrapResult::val(0u);
         auto& f = *it->second;
         size_t n = static_cast<size_t>(size) * count;
-        Bytes chunk = m.rdbytes(buf, n);
         if (f.pos + n > f.data.size()) f.data.resize(f.pos + n, 0);
-        if (n > 0) std::memcpy(f.data.data() + f.pos, chunk.data(), n);
+        if (n > 0) {
+            if (const u8* src = m.guest_rptr(buf, n)) {
+                std::memcpy(f.data.data() + f.pos, src, n);
+            } else {
+                Bytes chunk = m.rdbytes(buf, n);
+                std::memcpy(f.data.data() + f.pos, chunk.data(), n);
+            }
+        }
         f.pos += n;
         f.dirty = true;
         return TrapResult::val(count);

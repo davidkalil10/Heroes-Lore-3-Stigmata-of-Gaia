@@ -95,7 +95,8 @@ void HleRegistry::add_func(const std::string& names, TrapFn fn) {
     }
 }
 
-ObjCRuntime::ObjCRuntime(Machine& m, const HleRegistry& reg) : m_(m), reg_(reg) {}
+ObjCRuntime::ObjCRuntime(Machine& m, const HleRegistry& reg)
+    : m_(m), reg_(reg), dispatch_cache_(4096) {}
 
 void ObjCRuntime::register_image_classes() {
     for (const auto& c : m_.image().objc_classes) {
@@ -244,13 +245,36 @@ const HMethodEntry* ObjCRuntime::lookup(HClass* cls, const std::string& sel, boo
     return nullptr;
 }
 
-std::string ObjCRuntime::sel_name(u32 ptr) {
-    if (ptr == 0) return {};
+const std::string& ObjCRuntime::sel_name_ref(u32 ptr) {
+    static const std::string kEmpty;
+    if (ptr == 0) return kEmpty;
     auto it = sel_cache_.find(ptr);
     if (it != sel_cache_.end()) return it->second;
-    std::string s = m_.cstr(ptr);
-    sel_cache_[ptr] = s;
-    return s;
+    auto [inserted, _] = sel_cache_.emplace(ptr, m_.cstr(ptr));
+    return inserted->second;
+}
+
+std::string ObjCRuntime::sel_name(u32 ptr) {
+    return sel_name_ref(ptr);
+}
+
+u32 ObjCRuntime::resolve_send_slot(bool stret, bool super_) {
+    if (stret) {
+        if (slot_msg_send_stret_ == 0xFFFFFFFFu) {
+            slot_msg_send_stret_ = m_.import_addr("_objc_msgSend_stret");
+        }
+        return slot_msg_send_stret_;
+    }
+    if (super_) {
+        if (slot_msg_send_super2_ == 0xFFFFFFFFu) {
+            slot_msg_send_super2_ = m_.import_addr("_objc_msgSendSuper2");
+        }
+        return slot_msg_send_super2_;
+    }
+    if (slot_msg_send_ == 0xFFFFFFFFu) {
+        slot_msg_send_ = m_.import_addr("_objc_msgSend");
+    }
+    return slot_msg_send_;
 }
 
 bool ObjCRuntime::try_get_str(u32 obj, std::string& out) const {
@@ -321,52 +345,93 @@ void ObjCRuntime::msg_send(Runtime& rt, bool stret, bool super_) {
     int base = stret ? 1 : 0;
     u32 recv = m_.reg(base);
     u32 sel_ptr = m_.reg(base + 1);
-    std::string sel = sel_name(sel_ptr);
-    const char* sym_name = stret ? "_objc_msgSend_stret" : (super_ ? "_objc_msgSendSuper2" : "_objc_msgSend");
-    u32 slot = m_.import_addr(sym_name);
-
-    HClass* start_cls = nullptr;
-    HClass* cls = nullptr;
-    bool is_class = false;
-    if (super_) {
-        u32 sup_ptr = recv;
-        recv = m_.rd32(sup_ptr);
-        u32 cls_ptr = m_.rd32(sup_ptr + 4u);
-        HClass* cur = nullptr;
-        if (auto it = by_addr_.find(cls_ptr); it != by_addr_.end()) cur = it->second;
-        else if (auto it2 = by_meta_.find(cls_ptr); it2 != by_meta_.end()) cur = it2->second;
-        auto [c, is_c] = class_of(recv);
-        cls = c;
-        is_class = is_c;
-        if (cls && cur) {
-            start_cls = cur->sup;
-        }
-    } else {
-        auto [c, is_c] = class_of(recv);
-        cls = c;
-        is_class = is_c;
-    }
-
+    u32 slot = resolve_send_slot(stret, super_);
     m_.reset_forward(slot);
+
     if (recv == 0) {
         m_.set_reg(0, 0);
         m_.set_reg(1, 0);
         return;
     }
+
+    HClass* cls = nullptr;
+    bool is_class = false;
+    const HMethodEntry* target = nullptr;
+
+    if (!super_ && !msg_trace_) {
+        const u8* isa_p = m_.guest_rptr(recv, 4);
+        if (isa_p) {
+            u32 isa = read_u32_le(isa_p);
+            u32 cidx = ((isa >> 2) ^ (sel_ptr >> 2) ^ (isa >> 11)) & 4095u;
+            const DispatchCacheEntry& ce = dispatch_cache_[cidx];
+            if (ce.isa == isa && ce.sel_ptr == sel_ptr && ce.method != nullptr) {
+                cls = ce.cls;
+                is_class = ce.is_class;
+                target = ce.method;
+            } else {
+                auto [c, is_c] = class_of(recv);
+                cls = c;
+                is_class = is_c;
+                if (cls) {
+                    const std::string& sel = sel_name_ref(sel_ptr);
+                    target = lookup(cls, sel, is_class);
+                    if (target) {
+                        dispatch_cache_[cidx] = {isa, sel_ptr, cls, is_class, target};
+                    }
+                }
+            }
+        }
+    }
+
     if (!cls) {
-        m_.record_unimplemented("msg-to-unknown-object:" + sel);
-        m_.set_reg(0, 0);
-        return;
-    }
-
-    HClass* lookup_cls = start_cls ? start_cls : cls;
-    if (msg_trace_) {
-        m_.log(std::string("MSG ") + (is_class ? "+" : "-") + "[" + cls->name + " " + sel + "] r0=" +
-               hex32(m_.reg(0)) + " lr=" + hex32(m_.lr()));
-    }
-
-    const HMethodEntry* target = lookup(lookup_cls, sel, is_class);
-    if (!target) {
+        const std::string& sel = sel_name_ref(sel_ptr);
+        HClass* start_cls = nullptr;
+        if (super_) {
+            u32 sup_ptr = recv;
+            recv = m_.rd32(sup_ptr);
+            u32 cls_ptr = m_.rd32(sup_ptr + 4u);
+            HClass* cur = nullptr;
+            if (auto it = by_addr_.find(cls_ptr); it != by_addr_.end()) cur = it->second;
+            else if (auto it2 = by_meta_.find(cls_ptr); it2 != by_meta_.end()) cur = it2->second;
+            auto [c, is_c] = class_of(recv);
+            cls = c;
+            is_class = is_c;
+            if (cls && cur) {
+                start_cls = cur->sup;
+            }
+            if (recv == 0) {
+                m_.set_reg(0, 0);
+                m_.set_reg(1, 0);
+                return;
+            }
+        } else {
+            auto [c, is_c] = class_of(recv);
+            cls = c;
+            is_class = is_c;
+        }
+        if (!cls) {
+            m_.record_unimplemented("msg-to-unknown-object:" + sel);
+            m_.set_reg(0, 0);
+            return;
+        }
+        HClass* lookup_cls = start_cls ? start_cls : cls;
+        if (msg_trace_) {
+            m_.log(std::string("MSG ") + (is_class ? "+" : "-") + "[" + cls->name + " " + sel + "] r0=" +
+                   hex32(m_.reg(0)) + " lr=" + hex32(m_.lr()));
+        }
+        target = lookup(lookup_cls, sel, is_class);
+        if (!target) {
+            std::string key = std::string(is_class ? "+" : "-") + "[" + cls->name + " " + sel + "]";
+            m_.record_unimplemented(key);
+            m_.set_reg(0, 0);
+            m_.set_reg(1, 0);
+            if (!is_ignored_selector(sel) && logged_unimpl_.insert(key).second) {
+                m_.log("UNIMPL msg " + key + " from lr=" + hex32(m_.lr()));
+            }
+            return;
+        }
+    } else if (!target) {
+        const std::string& sel = sel_name_ref(sel_ptr);
         std::string key = std::string(is_class ? "+" : "-") + "[" + cls->name + " " + sel + "]";
         m_.record_unimplemented(key);
         m_.set_reg(0, 0);

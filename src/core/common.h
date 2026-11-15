@@ -20,7 +20,7 @@ using i32 = int32_t;
 using i64 = int64_t;
 using Bytes = std::vector<u8>;
 
-inline constexpr const char* kPortVersion = "1.0.5";
+inline constexpr const char* kPortVersion = "1.0.6";
 inline constexpr const char* kOriginalVersion = "1.0.1";
 inline constexpr const char* kPortAuthor = "David Kalil Braga (2026)";
 inline constexpr const char* kGithubRepo = "davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia";

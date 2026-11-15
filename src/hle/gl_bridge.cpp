@@ -445,6 +445,7 @@ void WidescreenController::write_code32(u32 va, u32 word) {
     }
     m_.wr32(va, word);
     uc_ctl_remove_cache(m_.uc(), va, va + 4);
+    m_.invalidate_code_word(va);
 }
 
 void WidescreenController::patch_imm(u32 va, u32 val) {
@@ -680,6 +681,7 @@ struct GLBridge::GlImpl {
     using PfnDeleteBuffers = void(APIENTRY*)(int, const u32*);
     using PfnBindBuffer = void(APIENTRY*)(u32, u32);
     using PfnBufferData = void(APIENTRY*)(u32, std::ptrdiff_t, const void*, u32);
+    using PfnBufferSubData = void(APIENTRY*)(u32, std::ptrdiff_t, std::ptrdiff_t, const void*);
 
     PfnGenTextures gen_textures = nullptr;
     PfnDeleteTextures delete_textures = nullptr;
@@ -726,9 +728,11 @@ struct GLBridge::GlImpl {
     PfnDeleteBuffers delete_buffers = nullptr;
     PfnBindBuffer bind_buffer = nullptr;
     PfnBufferData buffer_data = nullptr;
+    PfnBufferSubData buffer_sub_data = nullptr;
 
     u32 program = 0;
     u32 vbo = 0;
+    size_t vbo_capacity_bytes = 0;
     u32 backdrop_tex = 0;
     int backdrop_w = 0;
     int backdrop_h = 0;
@@ -738,6 +742,24 @@ struct GLBridge::GlImpl {
     int u_tex_mode = -1;
     int u_alpha_mode = -1;
     int u_alpha_ref = -1;
+
+    // Cached GL pipeline & batch state to minimize driver overhead on mobile/Switch
+    bool state_initialized = false;
+    u32 gpu_bound_tex = 0;
+    int cached_use_tex = -1;
+    int cached_tex_mode = -1;
+    int cached_alpha_mode = -99;
+    float cached_alpha_ref = -1.0f;
+    bool cached_has_mvp = false;
+    std::array<float, 16> cached_mvp{};
+
+    bool batch_active = false;
+    bool batch_use_tex = false;
+    u32 batch_tex_id = 0;
+    int batch_tex_mode = 0;
+    int batch_alpha_mode = -1;
+    float batch_alpha_ref = 0.0f;
+    std::array<float, 16> batch_mvp{};
 
     bool overlay_active = false;
     int overlay_tex_mode = -1;
@@ -799,6 +821,7 @@ struct GLBridge::GlImpl {
         ok &= load(delete_buffers, "glDeleteBuffers");
         ok &= load(bind_buffer, "glBindBuffer");
         ok &= load(buffer_data, "glBufferData");
+        load(buffer_sub_data, "glBufferSubData");
         return ok;
     }
 
@@ -959,8 +982,20 @@ bool GLBridge::init_gl() {
     impl_->u_alpha_mode = impl_->get_uniform_location(prog, "u_alpha_mode");
     impl_->u_alpha_ref = impl_->get_uniform_location(prog, "u_alpha_ref");
     impl_->gen_buffers(1, &impl_->vbo);
+    impl_->vbo_capacity_bytes = 64u * 1024u;
+    impl_->bind_buffer(kGlArrayBuffer, impl_->vbo);
+    impl_->buffer_data(kGlArrayBuffer, static_cast<std::ptrdiff_t>(impl_->vbo_capacity_bytes), nullptr, kGlStreamDraw);
     impl_->use_program(prog);
     impl_->uniform1i(impl_->u_tex, 0);
+    if (impl_->active_texture) impl_->active_texture(kGlTexture0);
+    impl_->enable_vertex_attrib_array(0);
+    impl_->enable_vertex_attrib_array(1);
+    impl_->enable_vertex_attrib_array(2);
+    const char* base = nullptr;
+    impl_->vertex_attrib_pointer(0, 3, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, x));
+    impl_->vertex_attrib_pointer(1, 2, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, u));
+    impl_->vertex_attrib_pointer(2, 4, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, r));
+    impl_->state_initialized = true;
 
     gl_ready_ = true;
     return true;
@@ -968,6 +1003,10 @@ bool GLBridge::init_gl() {
 
 void GLBridge::shutdown_gl() {
     if (!gl_ready_) return;
+    batch_verts_.clear();
+    impl_->batch_active = false;
+    impl_->state_initialized = false;
+    impl_->vbo_capacity_bytes = 0;
     if (impl_->backdrop_tex) {
         impl_->delete_textures(1, &impl_->backdrop_tex);
         impl_->backdrop_tex = 0;
@@ -1055,6 +1094,7 @@ std::pair<float, float> GLBridge::window_to_game_coord(int wx, int wy) const {
 }
 
 void GLBridge::begin_frame() {
+    flush_batch();
     ui_ox_ = 0;
     ui_oy_ = 0;
     has_last_ortho_ = false;
@@ -1074,6 +1114,12 @@ void GLBridge::begin_frame() {
     mv_stack_[0] = Mat4::identity();
 
     if (!gl_ready_) return;
+    impl_->gpu_bound_tex = 0;
+    impl_->cached_use_tex = -1;
+    impl_->cached_tex_mode = -1;
+    impl_->cached_alpha_mode = -99;
+    impl_->cached_has_mvp = false;
+    impl_->state_initialized = false;
     impl_->use_program(impl_->program);
     impl_->disable(kGlDepthTest);
     impl_->disable(kGlCullFace);
@@ -1090,6 +1136,7 @@ void GLBridge::begin_frame() {
 }
 
 void GLBridge::present_widescreen_backdrop() {
+    flush_batch();
     if (!gl_ready_ || world_active_ || !impl_->copy_tex_sub_image_2d) return;
     if (viewport_rect_.w <= 0 || viewport_rect_.h <= 0 || win_w_ <= 0 || win_h_ <= 0) return;
 
@@ -1212,6 +1259,7 @@ void GLBridge::present_widescreen_backdrop() {
     blend_s_ = 0x0302u;
     blend_d_ = 0x0303u;
     bound_tex_ = 0;
+    impl_->gpu_bound_tex = 0;
 }
 
 std::vector<u32> GLBridge::gen_textures(int n) {
@@ -1228,16 +1276,23 @@ std::vector<u32> GLBridge::gen_textures(int n) {
 
 void GLBridge::bind_texture(u32 target, u32 tex_id) {
     if (target == kGlTexture2D && bound_tex_ == tex_id) return;
-    if (gl_ready_) impl_->bind_texture(target, tex_id);
-    if (target == kGlTexture2D) {
-        bound_tex_ = tex_id;
+    if (target != kGlTexture2D) {
+        flush_batch();
+        if (gl_ready_) impl_->bind_texture(target, tex_id);
+        return;
+    }
+    bound_tex_ = tex_id;
+    auto it = tex_params_.find(tex_id);
+    if (it == tex_params_.end()) {
+        flush_batch();
+        if (gl_ready_ && impl_->gpu_bound_tex != tex_id) {
+            impl_->bind_texture(kGlTexture2D, tex_id);
+            impl_->gpu_bound_tex = tex_id;
+        }
         auto& tp = tex_params_[tex_id];
         auto ensure = [&](u32 pname, int param) {
-            auto it = tp.find(pname);
-            if (it == tp.end() || it->second != param) {
-                if (gl_ready_) impl_->tex_parameteri(target, pname, param);
-                tp[pname] = param;
-            }
+            if (gl_ready_) impl_->tex_parameteri(target, pname, param);
+            tp[pname] = param;
         };
         ensure(kGlTextureWrapS, static_cast<int>(kGlClampToEdge));
         ensure(kGlTextureWrapT, static_cast<int>(kGlClampToEdge));
@@ -1247,9 +1302,11 @@ void GLBridge::bind_texture(u32 target, u32 tex_id) {
 }
 
 void GLBridge::delete_textures(const std::vector<u32>& tex_ids) {
+    flush_batch();
     for (u32 id : tex_ids) {
         tex_params_.erase(id);
         if (bound_tex_ == id) bound_tex_ = 0;
+        if (impl_->gpu_bound_tex == id) impl_->gpu_bound_tex = 0;
     }
     if (gl_ready_ && !tex_ids.empty()) {
         impl_->delete_textures(static_cast<int>(tex_ids.size()), tex_ids.data());
@@ -1258,6 +1315,11 @@ void GLBridge::delete_textures(const std::vector<u32>& tex_ids) {
 
 void GLBridge::tex_image_2d(u32 target, int level, u32, int w, int h, int border, u32 fmt, u32 tp, u32 pix_ptr) {
     if (!gl_ready_) return;
+    flush_batch();
+    if (target == kGlTexture2D && impl_->gpu_bound_tex != bound_tex_) {
+        impl_->bind_texture(kGlTexture2D, bound_tex_);
+        impl_->gpu_bound_tex = bound_tex_;
+    }
     if (pix_ptr == 0 || !m_) {
         impl_->tex_image_2d(target, level, static_cast<int>(kGlRgba), w, h, border, kGlRgba, kGlUnsignedByte, nullptr);
         return;
@@ -1297,7 +1359,14 @@ void GLBridge::tex_parameter_i(u32 target, u32 pname, int param) {
         if (it != tp.end() && it->second == param) return;
         tp[pname] = param;
     }
-    if (gl_ready_) impl_->tex_parameteri(target, pname, param);
+    flush_batch();
+    if (gl_ready_) {
+        if (target == kGlTexture2D && impl_->gpu_bound_tex != bound_tex_) {
+            impl_->bind_texture(kGlTexture2D, bound_tex_);
+            impl_->gpu_bound_tex = bound_tex_;
+        }
+        impl_->tex_parameteri(target, pname, param);
+    }
 }
 
 void GLBridge::tex_parameter_f(u32 target, u32 pname, float param) {
@@ -1363,6 +1432,7 @@ void GLBridge::enable(u32 cap) {
     enabled_caps_[cap] = true;
     if (!gl_ready_) return;
     if (cap == kGlBlend || cap == kGlScissorTest || cap == kGlDepthTest || cap == kGlCullFace || cap == kGlDither) {
+        flush_batch();
         impl_->enable(cap);
     }
 }
@@ -1373,6 +1443,7 @@ void GLBridge::disable(u32 cap) {
     enabled_caps_[cap] = false;
     if (!gl_ready_) return;
     if (cap == kGlBlend || cap == kGlScissorTest || cap == kGlDepthTest || cap == kGlCullFace || cap == kGlDither) {
+        flush_batch();
         impl_->disable(cap);
     }
 }
@@ -1393,6 +1464,7 @@ void GLBridge::blend_func(u32 sfactor, u32 dfactor) {
     if (blend_s_ == sfactor && blend_d_ == dfactor) return;
     blend_s_ = sfactor;
     blend_d_ = dfactor;
+    flush_batch();
     if (gl_ready_) impl_->blend_func(sfactor, dfactor);
 }
 
@@ -1406,11 +1478,13 @@ void GLBridge::clear_color(float r, float g, float b, float a) {
 }
 
 void GLBridge::clear(u32 mask) {
+    flush_batch();
     if (gl_ready_) impl_->clear(mask);
 }
 
 void GLBridge::scissor(int x, int y, int w, int h) {
     if (!gl_ready_) return;
+    flush_batch();
     x += ui_ox_;
     y -= ui_oy_;
     const RectI& vr = viewport_rect_;
@@ -1426,6 +1500,7 @@ void GLBridge::scissor(int x, int y, int w, int h) {
 }
 
 void GLBridge::viewport(int, int, int, int) {
+    flush_batch();
     if (gl_ready_) impl_->viewport(viewport_rect_.x, viewport_rect_.y, viewport_rect_.w, viewport_rect_.h);
 }
 
@@ -1455,16 +1530,23 @@ void GLBridge::draw_arrays(u32 mode, int first, int count) {
 
     scratch_verts_.resize(static_cast<size_t>(count));
 
+    auto get_src_ptr = [&](u32 addr, size_t nbytes) -> const u8* {
+        if (const u8* direct = m_->guest_rptr(addr, nbytes)) return direct;
+        scratch_raw_.resize(nbytes);
+        if (!m_->rdbytes(addr, nbytes, scratch_raw_.data())) return nullptr;
+        return scratch_raw_.data();
+    };
+
     // Read vertices
     {
         int eb = elem_size_bytes(v_type_);
         int elem_bytes = std::max(1, v_size_) * eb;
         int strd = (v_stride_ > 0) ? v_stride_ : elem_bytes;
         size_t nbytes = static_cast<size_t>(count - 1) * strd + elem_bytes;
-        scratch_raw_.resize(nbytes);
-        if (!m_->rdbytes(v_ptr_ + static_cast<u32>(first * strd), nbytes, scratch_raw_.data())) return;
+        const u8* src = get_src_ptr(v_ptr_ + static_cast<u32>(first * strd), nbytes);
+        if (!src) return;
         for (int i = 0; i < count; ++i) {
-            const u8* vp = scratch_raw_.data() + i * strd;
+            const u8* vp = src + i * strd;
             auto& dst = scratch_verts_[i];
             dst.x = read_coord(vp, v_type_);
             dst.y = (v_size_ >= 2) ? read_coord(vp + eb, v_type_) : 0.0f;
@@ -1478,10 +1560,9 @@ void GLBridge::draw_arrays(u32 mode, int first, int count) {
         int elem_bytes = std::max(1, t_size_) * eb;
         int strd = (t_stride_ > 0) ? t_stride_ : elem_bytes;
         size_t nbytes = static_cast<size_t>(count - 1) * strd + elem_bytes;
-        scratch_raw_.resize(nbytes);
-        if (m_->rdbytes(t_ptr_ + static_cast<u32>(first * strd), nbytes, scratch_raw_.data())) {
+        if (const u8* src = get_src_ptr(t_ptr_ + static_cast<u32>(first * strd), nbytes)) {
             for (int i = 0; i < count; ++i) {
-                const u8* tp = scratch_raw_.data() + i * strd;
+                const u8* tp = src + i * strd;
                 scratch_verts_[i].u = read_coord(tp, t_type_);
                 scratch_verts_[i].v = (t_size_ >= 2) ? read_coord(tp + eb, t_type_) : 0.0f;
             }
@@ -1499,10 +1580,9 @@ void GLBridge::draw_arrays(u32 mode, int first, int count) {
         int elem_bytes = std::max(1, c_size_) * eb;
         int strd = (c_stride_ > 0) ? c_stride_ : elem_bytes;
         size_t nbytes = static_cast<size_t>(count - 1) * strd + elem_bytes;
-        scratch_raw_.resize(nbytes);
-        if (m_->rdbytes(c_ptr_ + static_cast<u32>(first * strd), nbytes, scratch_raw_.data())) {
+        if (const u8* src = get_src_ptr(c_ptr_ + static_cast<u32>(first * strd), nbytes)) {
             for (int i = 0; i < count; ++i) {
-                const u8* cp = scratch_raw_.data() + i * strd;
+                const u8* cp = src + i * strd;
                 scratch_verts_[i].r = read_color_comp(cp, c_type_);
                 scratch_verts_[i].g = (c_size_ >= 2) ? read_color_comp(cp + eb, c_type_) : 1.0f;
                 scratch_verts_[i].b = (c_size_ >= 3) ? read_color_comp(cp + 2 * eb, c_type_) : 1.0f;
@@ -1527,53 +1607,205 @@ Mat4 GLBridge::current_mvp() const {
     return Mat4::mul(proj_stack_.back(), mv_stack_.back());
 }
 
-void GLBridge::apply_alpha_state_uniforms() {
+int GLBridge::compute_alpha_mode() const {
     bool alpha_on = false;
     if (auto it = enabled_caps_.find(kGlAlphaTest); it != enabled_caps_.end()) alpha_on = it->second;
-    int amode = -1;
     if (alpha_on && alpha_func_ >= 0x0200u && alpha_func_ <= 0x0207u) {
-        amode = static_cast<int>(alpha_func_ - 0x0200u);
+        return static_cast<int>(alpha_func_ - 0x0200u);
     }
-    impl_->uniform1i(impl_->u_alpha_mode, amode);
-    impl_->uniform1f(impl_->u_alpha_ref, alpha_ref_);
+    return -1;
+}
+
+void GLBridge::flush_batch() {
+    if (!gl_ready_ || batch_verts_.empty()) {
+        batch_verts_.clear();
+        if (impl_) impl_->batch_active = false;
+        return;
+    }
+    flush_batch_internal();
+}
+
+void GLBridge::flush_batch_internal() {
+    if (!impl_->state_initialized) {
+        impl_->use_program(impl_->program);
+        impl_->uniform1i(impl_->u_tex, 0);
+        if (impl_->active_texture) impl_->active_texture(kGlTexture0);
+        impl_->bind_buffer(kGlArrayBuffer, impl_->vbo);
+        impl_->enable_vertex_attrib_array(0);
+        impl_->enable_vertex_attrib_array(1);
+        impl_->enable_vertex_attrib_array(2);
+        const char* base = nullptr;
+        impl_->vertex_attrib_pointer(0, 3, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, x));
+        impl_->vertex_attrib_pointer(1, 2, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, u));
+        impl_->vertex_attrib_pointer(2, 4, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, r));
+        impl_->state_initialized = true;
+        impl_->cached_has_mvp = false;
+        impl_->cached_use_tex = -1;
+        impl_->cached_tex_mode = -1;
+        impl_->cached_alpha_mode = -99;
+    }
+
+    if (!impl_->cached_has_mvp ||
+        std::memcmp(impl_->cached_mvp.data(), impl_->batch_mvp.data(), sizeof(impl_->batch_mvp)) != 0) {
+        impl_->uniform_matrix4fv(impl_->u_mvp, 1, 0, impl_->batch_mvp.data());
+        impl_->cached_mvp = impl_->batch_mvp;
+        impl_->cached_has_mvp = true;
+    }
+    int use_tex_i = impl_->batch_use_tex ? 1 : 0;
+    if (impl_->cached_use_tex != use_tex_i) {
+        impl_->uniform1i(impl_->u_use_tex, use_tex_i);
+        impl_->cached_use_tex = use_tex_i;
+    }
+    if (impl_->cached_tex_mode != impl_->batch_tex_mode) {
+        impl_->uniform1i(impl_->u_tex_mode, impl_->batch_tex_mode);
+        impl_->cached_tex_mode = impl_->batch_tex_mode;
+    }
+    if (impl_->cached_alpha_mode != impl_->batch_alpha_mode) {
+        impl_->uniform1i(impl_->u_alpha_mode, impl_->batch_alpha_mode);
+        impl_->cached_alpha_mode = impl_->batch_alpha_mode;
+        if (impl_->batch_alpha_mode >= 0) {
+            impl_->uniform1f(impl_->u_alpha_ref, impl_->batch_alpha_ref);
+            impl_->cached_alpha_ref = impl_->batch_alpha_ref;
+        }
+    } else if (impl_->batch_alpha_mode >= 0 && impl_->cached_alpha_ref != impl_->batch_alpha_ref) {
+        impl_->uniform1f(impl_->u_alpha_ref, impl_->batch_alpha_ref);
+        impl_->cached_alpha_ref = impl_->batch_alpha_ref;
+    }
+
+    if (impl_->batch_use_tex && impl_->batch_tex_id != 0 && impl_->gpu_bound_tex != impl_->batch_tex_id) {
+        impl_->bind_texture(kGlTexture2D, impl_->batch_tex_id);
+        impl_->gpu_bound_tex = impl_->batch_tex_id;
+    }
+
+    size_t need_bytes = batch_verts_.size() * sizeof(Vertex);
+    if (!impl_->buffer_sub_data) {
+        impl_->buffer_data(kGlArrayBuffer, static_cast<std::ptrdiff_t>(need_bytes), batch_verts_.data(), kGlStreamDraw);
+    } else {
+        if (need_bytes > impl_->vbo_capacity_bytes) {
+            impl_->vbo_capacity_bytes =
+                std::max(impl_->vbo_capacity_bytes * 2u, (need_bytes + 65535u) & ~size_t(65535u));
+            impl_->buffer_data(kGlArrayBuffer, static_cast<std::ptrdiff_t>(impl_->vbo_capacity_bytes), nullptr,
+                               kGlStreamDraw);
+        }
+        impl_->buffer_sub_data(kGlArrayBuffer, 0, static_cast<std::ptrdiff_t>(need_bytes), batch_verts_.data());
+    }
+
+    impl_->draw_arrays(kGlTriangles, 0, static_cast<int>(batch_verts_.size()));
+    batch_verts_.clear();
+    impl_->batch_active = false;
 }
 
 void GLBridge::draw_vertices(u32 mode, const Vertex* verts, size_t count, bool use_tex, u32 tex_id) {
     if (!gl_ready_ || count == 0) return;
 
-    impl_->use_program(impl_->program);
-    Mat4 mvp = impl_->overlay_active ? impl_->overlay_proj : current_mvp();
-    impl_->uniform_matrix4fv(impl_->u_mvp, 1, 0, mvp.m.data());
-    impl_->uniform1i(impl_->u_use_tex, (use_tex && tex_id != 0) ? 1 : 0);
+    bool actual_use_tex = (use_tex && tex_id != 0);
+    u32 actual_tex_id = actual_use_tex ? tex_id : 0u;
     int tex_mode = (impl_->overlay_active && impl_->overlay_tex_mode >= 0) ? impl_->overlay_tex_mode
                                                                           : (tex_replace_ ? 1 : 0);
-    impl_->uniform1i(impl_->u_tex_mode, tex_mode);
-    if (impl_->overlay_active) {
-        impl_->uniform1i(impl_->u_alpha_mode, -1);
-    } else {
-        apply_alpha_state_uniforms();
+    int amode = impl_->overlay_active ? -1 : compute_alpha_mode();
+    float aref = alpha_ref_;
+    Mat4 mvp = impl_->overlay_active ? impl_->overlay_proj : current_mvp();
+
+    size_t tri_verts = 0;
+    if (mode == kGlTriangles && count >= 3 && (count % 3 == 0)) {
+        tri_verts = count;
+    } else if ((mode == kGlTriangleFan || mode == kGlTriangleStrip) && count >= 3) {
+        tri_verts = (count - 2) * 3;
     }
 
-    if (use_tex && tex_id != 0) {
-        if (impl_->active_texture) impl_->active_texture(kGlTexture0);
-        if (bound_tex_ != tex_id) {
-            impl_->bind_texture(kGlTexture2D, tex_id);
-            bound_tex_ = tex_id;
+    if (tri_verts > 0) {
+        bool same_state = impl_->batch_active &&
+                          impl_->batch_use_tex == actual_use_tex &&
+                          (!actual_use_tex || impl_->batch_tex_id == actual_tex_id) &&
+                          impl_->batch_tex_mode == tex_mode &&
+                          impl_->batch_alpha_mode == amode &&
+                          (amode < 0 || impl_->batch_alpha_ref == aref) &&
+                          std::memcmp(impl_->batch_mvp.data(), mvp.m.data(), sizeof(mvp.m)) == 0;
+        if (impl_->batch_active && (!same_state || (batch_verts_.size() + tri_verts) > 4096u)) {
+            flush_batch_internal();
         }
+        if (!impl_->batch_active) {
+            impl_->batch_active = true;
+            impl_->batch_use_tex = actual_use_tex;
+            impl_->batch_tex_id = actual_tex_id;
+            impl_->batch_tex_mode = tex_mode;
+            impl_->batch_alpha_mode = amode;
+            impl_->batch_alpha_ref = aref;
+            impl_->batch_mvp = mvp.m;
+        }
+        if (mode == kGlTriangles) {
+            batch_verts_.insert(batch_verts_.end(), verts, verts + count);
+        } else if (mode == kGlTriangleFan) {
+            for (size_t i = 1; i + 1 < count; ++i) {
+                batch_verts_.push_back(verts[0]);
+                batch_verts_.push_back(verts[i]);
+                batch_verts_.push_back(verts[i + 1]);
+            }
+        } else {  // kGlTriangleStrip
+            for (size_t i = 0; i + 2 < count; ++i) {
+                if ((i & 1u) == 0u) {
+                    batch_verts_.push_back(verts[i]);
+                    batch_verts_.push_back(verts[i + 1]);
+                    batch_verts_.push_back(verts[i + 2]);
+                } else {
+                    batch_verts_.push_back(verts[i + 1]);
+                    batch_verts_.push_back(verts[i]);
+                    batch_verts_.push_back(verts[i + 2]);
+                }
+            }
+        }
+        return;
     }
 
-    impl_->bind_buffer(kGlArrayBuffer, impl_->vbo);
-    impl_->buffer_data(kGlArrayBuffer, static_cast<std::ptrdiff_t>(count * sizeof(Vertex)), verts, kGlStreamDraw);
-
-    impl_->enable_vertex_attrib_array(0);
-    impl_->enable_vertex_attrib_array(1);
-    impl_->enable_vertex_attrib_array(2);
-
-    const char* base = nullptr;
-    impl_->vertex_attrib_pointer(0, 3, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, x));
-    impl_->vertex_attrib_pointer(1, 2, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, u));
-    impl_->vertex_attrib_pointer(2, 4, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, r));
-
+    // Immediate path for non-triangle primitives (e.g. GL_LINE_LOOP overlay outlines)
+    flush_batch();
+    if (!impl_->state_initialized) {
+        impl_->use_program(impl_->program);
+        impl_->uniform1i(impl_->u_tex, 0);
+        if (impl_->active_texture) impl_->active_texture(kGlTexture0);
+        impl_->bind_buffer(kGlArrayBuffer, impl_->vbo);
+        impl_->enable_vertex_attrib_array(0);
+        impl_->enable_vertex_attrib_array(1);
+        impl_->enable_vertex_attrib_array(2);
+        const char* base = nullptr;
+        impl_->vertex_attrib_pointer(0, 3, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, x));
+        impl_->vertex_attrib_pointer(1, 2, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, u));
+        impl_->vertex_attrib_pointer(2, 4, kGlFloat, 0, sizeof(Vertex), base + offsetof(Vertex, r));
+        impl_->state_initialized = true;
+        impl_->cached_has_mvp = false;
+        impl_->cached_use_tex = -1;
+        impl_->cached_tex_mode = -1;
+        impl_->cached_alpha_mode = -99;
+    }
+    impl_->uniform_matrix4fv(impl_->u_mvp, 1, 0, mvp.m.data());
+    impl_->cached_mvp = mvp.m;
+    impl_->cached_has_mvp = true;
+    impl_->uniform1i(impl_->u_use_tex, actual_use_tex ? 1 : 0);
+    impl_->cached_use_tex = actual_use_tex ? 1 : 0;
+    impl_->uniform1i(impl_->u_tex_mode, tex_mode);
+    impl_->cached_tex_mode = tex_mode;
+    impl_->uniform1i(impl_->u_alpha_mode, amode);
+    impl_->cached_alpha_mode = amode;
+    if (amode >= 0) {
+        impl_->uniform1f(impl_->u_alpha_ref, aref);
+        impl_->cached_alpha_ref = aref;
+    }
+    if (actual_use_tex && impl_->gpu_bound_tex != actual_tex_id) {
+        impl_->bind_texture(kGlTexture2D, actual_tex_id);
+        impl_->gpu_bound_tex = actual_tex_id;
+    }
+    size_t need_bytes = count * sizeof(Vertex);
+    if (!impl_->buffer_sub_data) {
+        impl_->buffer_data(kGlArrayBuffer, static_cast<std::ptrdiff_t>(need_bytes), verts, kGlStreamDraw);
+    } else {
+        if (need_bytes > impl_->vbo_capacity_bytes) {
+            impl_->vbo_capacity_bytes =
+                std::max(impl_->vbo_capacity_bytes * 2u, (need_bytes + 65535u) & ~size_t(65535u));
+            impl_->buffer_data(kGlArrayBuffer, static_cast<std::ptrdiff_t>(impl_->vbo_capacity_bytes), nullptr,
+                               kGlStreamDraw);
+        }
+        impl_->buffer_sub_data(kGlArrayBuffer, 0, static_cast<std::ptrdiff_t>(need_bytes), verts);
+    }
     impl_->draw_arrays(mode, 0, static_cast<int>(count));
 }
 
@@ -1582,11 +1814,13 @@ void GLBridge::draw_vertices(u32 mode, const Vertex* verts, size_t count, bool u
 // -----------------------------------------------------------------------------
 u32 GLBridge::create_rgba_texture(int w, int h, const u8* rgba, bool linear_filter) {
     if (!gl_ready_ || w <= 0 || h <= 0 || !rgba) return 0;
+    flush_batch();
     u32 tex = 0;
     impl_->gen_textures(1, &tex);
     if (!tex) return 0;
     impl_->bind_texture(kGlTexture2D, tex);
     bound_tex_ = tex;
+    impl_->gpu_bound_tex = tex;
     int filt = static_cast<int>(linear_filter ? kGlLinear : kGlNearest);
     impl_->tex_parameteri(kGlTexture2D, kGlTextureMinFilter, filt);
     impl_->tex_parameteri(kGlTexture2D, kGlTextureMagFilter, filt);
@@ -1599,21 +1833,26 @@ u32 GLBridge::create_rgba_texture(int w, int h, const u8* rgba, bool linear_filt
 
 void GLBridge::update_rgba_texture(u32 tex_id, int w, int h, const u8* rgba) {
     if (!gl_ready_ || !tex_id || w <= 0 || h <= 0 || !rgba) return;
+    flush_batch();
     impl_->bind_texture(kGlTexture2D, tex_id);
     bound_tex_ = tex_id;
+    impl_->gpu_bound_tex = tex_id;
     impl_->pixel_storei(kGlUnpackAlignment, 1);
     impl_->tex_image_2d(kGlTexture2D, 0, static_cast<int>(kGlRgba), w, h, 0, kGlRgba, kGlUnsignedByte, rgba);
 }
 
 void GLBridge::destroy_texture(u32 tex_id) {
     if (!gl_ready_ || !tex_id) return;
+    flush_batch();
     if (bound_tex_ == tex_id) bound_tex_ = 0;
+    if (impl_->gpu_bound_tex == tex_id) impl_->gpu_bound_tex = 0;
     tex_params_.erase(tex_id);
     impl_->delete_textures(1, &tex_id);
 }
 
 void GLBridge::overlay_begin_game(float ortho_w, float ortho_h, bool in_viewport) {
     if (!gl_ready_) return;
+    flush_batch();
     impl_->overlay_active = true;
     if (in_viewport) {
         impl_->viewport(viewport_rect_.x, viewport_rect_.y, viewport_rect_.w, viewport_rect_.h);
@@ -1632,6 +1871,7 @@ void GLBridge::overlay_begin_game(float ortho_w, float ortho_h, bool in_viewport
 
 void GLBridge::overlay_begin_window(int win_w, int win_h) {
     if (!gl_ready_) return;
+    flush_batch();
     impl_->overlay_active = true;
     impl_->viewport(0, 0, win_w, win_h);
     impl_->overlay_proj = Mat4::ortho(0.0f, static_cast<float>(win_w), static_cast<float>(win_h), 0.0f, -1.0f, 1.0f);
@@ -1646,6 +1886,7 @@ void GLBridge::overlay_begin_window(int win_w, int win_h) {
 
 void GLBridge::overlay_end() {
     if (!gl_ready_) return;
+    flush_batch();
     impl_->overlay_active = false;
     impl_->disable(kGlScissorTest);
     enabled_caps_[kGlScissorTest] = impl_->overlay_prev_scissor;
@@ -1656,6 +1897,7 @@ void GLBridge::overlay_end() {
 
 void GLBridge::overlay_set_scissor_topdown(int x, int y, int w, int h) {
     if (!gl_ready_) return;
+    flush_batch();
     int sx = std::max(0, x);
     int sy = std::max(0, win_h_ - (y + h));
     int sw = std::max(1, std::min(win_w_ - sx, w));
@@ -1665,6 +1907,7 @@ void GLBridge::overlay_set_scissor_topdown(int x, int y, int w, int h) {
 }
 
 void GLBridge::overlay_clear_scissor() {
+    flush_batch();
     if (gl_ready_) impl_->disable(kGlScissorTest);
 }
 
@@ -1714,6 +1957,7 @@ void GLBridge::overlay_textured_rect(u32 tex_id, float x, float y, float w, floa
 
 bool GLBridge::read_framebuffer_rgba(int& out_w, int& out_h, Bytes& out_rgba) const {
     if (!gl_ready_) return false;
+    const_cast<GLBridge*>(this)->flush_batch();
     out_w = win_w_;
     out_h = win_h_;
     out_rgba.resize(static_cast<size_t>(out_w) * static_cast<size_t>(out_h) * 4);

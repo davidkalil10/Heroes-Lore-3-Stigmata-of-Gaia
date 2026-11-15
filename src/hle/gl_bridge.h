@@ -114,6 +114,7 @@ public:
     WidescreenController* widescreen() { return widescreen_.get(); }
 
     void begin_frame();
+    void flush_batch();
     void present_widescreen_backdrop();
 
     // Guest GLES 1.1 bridge
@@ -175,9 +176,10 @@ private:
     struct GlImpl;
     std::unique_ptr<GlImpl> impl_;
 
-    void apply_alpha_state_uniforms();
+    int compute_alpha_mode() const;
     Mat4 current_mvp() const;
     void draw_vertices(u32 mode, const Vertex* verts, size_t count, bool use_tex, u32 tex_id);
+    void flush_batch_internal();
 
     Machine* m_ = nullptr;
     int win_w_ = 960;
@@ -231,6 +233,7 @@ private:
     bool gl_ready_ = false;
 
     std::vector<Vertex> scratch_verts_;
+    std::vector<Vertex> batch_verts_;
     Bytes scratch_raw_;
 };
 

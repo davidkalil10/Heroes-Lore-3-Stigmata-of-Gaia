@@ -267,6 +267,71 @@ void InputController::shutdown_controllers() {
         if (js) SDL_JoystickClose(js);
     }
     raw_joysticks_.clear();
+    trigger_pressed_.clear();
+}
+
+int InputController::map_controller_button(SDL_GameControllerButton button, bool nintendo_layout) {
+    if (nintendo_layout) {
+        if (button == SDL_CONTROLLER_BUTTON_A) button = SDL_CONTROLLER_BUTTON_B;
+        else if (button == SDL_CONTROLLER_BUTTON_B) button = SDL_CONTROLLER_BUTTON_A;
+        else if (button == SDL_CONTROLLER_BUTTON_X) button = SDL_CONTROLLER_BUTTON_Y;
+        else if (button == SDL_CONTROLLER_BUTTON_Y) button = SDL_CONTROLLER_BUTTON_X;
+    }
+    switch (button) {
+    case SDL_CONTROLLER_BUTTON_A: return kGamepadConfirm;
+    case SDL_CONTROLLER_BUTTON_B: return kGamepadCancel;
+    case SDL_CONTROLLER_BUTTON_X: return kGamepadAttackPrimary;
+    case SDL_CONTROLLER_BUTTON_Y: return kGamepadAttackSecondary;
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return kGamepadPotion1;
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return kGamepadPotion2;
+    case SDL_CONTROLLER_BUTTON_BACK: return kGamepadMinimap;
+    case SDL_CONTROLLER_BUTTON_START: return kGamepadStart;
+    case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return kGamepadSkill3;
+    case SDL_CONTROLLER_BUTTON_LEFTSTICK: return kGamepadPortOptions;
+    default: return -1;
+    }
+}
+
+bool InputController::update_trigger_axis_state(bool& was_pressed, Sint16 value) {
+    if (!was_pressed && value >= 16384) {
+        was_pressed = true;
+        return true;
+    }
+    if (was_pressed && value <= 8192) {
+        was_pressed = false;
+    }
+    return false;
+}
+
+bool InputController::is_nintendo_controller(SDL_JoystickID instance_id) const {
+#ifdef __SWITCH__
+    (void)instance_id;
+    return true;
+#else
+    auto it = controllers_.find(instance_id);
+    if (it == controllers_.end() || !it->second) return false;
+    SDL_GameControllerType type = SDL_GameControllerGetType(it->second);
+    if (type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO ||
+        type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT ||
+        type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT ||
+        type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR) {
+        return true;
+    }
+    const char* name = SDL_GameControllerName(it->second);
+    if (name && name[0] != '\0') {
+        std::string lower;
+        lower.reserve(std::char_traits<char>::length(name));
+        for (const unsigned char* p = reinterpret_cast<const unsigned char*>(name); *p != 0; ++p) {
+            lower.push_back(static_cast<char>(std::tolower(*p)));
+        }
+        if (lower.find("nintendo") != std::string::npos ||
+            lower.find("joy-con") != std::string::npos ||
+            lower.find("switch pro") != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
+#endif
 }
 
 bool InputController::should_ignore_joystick_device(const char* name, int num_buttons, int num_hats) {
@@ -352,6 +417,7 @@ void InputController::handle_controller_removed(SDL_JoystickID instance_id) {
         if (it->second) SDL_JoystickClose(it->second);
         raw_joysticks_.erase(it);
     }
+    trigger_pressed_.erase(instance_id);
 }
 
 EngineState InputController::get_engine_state(Runtime& rt) const {
@@ -1432,49 +1498,73 @@ void InputController::tick_timers_and_touches(Runtime& rt) {
 }
 
 void InputController::handle_gamepad_button(int btn, Runtime& rt, PortOptionsModal* modal) {
+    if (btn == kGamepadPortOptions) {
+        if (modal && modal->is_open()) {
+            modal->close();
+        } else if (actions_.open_port_modal) {
+            actions_.open_port_modal();
+        } else if (modal) {
+            modal->open();
+        }
+        return;
+    }
     if (modal && modal->is_open()) {
-        if (btn == 0) modal->handle_confirm();
-        else if (btn == 1 || btn == 7) modal->handle_cancel();
+        if (btn == kGamepadConfirm) modal->handle_confirm();
+        else if (btn == kGamepadCancel || btn == kGamepadStart) modal->handle_cancel();
         return;
     }
     EngineState st = get_engine_state(rt);
     bool is_field = (st.app_state == 2 && st.sub_state == 3 && st.active_popup_id == 0);
-    if (btn == 0) {
+    if (btn == kGamepadConfirm) {
         handle_confirm(rt);
-    } else if (btn == 1) {
+    } else if (btn == kGamepadCancel) {
         handle_cancel(rt);
-    } else if (btn == 2) {
+    } else if (btn == kGamepadAttackPrimary) {
         if (is_field) {
-            auto [tx, ty] = st.combat_mode ? hud_pt(rt, kHudAttackPrimaryX, kHudAttackPrimaryY)
-                                           : hud_pt(rt, kHudSkill1X, kHudSkill1Y);
-            tap_once(rt, st.combat_mode ? "pad_attack" : "skill1", tx, ty, 2);
+            auto [tx, ty] = hud_pt(rt, kHudAttackPrimaryX, kHudAttackPrimaryY);
+            tap_once(rt, "pad_attack", tx, ty, 2);
         }
-    } else if (btn == 3) {
+    } else if (btn == kGamepadAttackSecondary) {
         if (st.sub_state == 4 || st.sub_state == 22 || st.form_id == 44) handle_skip(rt);
         else if (is_field) {
             auto [tx, ty] = hud_pt(rt, kHudAttackSecondaryX, kHudAttackSecondaryY);
             tap_once(rt, "attack2", tx, ty, 2);
         }
-    } else if (btn == 4) {
+    } else if (btn == kGamepadPotion1) {
         if (is_field) {
             auto [tx, ty] = hud_pt(rt, kHudPotion1X, kHudPotion1Y);
             tap_once(rt, "potion1", tx, ty, 3);
         } else if (st.app_state == 8 && st.active_popup_id == 0) {
             handle_page_tab(rt, -1);
         }
-    } else if (btn == 5) {
+    } else if (btn == kGamepadPotion2) {
         if (is_field) {
             auto [tx, ty] = hud_pt(rt, kHudPotion2X, kHudPotion2Y);
             tap_once(rt, "potion2", tx, ty, 3);
         } else if (st.app_state == 8 && st.active_popup_id == 0) {
             handle_page_tab(rt, 1);
         }
-    } else if (btn == 6) {
+    } else if (btn == kGamepadSkill1) {
+        if (is_field) {
+            auto [tx, ty] = hud_pt(rt, kHudSkill1X, kHudSkill1Y);
+            tap_once(rt, "skill1", tx, ty, 2);
+        }
+    } else if (btn == kGamepadSkill2) {
+        if (is_field) {
+            auto [tx, ty] = hud_pt(rt, kHudSkill2X, kHudSkill2Y);
+            tap_once(rt, "skill2", tx, ty, 2);
+        }
+    } else if (btn == kGamepadSkill3) {
+        if (is_field) {
+            auto [tx, ty] = hud_pt(rt, kHudSkill3X, kHudSkill3Y);
+            tap_once(rt, "skill3", tx, ty, 2);
+        }
+    } else if (btn == kGamepadMinimap) {
         if (is_field) {
             auto [tx, ty] = hud_pt(rt, kHudMapX, kHudMapY);
             tap_once(rt, "hud_map", tx, ty, 3);
         }
-    } else if (btn == 7) {
+    } else if (btn == kGamepadStart) {
         if (st.sub_state == 4 || st.sub_state == 22 || st.form_id == 44) handle_skip(rt);
         else if (is_field) {
             auto [tx, ty] = hud_pt(rt, kHudPortraitMenuX, kHudPortraitMenuY);
@@ -1762,24 +1852,15 @@ bool InputController::process_sdl_event(const SDL_Event& ev, Runtime& rt, PortOp
         return true;
 
     case SDL_CONTROLLERBUTTONDOWN: {
-        int btn = -1;
-        switch (ev.cbutton.button) {
-        case SDL_CONTROLLER_BUTTON_A: btn = 0; break;
-        case SDL_CONTROLLER_BUTTON_B: btn = 1; break;
-        case SDL_CONTROLLER_BUTTON_X: btn = 2; break;
-        case SDL_CONTROLLER_BUTTON_Y: btn = 3; break;
-        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: btn = 4; break;
-        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: btn = 5; break;
-        case SDL_CONTROLLER_BUTTON_BACK: btn = 6; break;
-        case SDL_CONTROLLER_BUTTON_START: btn = 7; break;
-        case SDL_CONTROLLER_BUTTON_DPAD_UP:
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: {
-            const char* dir = (ev.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP)      ? "up"
-                              : (ev.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN)  ? "down"
-                              : (ev.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT)  ? "left"
-                                                                                        : "right";
+        auto cbtn = static_cast<SDL_GameControllerButton>(ev.cbutton.button);
+        if (cbtn == SDL_CONTROLLER_BUTTON_DPAD_UP ||
+            cbtn == SDL_CONTROLLER_BUTTON_DPAD_DOWN ||
+            cbtn == SDL_CONTROLLER_BUTTON_DPAD_LEFT ||
+            cbtn == SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
+            const char* dir = (cbtn == SDL_CONTROLLER_BUTTON_DPAD_UP)      ? "up"
+                              : (cbtn == SDL_CONTROLLER_BUTTON_DPAD_DOWN)  ? "down"
+                              : (cbtn == SDL_CONTROLLER_BUTTON_DPAD_LEFT)  ? "left"
+                                                                           : "right";
             if (modal && modal->is_open()) {
                 if (nav_cooldown_ == 0) {
                     modal->handle_nav(dir);
@@ -1794,9 +1875,23 @@ bool InputController::process_sdl_event(const SDL_Event& ev, Runtime& rt, PortOp
             }
             return true;
         }
-        default: break;
-        }
+        int btn = map_controller_button(cbtn, is_nintendo_controller(ev.cbutton.which));
         if (btn >= 0) handle_gamepad_button(btn, rt, modal);
+        return true;
+    }
+
+    case SDL_CONTROLLERAXISMOTION: {
+        if (ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+            auto& st = trigger_pressed_[ev.caxis.which];
+            if (update_trigger_axis_state(st.first, ev.caxis.value)) {
+                handle_gamepad_button(kGamepadSkill1, rt, modal);
+            }
+        } else if (ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+            auto& st = trigger_pressed_[ev.caxis.which];
+            if (update_trigger_axis_state(st.second, ev.caxis.value)) {
+                handle_gamepad_button(kGamepadSkill2, rt, modal);
+            }
+        }
         return true;
     }
 

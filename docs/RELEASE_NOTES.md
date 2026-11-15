@@ -1,3 +1,14 @@
+## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.6`
+
+### What's New in `v1.0.6` (`Android versionCode 7`)
+- **Nintendo Switch Performance Optimization (`ArmFastCpu` + Pack A)**:
+  - Introduced `ArmFastCpu`, a pre-decoded C++ ARMv6 + VFPv2 executor enabled on Nintendo Switch / Unicorn-TCI builds with deterministic RAII Unicorn fallback for Thumb-1 and uncovered instructions, validated lockstep against the Unicorn oracle with pixel-identical headless output.
+  - Added host RAM mapping, zero-copy `libc` HLE fast paths, Objective-C selector/method caching, and OpenGL ES quad batching (`VBO`), reducing Unicorn-TCI steady-state frame cost by **2.37x** (`9.68 ms/frame` -> `4.09 ms/frame` over frames 120–360).
+- **Nintendo Switch Face Button Swap (`A <-> B`, `X <-> Y`)**:
+  - Inverted `A <-> B` and `X <-> Y` behavior on Nintendo Switch and Switch controllers across platforms to match native Nintendo ergonomics (`A` Confirm/Interact, `B` Cancel/Back).
+- **Complete Gamepad HUD Slot Mapping + `README.md` Sync**:
+  - Mapped all 3 skill slots and Port Options directly to the controller: `LT`/`ZL` (Skill 1), `RT`/`ZR` (Skill 2), `R3` (Right Stick Click — Skill 3), `LB`/`RB` (Potions 1/2 and Menu Tabs), `L3` (Left Stick Click — Port Options & Cloud), `X` (Primary Attack), and `Y` (Secondary Attack / Skip).
+
 ## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.5`
 
 Native multiplatform C++17 recompilation/runtime port by **David Kalil Braga (2026)** built from the original iOS release `com.ea.heroesloresg.bv` (v1.0.1).

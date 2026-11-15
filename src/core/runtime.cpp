@@ -190,14 +190,15 @@ void Runtime::boot_to_app_main() {
     run_mod_inits();
     u32 sp = setup_main_stack();
     m_->set_phase("boot");
-    m_->set_sp(sp);
-    m_->set_lr(kHostStop);
     m_->stop_reason.clear();
     has_pending_app_main_ = false;
 
-    uc_err err = uc_emu_start(m_->uc(), m_->image().entry_pc, kHostStop, 0, 0);
-    if (err != UC_ERR_OK && !has_pending_app_main_) {
-        throw GuestFault(std::string("boot failed: ") + uc_strerror(err) + "; " + m_->stop_reason);
+    try {
+        m_->call(m_->image().entry_pc, {}, sp);
+    } catch (const GuestFault& exc) {
+        if (!has_pending_app_main_) {
+            throw GuestFault(std::string("boot failed: ") + exc.what());
+        }
     }
     if (!has_pending_app_main_) {
         throw GuestFault("boot ended without UIApplicationMain: " + m_->stop_reason);

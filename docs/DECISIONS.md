@@ -588,3 +588,14 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 
 
 
+
+## ADR-029: Layout Nintendo Switch (`A↔B`/`X↔Y`), Slots Completos em Controle e Executor Híbrido `ArmFastCpu` + Pack A (`v1.0.6`)
+- **Status**: Aceito e validado
+- **Contexto**: Em testes reais no Nintendo Switch (`v1.0.5`), foram identificados: (1) botões frontais seguindo layout Xbox (`A/B` e `X/Y` invertidos em relação ao padrão Nintendo), (2) falta de atalhos em controle para os 3 slots de ataque/skill + menu de opções do port, e (3) baixa taxa de quadros no Switch (backend `unicorn-tci` sem JIT).
+- **Decisão**:
+  1. Inverter `A <-> B` e `X <-> Y` sob `#ifdef __SWITCH__` e quando o controle ativo for identificado como Nintendo Switch em PC/Android (`src/platform/input_controller.{h,cpp}`), preservando paridade nos prompts e no `README.md`.
+  2. Completar o mapeamento de slots em controle: `LT/ZL` (Skill 1), `RT/ZR` (Skill 2), `R3` / click do analógico direito (Skill 3), `LB/RB` (Poções 1/2 e abas de menu), `L3` / click do analógico esquerdo (Opções do Port & Cloud), `X` (Ataque Primário) e `Y` (Ataque Secundário / Skip), validado por `test_gamepad_switch_and_slots`.
+  3. Implementar Pack A (mapeamento direto de RAM host em `Machine`, fast paths zero-copy em `hle_libc.cpp`, cache ObjC em `src/core/objc.{h,cpp}`, batching de quads via VBO em `gl_bridge.{h,cpp}` e ajuste de VSync/Sleep no loop SDL) e Pack B (`ArmFastCpu` em `src/core/arm_fast_cpu.{h,cpp}`): executor C++ pré-decodificado de instruções ARMv6 + VFPv2 para `[kImageBase, kImageEnd)` + stub de retorno com invalidação por palavra em `WidescreenController::write_code32` e fallback RAII determinístico para Unicorn em Thumb-1 / opcodes não cobertos, sem criar `std::thread` por passo.
+- **Consequências**:
+  - `ctest` (`macho_boot`, `headless_runtime`, `platform_services`) e suíte Python (`72` testes) mantiveram paridade total de memória, registradores e pixels entre `fast=0` (Unicorn JIT) e `fast=1` (`ArmFastCpu`).
+  - No build TCI (`HL3_TCI=ON` + `HL3_USE_FAST_CPU=1`), o custo em steady-state por frame caiu **2.37x** (`9.68 ms/frame` -> `4.09 ms/frame` entre os frames 120 e 360).

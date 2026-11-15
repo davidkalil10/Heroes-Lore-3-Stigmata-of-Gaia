@@ -462,3 +462,10 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
 
 
 
+
+## 2026-11-15 - Sessão 28 (S07 + S12 + S13): Layout Switch A↔B/X↔Y, Slots Completos (`LT`/`RT`/`R3`/`L3`) e Aceleração Pack A + `ArmFastCpu` para `v1.0.6`
+- **Resumo**: Corrigido o layout dos botões no Nintendo Switch (`A <-> B`, `X <-> Y`), mapeados todos os slots da HUD e o atalho de opções em controle (`LT/ZL` Skill 1, `RT/ZR` Skill 2, `R3` Skill 3, `LB/RB` Poções/Abas, `L3` Opções do Port & Cloud, `X`/`Y` ataques), implementado Pack A (RAM host direta, `libc` zero-copy, cache ObjC, VBO quad batching no `gl_bridge`, ajuste de VSync/Sleep) e Pack B (`ArmFastCpu`, executor C++ pré-decodificado ARMv6 + VFPv2 híbrido com fallback Unicorn RAII para Thumb-1).
+- **Validação & Métricas**:
+  - Paridade lockstep ARMv6/VFPv2 contra oráculo Unicorn (`alu_flags_shifts`, `reg_shift_and_mul64`, `media_and_mem_extra`, `vfp_math_cmp_cvt`) + `macho_boot` (`52022` ARM32 executadas, `870` fallbacks Thumb-1) + `headless_runtime` bit/pixel-exato (`686201` pixels não-pretos, `presents=61`).
+  - Benchmark Unicorn-TCI (`--headless`): `120f` caiu de `4.969s` para `3.7743s`; `360f` caiu de `7.293s` para `4.7552s`; steady-state `240f` (`360f - 120f`) melhorou **2.37x** (`2.324s` / `9.68 ms/f` -> `0.981s` / `4.09 ms/f`).
+- **Sessão detalhada**: [research/sessions/2026-11-15-01.md](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/research/sessions/2026-11-15-01.md)
