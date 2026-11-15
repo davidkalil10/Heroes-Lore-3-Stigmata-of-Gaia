@@ -25,3 +25,13 @@ python tools/verify_workspace.py
 - Retomada: abrir workflow Nintendo Switch 2 NRO, baixar o artefato e enviar ao Netloader. Depois de aprovacao em console, integrar ao workflow multiplataforma e publicar. Ver `docs/SWITCH2.md`.
 
 - Primeira build `43692335843`: codigo do jogo compilado, Unicorn interrompida por `sys/mman.h` ausente. Corrigido include herdado em CMake antes de adicionar Unicorn; a toolchain oficial sobrescrevia as flags INIT locais. Nova compilacao pendente.
+
+## Resultado da build Switch 2
+
+- CI aprovado: https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43692514440
+- Fonte da build: `043b047f400fcfd69d649f2674e34686d8c9a503`. NRO: 55.572.693 bytes; SHA-256 `b4eeed7d1ac06941c4047275d5535accebfaec730b8241f083f776943756b93a`.
+- Copia de teste: `D:/Games/NS2ToolKit-homebrew/Heroes-Lore-3-Switch2-043b047/heroes_lore_3_switch2.nro`.
+- Transferencia ao Netloader 192.168.18.139:28280 aceita, nome remoto `heroes_lore_3_switch2_043b047.nro`. Confirmacao de recebimento nao comprova boot ou gameplay.
+- Preservados codigo de saves, Google Drive, storage, runtime, toolchain Switch 1 e workflow multiplataforma (comparacao com main).
+- Verificacoes locais: 6 testes multiplataforma, contrato de patch idempotente e guardado, YAML/bash, versao sincronizada e verify_workspace aprovados. CI passou contrato de memoria e verificacao NRO/RomFS.
+- Proximo passo: aguardar teste no Switch 2 (incluindo save/load e restauracao) antes de integrar main/release.
