@@ -1,13 +1,9 @@
-#include "../../src/core/runtime.h"
-
-#include <cstdio>
-#include <string>
-
 #include "../../src/core/arm_fast_cpu.h"
 #include "../../src/core/runtime.h"
 
 #include <array>
 #include <cstdio>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -188,13 +184,27 @@ int main() {
         return rc;
     }
 
-    // Compare Unicorn vs ArmFastCpu full Mach-O boot + launch parity
+    // Compare Unicorn vs ArmFastCpu full Mach-O boot + launch parity using identical empty docs dirs.
     hl3::u32 uc_heap = 0;
     size_t uc_unimpl = 0;
     for (bool fast : {false, true}) {
+        const auto tmp_docs = std::filesystem::temp_directory_path() /
+                              (fast ? "hl3_test_macho_boot_docs_fast1" : "hl3_test_macho_boot_docs_fast0");
+        std::error_code fs_ec;
+        std::filesystem::remove_all(tmp_docs, fs_ec);
+        std::filesystem::create_directories(tmp_docs, fs_ec);
+
+        struct TempDirGuard {
+            std::filesystem::path dir;
+            ~TempDirGuard() {
+                std::error_code ec;
+                std::filesystem::remove_all(dir, ec);
+            }
+        } guard{tmp_docs};
+
         hl3::Runtime rt;
         std::string err;
-        if (!rt.init({}, {}, false, &err)) {
+        if (!rt.init({}, tmp_docs, false, &err)) {
             std::fprintf(stderr, "Runtime init failed (fast=%d): %s\n", fast ? 1 : 0, err.c_str());
             return 1;
         }

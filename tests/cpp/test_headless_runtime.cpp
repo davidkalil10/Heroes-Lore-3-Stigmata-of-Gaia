@@ -83,9 +83,22 @@ int main() {
     SDL_GL_MakeCurrent(win, ctx);
 
     auto run_headless_pass = [&](bool fast_cpu) -> int {
+        const auto tmp_docs = std::filesystem::temp_directory_path() /
+                              (fast_cpu ? "hl3_test_headless_docs_fast1" : "hl3_test_headless_docs_fast0");
+        std::error_code docs_ec;
+        std::filesystem::remove_all(tmp_docs, docs_ec);
+        std::filesystem::create_directories(tmp_docs, docs_ec);
+        struct DocsCleanupGuard {
+            std::filesystem::path dir;
+            ~DocsCleanupGuard() {
+                std::error_code ec;
+                std::filesystem::remove_all(dir, ec);
+            }
+        } docs_guard{tmp_docs};
+
         hl3::Runtime rt;
         std::string err;
-        if (!rt.init({}, {}, false, &err)) {
+        if (!rt.init({}, tmp_docs, false, &err)) {
             std::fprintf(stderr, "Runtime init failed: %s\n", err.c_str());
             return 4;
         }

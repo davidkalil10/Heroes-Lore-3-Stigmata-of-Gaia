@@ -311,10 +311,13 @@ bool InputController::is_nintendo_controller(SDL_JoystickID instance_id) const {
     auto it = controllers_.find(instance_id);
     if (it == controllers_.end() || !it->second) return false;
     SDL_GameControllerType type = SDL_GameControllerGetType(it->second);
-    if (type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO ||
-        type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT ||
+    if (type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO
+#if SDL_VERSION_ATLEAST(2, 24, 0)
+        || type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT ||
         type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT ||
-        type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR) {
+        type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR
+#endif
+    ) {
         return true;
     }
     const char* name = SDL_GameControllerName(it->second);
