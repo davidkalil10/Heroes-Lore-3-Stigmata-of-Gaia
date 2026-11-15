@@ -19,3 +19,7 @@ Faça push nesta branch e abra o workflow **Nintendo Switch 2 NRO**. O artefato 
 No ounce-hbmenu, abra Netloader. Envie o NRO com nxlink para o IP e porta exibidos. Verifique título, controles, áudio, gameplay, save/load, backup/restauração Google Drive, idiomas e proporções. Se falhar, preserve `sdmc:/switch/heroes_lore_3/boot.log` e os demais logs do jogo.
 
 Após confirmação no console: integrar o job reutilizável no workflow multiplataforma e publicar o NRO de Switch 2 junto aos arquivos existentes.
+
+## Armadilha de linkagem SDL2
+
+A primeira build compilou, mas falhou no console: o pacote `sdl2.pc` do Switch 1 contem caminhos absolutos para libnx e Mesa de Switch 1, que o CMake transforma em dependencias absolutas. O alvo Switch 2 usa bibliotecas explicitas em vez desse arquivo. `verify_switch2_package.py` exige o registro MOD0 `OUN0` (plataforma 2, versao 1) emitido pelo startup real da libounce e verifica o mapa de linkagem. A build antiga 043b047 deve ser descartada. Um marcador isolado adicionado ao arquivo nao corrige binarios de Switch 1.

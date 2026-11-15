@@ -66,6 +66,7 @@ jobs:
       - name: Fetch and patch Unicorn TCI
         run: |
           set -euo pipefail
+          python3 -m unittest tests/test_switch2_package.py -v
           python3 tools/fetch_build_deps.py --switch
           python3 tools/patch_unicorn_switch2.py third_party/unicorn-tci/unicorn-engine-sys-tci
           mkdir -p build_switch2
@@ -82,7 +83,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=platforms/switch2/toolchain.cmake \
             -DHL3_SWITCH2=ON -DHL3_TCI=ON -DCMAKE_BUILD_TYPE=Release \
             2>&1 | tee switch2-build.log
-          cmake --build build_switch2 --parallel 2 2>&1 | tee -a switch2-build.log
+          cmake --build build_switch2 --parallel 2 --verbose 2>&1 | tee -a switch2-build.log
 
       - name: Package embedded assets
         run: |
@@ -104,7 +105,7 @@ jobs:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
-          python3 tools/verify_switch_package.py heroes_lore_3_switch2.nro
+          python3 tools/verify_switch2_package.py heroes_lore_3_switch2.nro --link-map build_switch2/HeroesLore3.map
           python3 - <<'PY'
           import hashlib, json, os, struct
           from pathlib import Path
@@ -150,6 +151,7 @@ jobs:
             switch2-build.log
             switch2-build.json
             switch2-packages.txt
+            build_switch2/HeroesLore3.map
             build_switch2/CMakeCache.txt
             build_switch2/CMakeFiles/CMakeConfigureLog.yaml
             build_switch2/unicorn-build/config.log

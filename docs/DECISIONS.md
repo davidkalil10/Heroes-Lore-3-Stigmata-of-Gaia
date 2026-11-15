@@ -618,3 +618,12 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 - Decisao: adicionar `HL3_SWITCH2` sobre o runtime Horizon existente, usando toolchain oficial ounce-devkit 20261115 e OpenGL ES do OunceVK. Manter TCI/ArmFastCpu e o formato dos saves, sem introduzir JIT ou modificar offsets do jogo.
 - O patch adicional altera somente as specs/libdir dos probes de configuracao da Unicorn para libounce. As demais plataformas preservam seu caminho de build.
 - Usar nome de NRO exclusivo no empacotamento e OTA para impedir download acidental do arquivo Switch 1. Manter pipeline experimental separado da main ate o teste em console.
+
+
+## ADR-032: Dependencias explicitas e verificacao real de plataforma Switch 2
+
+- Data: 2026-11-15. Status: correcao implementada; reteste fisico pendente.
+- O primeiro teste de HL3 mostrou que `sdl2.pc` resolve libnx e Mesa do Switch 1 por caminhos absolutos, apesar da toolchain ounce. A ausencia de OUN0 no NRO confirmou o startup incorreto.
+- O alvo Switch 2 deixa de importar pkg-config SDL2/CURL, reutiliza apenas os arquivos C necessarios e seleciona libounce/OunceVK explicitamente. Switch 1 e demais plataformas conservam a configuracao anterior.
+- CI deve verificar OUN0 plataforma=2 versao=1 no encadeamento MOD0 da primeira pagina (mesma regra do hbmenu) e rejeitar bibliotecas de startup/GPU do Switch 1 no mapa. NRO0/ASET/RomFS sozinhos nao comprovam plataforma.
+- Os novos testes rejeitam o NRO HL3 que falhou e aceitam o HL2 validado em hardware. Isso verifica empacotamento/plataforma; gameplay e servicos continuam dependendo de teste no console.

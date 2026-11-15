@@ -47,6 +47,20 @@ if(ANDROID)
     set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
     add_subdirectory(third_party/SDL2 SDL2-build)
     set(HL3_SDL2_TARGET SDL2::SDL2)
+elseif(HL3_SWITCH2)
+    # Switch 1's sdl2.pc embeds absolute libnx/Mesa paths. Find only the
+    # reusable C libraries here; take startup and graphics from Switch 2.
+    set(HL3_DKP "$ENV{DEVKITPRO}")
+    find_library(HL3_S2_SDL2 SDL2 PATHS "${HL3_DKP}/portlibs/switch/lib" NO_DEFAULT_PATH REQUIRED)
+    find_library(HL3_S2_CURL curl PATHS "${HL3_DKP}/portlibs/switch/lib" NO_DEFAULT_PATH REQUIRED)
+    find_library(HL3_S2_EGL EGL PATHS "${HL3_DKP}/portlibs/switch2/lib" NO_DEFAULT_PATH REQUIRED)
+    find_library(HL3_S2_NX nx PATHS "${HL3_DKP}/libounce/lib" NO_DEFAULT_PATH REQUIRED)
+    add_library(hl3_switch2_sdl2 INTERFACE)
+    target_include_directories(hl3_switch2_sdl2 INTERFACE
+        "${HL3_DKP}/portlibs/switch/include/SDL2"
+        "${HL3_DKP}/portlibs/switch/include")
+    target_link_libraries(hl3_switch2_sdl2 INTERFACE ${HL3_S2_SDL2})
+    set(HL3_SDL2_TARGET hl3_switch2_sdl2)
 elseif(HL3_SWITCH)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
@@ -125,6 +139,16 @@ if(WIN32)
     target_link_libraries(hl3_core PUBLIC opengl32 winhttp shell32 gdi32 ole32)
 elseif(ANDROID)
     target_link_libraries(hl3_core PUBLIC log android)
+elseif(HL3_SWITCH2)
+    target_compile_definitions(hl3_core PUBLIC SDL_MAIN_HANDLED CURL_STATICLIB)
+    target_link_libraries(hl3_core PUBLIC
+        ${HL3_S2_CURL}
+        ${HL3_SDL2_TARGET}
+        ${HL3_S2_EGL}
+        mbedtls mbedx509 mbedcrypto
+        ${HL3_S2_NX}
+        m
+    )
 elseif(HL3_SWITCH)
     target_compile_definitions(hl3_core PUBLIC SDL_MAIN_HANDLED)
     target_link_libraries(hl3_core PUBLIC
@@ -166,6 +190,9 @@ else()
         target_sources(HeroesLore3 PRIVATE platforms/switch/unicorn_os.c)
         target_include_directories(HeroesLore3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/platforms/switch/compat)
         set_target_properties(HeroesLore3 PROPERTIES SUFFIX ".elf")
+        if(HL3_SWITCH2)
+            target_link_options(HeroesLore3 PRIVATE "-Wl,-Map=${CMAKE_BINARY_DIR}/HeroesLore3.map")
+        endif()
     endif()
 
     if(NOT HL3_SWITCH AND NOT CMAKE_CROSSCOMPILING)

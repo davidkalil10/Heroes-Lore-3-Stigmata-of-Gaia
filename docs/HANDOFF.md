@@ -35,3 +35,11 @@ python tools/verify_workspace.py
 - Preservados codigo de saves, Google Drive, storage, runtime, toolchain Switch 1 e workflow multiplataforma (comparacao com main).
 - Verificacoes locais: 6 testes multiplataforma, contrato de patch idempotente e guardado, YAML/bash, versao sincronizada e verify_workspace aprovados. CI passou contrato de memoria e verificacao NRO/RomFS.
 - Proximo passo: aguardar teste no Switch 2 (incluindo save/load e restauracao) antes de integrar main/release.
+
+## Falha do primeiro teste fisico (2026-11-15)
+
+- Build 043b047 provocou aviso Switch 1/devkit antigo no hbmenu; ao prosseguir, o console travou e precisou reiniciar. **Build nao aprovada; nao redistribuir nem reutilizar para teste.**
+- Causa confirmada: `PkgConfig::SDL2` resolveu caminhos absolutos de `sdl2.pc` para `/opt/devkitpro/libnx/lib/libnx.a` e EGL/glapi/drm_nouveau do Switch 1. Flags de CPU e specs estavam corretas, mas insuficientes. NRO antigo nao tem bloco MOD0 `OUN0`; HL2 validado tem `OUN0`, plataforma 2, versao 1.
+- Correcao: alvo CMake Switch 2 nao importa `sdl2.pc`. SDL2/curl C reutilizaveis sao localizados explicitamente; libounce e OunceVK vem exclusivamente das pastas Switch 2.
+- Novo gate `verify_switch2_package.py` reproduz a leitura do bloco OUN0 do hbmenu/libounce e rejeita mapa com libnx/Mesa de Switch 1. Mapas e comandos completos de linkagem preservados no CI.
+- Pendente: gerar build corrigida, conferir gate e repetir teste somente depois da reativacao do hbmenu e confirmacao de Netloader pronto.
