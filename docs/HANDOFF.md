@@ -43,3 +43,12 @@ python tools/verify_workspace.py
 - Correcao: alvo CMake Switch 2 nao importa `sdl2.pc`. SDL2/curl C reutilizaveis sao localizados explicitamente; libounce e OunceVK vem exclusivamente das pastas Switch 2.
 - Novo gate `verify_switch2_package.py` reproduz a leitura do bloco OUN0 do hbmenu/libounce e rejeita mapa com libnx/Mesa de Switch 1. Mapas e comandos completos de linkagem preservados no CI.
 - Pendente: gerar build corrigida, conferir gate e repetir teste somente depois da reativacao do hbmenu e confirmacao de Netloader pronto.
+
+## Build corrigida pronta, aguardando Netloader
+
+- CI aprovado: https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/actions/runs/43693074812
+- Commit `49b6629321cb9958f22fcf4cfebb07e6a512b110`, NRO 66.549.973 bytes, SHA-256 `d04f4b2987cffcf05e50c87bd2a30f1cdebb322546270217826a3553ee2425f2`.
+- Arquivo: `D:/Games/NS2ToolKit-homebrew/Heroes-Lore-3-Switch2-49b6629/heroes_lore_3_switch2.nro`. Download e hash conferidos, gate de startup repetido localmente e aprovado. CI aprovou tambem ausencia de libnx/Mesa Switch 1 no mapa.
+- **Ainda nao enviado**: apos o crash o console reiniciou. David disse que vai reativar o hbmenu e avisar quando estiver no Netloader. Aguardar essa confirmacao antes de conectar e enviar.
+- Usar nome remoto `heroes_lore_3_switch2_49b6629.nro` para distinguir da build antiga que falhou. Nao reenviar `043b047`.
+- Integracao main/release continua aguardando aprovacao no console. Fonte/formatos de saves e Google Drive permanecem inalterados.

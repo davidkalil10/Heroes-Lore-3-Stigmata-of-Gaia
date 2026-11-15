@@ -5,7 +5,7 @@
   "overall_phase": "multiplatform_release_v1_0_8",
   "current_step": "S13",
   "next_recommended_step": "S14",
-  "summary": "v1.0.8: port original preservado. Primeiro teste Switch 2 043b047 falhou no console (aviso de plataforma e crash); corrigida mistura de libnx/Mesa de Switch 1 causada por sdl2.pc. Build corrigida e nova validacao em hardware pendentes.",
+  "summary": "v1.0.8 original preservada. Corrigida mistura de libnx/Mesa de Switch 1 via sdl2.pc. Nova build Switch 2 49b6629 aprovada no CI 43693074812 e no gate OUN0/mapa, baixada e pronta; aguarda reativacao hbmenu/Netloader e novo teste fisico.",
   "steps": [
     {
       "id": "S00",
@@ -340,7 +340,7 @@
         "tools/verify_switch2_package.py",
         "tests/test_switch2_package.py"
       ],
-      "notes": "v1.0.8 (Android versionCode 9) publicada para validar em hardware Switch fisico o auto-updater OTA completo da v1.0.7 (download, validacao NRO0 + Sha256Hasher, romfsExit() ordenado, swap atomico com rollback, envSetNextLoad em argv[0] e relancamento automatico pelo Homebrew Loader), mantendo Pack A + ArmFastCpu (2.37x steady-state) e layout Switch A<->B / X<->Y + slots completos. Extensao Switch 2 em branch isolada; nao integrada ao release antes da aprovacao em hardware. Build Switch 2 043b047 aprovada no CI 43692514440, pacote verificado e transferencia Netloader aceita; aguarda teste de gameplay e saves no console. ATENCAO: teste fisico 043b047 falhou (startup libnx via sdl2.pc); nao validado. Correcao de dependencias e gate OUN0/mapa adicionados, aguardando rebuild e reteste."
+      "notes": "v1.0.8 (Android versionCode 9) publicada para validar em hardware Switch fisico o auto-updater OTA completo da v1.0.7 (download, validacao NRO0 + Sha256Hasher, romfsExit() ordenado, swap atomico com rollback, envSetNextLoad em argv[0] e relancamento automatico pelo Homebrew Loader), mantendo Pack A + ArmFastCpu (2.37x steady-state) e layout Switch A<->B / X<->Y + slots completos. Extensao Switch 2 em branch isolada; nao integrada ao release antes da aprovacao em hardware. Build Switch 2 043b047 aprovada no CI 43692514440, pacote verificado e transferencia Netloader aceita; aguarda teste de gameplay e saves no console. ATENCAO: teste fisico 043b047 falhou (startup libnx via sdl2.pc); nao validado. Correcao de dependencias e gate OUN0/mapa adicionados, aguardando rebuild e reteste. Nova build 49b6629 passou CI 43693074812 e gate de startup OUN0 plataforma 2; aguardando Netloader e reteste, ainda sem aprovacao fisica."
     },
     {
       "id": "S14",
