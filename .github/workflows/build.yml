@@ -1,4 +1,4 @@
-name: Build Multiplatform & Release (Windows, Linux, Android, Switch)
+name: Build Multiplatform & Release (Windows, Linux, Android, Switch, Switch 2)
 
 on:
   push:
@@ -350,9 +350,15 @@ jobs:
   # ============================================================================
   # 5. Multiplatform GitHub Release
   # ============================================================================
+  build-switch2:
+    name: Nintendo Switch 2 (.nro)
+    uses: ./.github/workflows/build-switch2.yml
+    permissions:
+      contents: read
+
   release:
     name: Publish Multiplatform GitHub Release
-    needs: [ build-windows, build-linux, build-android, build-switch ]
+    needs: [ build-windows, build-linux, build-android, build-switch, build-switch2 ]
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
     runs-on: ubuntu-latest
     permissions:
@@ -369,6 +375,12 @@ jobs:
           merge-multiple: true
           skip-decompress: true
 
+      - name: Download verified Switch 2 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: heroes_lore_3_switch2_nro
+          path: switch2_release
+
       - name: Prepare Release Tag & SHA-256 Checksums
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
@@ -379,6 +391,7 @@ jobs:
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
           mkdir -p release_staging
           find release_download -type f -exec mv -f {} release_staging/ \;
+          cp switch2_release/heroes_lore_3_switch2.nro switch2_release/heroes_lore_3_switch2.nro.sha256 release_staging/
           cd release_staging
           for expected in \
             HeroesLore3.exe \
@@ -396,7 +409,8 @@ jobs:
             heroes_lore_3_linux_x86_64.AppImage \
             heroes_lore_3_android_arm64.apk \
             heroes_lore_3_android_universal.apk \
-            heroes_lore_3.nro > SHA256SUMS.txt
+            heroes_lore_3.nro \
+            heroes_lore_3_switch2.nro > SHA256SUMS.txt
           ls -lh
           cat SHA256SUMS.txt
 
@@ -404,6 +418,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          fail_on_unmatched_files: true
           name: "Heroes Lore 3: Stigmata of Gaia Recomp ${{ env.RELEASE_TAG }}"
           body_path: docs/RELEASE_NOTES.md
           generate_release_notes: true
@@ -416,4 +432,6 @@ jobs:
             release_staging/heroes_lore_3_android_arm64.apk
             release_staging/heroes_lore_3_android_universal.apk
             release_staging/heroes_lore_3.nro
+            release_staging/heroes_lore_3_switch2.nro
+            release_staging/heroes_lore_3_switch2.nro.sha256
             release_staging/SHA256SUMS.txt

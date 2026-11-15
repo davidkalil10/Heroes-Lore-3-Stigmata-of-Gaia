@@ -2,8 +2,6 @@ name: Nintendo Switch 2 NRO
 
 on:
   workflow_call:
-  push:
-    branches: [codex/switch2-action]
   workflow_dispatch:
 
 permissions:
@@ -117,7 +115,7 @@ jobs:
           for at in (0x08, 0x18, 0x28):
               offset, size = struct.unpack_from('<QQ', data, asset_start+at)
               assert size > 0 and asset_start+offset+size <= len(data)
-          report = dict(platform='switch2', experimental=True, sourceCommit=os.environ['SOURCE_COMMIT'],
+          report = dict(platform='switch2', experimental=False, sourceCommit=os.environ['SOURCE_COMMIT'],
                         sdkVersion=os.environ['OUNCE_DEVKIT_VERSION'], sdkCommit=os.environ['OUNCE_DEVKIT_COMMIT'],
                         sha256=hashlib.sha256(data).hexdigest(), bytes=len(data),
                         embeddedRomfs=True, consoleValidated=False,

@@ -1,6 +1,6 @@
-# Nintendo Switch 2 — build experimental
+# Nintendo Switch 2
 
-A branch `codex/switch2-action` compila `heroes_lore_3_switch2.nro` em um workflow separado. O workflow multiplataforma e as releases existentes continuam inalterados até a validação no console.
+`heroes_lore_3_switch2.nro` foi aprovado no console em 15/11/2026, a partir da build `49b6629` (CI `43693074812`). O alvo agora integra o workflow multiplataforma. Pushes na main e PRs geram builds; tags `v*` ou publicação manual geram a release com as cinco plataformas.
 
 ## Arquitetura e dependências
 
@@ -14,11 +14,11 @@ Mantidos o formato e a pasta `sdmc:/switch/heroes_lore_3`, além dos serviços G
 
 ## Compilar e testar
 
-Faça push nesta branch e abra o workflow **Nintendo Switch 2 NRO**. O artefato inclui NRO com RomFS, ícone, NACP, SHA-256 e `switch2-build.json` com o commit de origem. A verificação de empacotamento não substitui o teste em hardware.
+Faça push na main e abra o workflow **Build Multiplatform & Release**, ou execute **Nintendo Switch 2 NRO** manualmente. O artefato inclui NRO com RomFS, ícone, NACP, SHA-256 e `switch2-build.json` com o commit de origem. A verificação de empacotamento não substitui o teste em hardware.
 
 No ounce-hbmenu, abra Netloader. Envie o NRO com nxlink para o IP e porta exibidos. Verifique título, controles, áudio, gameplay, save/load, backup/restauração Google Drive, idiomas e proporções. Se falhar, preserve `sdmc:/switch/heroes_lore_3/boot.log` e os demais logs do jogo.
 
-Após confirmação no console: integrar o job reutilizável no workflow multiplataforma e publicar o NRO de Switch 2 junto aos arquivos existentes.
+A release inclui o NRO de Switch 2 e seu SHA-256 junto aos demais arquivos. A versão vem da mesma fonte do port, sem edição duplicada.
 
 ## Armadilha de linkagem SDL2
 

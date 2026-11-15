@@ -50,3 +50,7 @@ git push origin vX.Y.Z
 
 O push da tag `vX.Y.Z` compila automaticamente **Windows x64** (`HeroesLore3.exe` + `.zip`), **Linux x86_64** (`AppImage`), **Android** (`arm64-v8a` + `universal` assinados com `android/app/heroes_lore_3.keystore`) e **Nintendo Switch** (`.nro` direto), calcula `SHA256SUMS.txt` e publica a Release no GitHub para o atualizador OTA do app.
 
+
+## Nintendo Switch 2
+
+O workflow multiplataforma tambem compila `heroes_lore_3_switch2.nro` com ounce-devkit fixado e exige startup OUN0 de Switch 2 e mapa sem drivers/libnx de Switch 1. Usa PORT_VERSION existente para NACP e runtime. O job de release aguarda as cinco plataformas e publica NRO, SHA individual e checksum agregado. `main`/PR geram artefatos; tags `v*` ou dispatch com `create_release=true` publicam.

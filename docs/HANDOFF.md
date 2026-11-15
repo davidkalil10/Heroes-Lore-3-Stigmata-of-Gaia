@@ -52,3 +52,9 @@ python tools/verify_workspace.py
 - **Ainda nao enviado**: apos o crash o console reiniciou. David disse que vai reativar o hbmenu e avisar quando estiver no Netloader. Aguardar essa confirmacao antes de conectar e enviar.
 - Usar nome remoto `heroes_lore_3_switch2_49b6629.nro` para distinguir da build antiga que falhou. Nao reenviar `043b047`.
 - Integracao main/release continua aguardando aprovacao no console. Fonte/formatos de saves e Google Drive permanecem inalterados.
+
+Atualizacao: hbmenu reativado aproveitando sessao 4/4 do toolkit apos correcao de prova FS. David confirmou hbmenu aberto e Netloader pronto. Build 49b6629 enviada como `heroes_lore_3_switch2_49b6629.nro`; receptor confirmou 49.602.298 bytes comprimidos, SHA e startup conferidos antes do envio. Aguarda teste fisico, nao integrar release ainda.
+
+## Aprovacao em console e integracao
+
+David confirmou funcionamento excelente da build 49b6629 apos o envio corrigido e autorizou main/release. Workflow multiplataforma passa a chamar o job Switch 2 e publicar NRO+SHA; main/PR geram artefatos, tags v* e dispatch de release publicam. A release atual recebe exatamente o NRO aprovado, preservando os outros arquivos. Aprovacao geral nao equivale a teste granular de cada servico.

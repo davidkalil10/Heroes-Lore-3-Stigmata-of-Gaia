@@ -216,3 +216,9 @@ python -m unittest discover -s tests -p "test_*.py" -v
 - **Port / Recompilação / Tradução PT-BR / Cloud Save / OTA Updater**: **David Kalil Braga (2026)**
 - **Jogo Original**: *Heroes Lore 3: Stigmata of Gaia* (iOS v1.0.1 — `com.ea.heroesloresg.bv`) © 2010 Electronic Arts Inc.
 - Preservação e pesquisa independente dos capítulos anteriores (*HL1*, *HL2*, *HL Zero*, *HL4*, *HL5*).
+
+### Nintendo Switch 2
+
+Build nativa com ounce-devkit, libounce e OunceVK, validada em console com kaiHEN/ounce-hbmenu. Baixe `heroes_lore_3_switch2.nro` em [Releases](https://github.com/davidkalil10/Heroes-Lore-3-Stigmata-of-Gaia/releases/latest). Recursos e traducoes estao embutidos no RomFS. Consulte [instrucoes e compilacao automatica](docs/SWITCH2.md).
+
+Creditos do ambiente: [ounce-devkit](https://github.com/ouncebrew/ounce-devkit), [libounce](https://github.com/ouncebrew/libounce), [OunceVK](https://github.com/ouncebrew/OunceVK), [kaiHEN](https://github.com/ouncebrew/kaihen) e [ounce-hbmenu](https://github.com/ouncebrew/ounce-hbmenu).
