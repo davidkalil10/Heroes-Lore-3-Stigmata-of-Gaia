@@ -25,6 +25,11 @@ if(HL3_TCI OR HL3_SWITCH)
 else()
     set(HL3_UNICORN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/unicorn")
 endif()
+if(HL3_SWITCH2)
+    # The SDK initializes compiler flags after reading the toolchain. Supply
+    # this compatibility header to Unicorn through inherited include paths.
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/platforms/switch/compat)
+endif()
 add_subdirectory(${HL3_UNICORN_DIR} unicorn-build)
 
 if(WIN32 OR HL3_SWITCH)

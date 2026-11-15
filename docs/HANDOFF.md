@@ -23,3 +23,5 @@ python tools/verify_workspace.py
 - Verificacao inicial encontrou header ignorado do snapshot HL5 ausente no checkout. Hidratado apenas na copia local com o arquivo identico de `src/vendor` (hash do manifesto conferido); sem alterar snapshots versionados.
 - Testes locais: `verify_workspace.py`, `bump_version.py --check`, 6 testes `test_multiplatform_ci.py`. Build remota e teste em hardware pendentes.
 - Retomada: abrir workflow Nintendo Switch 2 NRO, baixar o artefato e enviar ao Netloader. Depois de aprovacao em console, integrar ao workflow multiplataforma e publicar. Ver `docs/SWITCH2.md`.
+
+- Primeira build `43692335843`: codigo do jogo compilado, Unicorn interrompida por `sys/mman.h` ausente. Corrigido include herdado em CMake antes de adicionar Unicorn; a toolchain oficial sobrescrevia as flags INIT locais. Nova compilacao pendente.
