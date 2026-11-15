@@ -1,3 +1,11 @@
+## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.7`
+
+### What's New in `v1.0.7` (`Android versionCode 8`)
+- **Nintendo Switch Automatic In-App Update & Relaunch (`.nro` + `envSetNextLoad`)**:
+  - Replaced the manual staging fallback on Nintendo Switch with `install_portable_nro_update`: streams the downloaded `.nro` via `stdio` (`fread`/`fwrite`), validates the `NRO0` header magic, size, and SHA-256 before touching the active executable, flushes saves/configs and calls `romfsExit()` safely via `before_swap_cb_`, performs atomic swap with rollback protection, cleans up the staging/backup files, calls `envSetNextLoad` on the exact launched NRO path (`argv[0]`), and exits cleanly so Homebrew Loader relaunches the updated version automatically.
+- **Test & CI Determinism**:
+  - Added `test_switch_nro_installer` covering Switch NRO validation, pre-unmount rejection on corrupt magic/checksum, and atomic replacement.
+
 ## Heroes Lore 3: Stigmata of Gaia Recomp `v1.0.6`
 
 ### What's New in `v1.0.6` (`Android versionCode 7`)

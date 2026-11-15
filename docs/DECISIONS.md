@@ -599,3 +599,14 @@ Este documento registra as decisões de arquitetura tomadas no projeto **Heroes 
 - **Consequências**:
   - `ctest` (`macho_boot`, `headless_runtime`, `platform_services`) e suíte Python (`72` testes) mantiveram paridade total de memória, registradores e pixels entre `fast=0` (Unicorn JIT) e `fast=1` (`ArmFastCpu`).
   - No build TCI (`HL3_TCI=ON` + `HL3_USE_FAST_CPU=1`), o custo em steady-state por frame caiu **2.37x** (`9.68 ms/frame` -> `4.09 ms/frame` entre os frames 120 e 360).
+
+## ADR-030: Auto-Instalador OTA `.nro` no Nintendo Switch com `romfsExit()` Ordenado e `envSetNextLoad` (`v1.0.7`)
+- **Status**: Aceito e validado
+- **Contexto**: Em teste real no Nintendo Switch da `v1.0.6`, o `UpdateManager` baixou o `.nro`, mas `install_ready_update()` caía em `UpdatePhase::ManualStaged` sem substituir o `.nro` ativo nem reabrir o jogo.
+- **Decisão**:
+  1. Extrair `Sha256Hasher` em `src/core/common.h` para validação em streaming (64 KiB) sem alocar ~55 MB em RAM no applet mode do Switch.
+  2. Implementar `normalize_switch_nro_path` + `install_portable_nro_update` em `src/platform/updater.{h,cpp}` usando `std::FILE* fread/fwrite` (evitando `ENOSYS` de `std::filesystem::copy_file` na libnx), checando magic `NRO0` (offset 16), tamanho e SHA-256 antes de chamar `before_swap_cb_` (`flush` + `romfsExit()` idempotente em `src/main.cpp`), aplicando swap atômico com rollback via `std::rename`, limpando `.new`/`.old`/pacote e invocando `envSetNextLoad(target_nro, target_nro)` + `request_quit_cb_()`.
+  3. Bloquear eventos e frames guest subsequentes após `running_ = false` no `step_frame()` de `src/main.cpp`.
+- **Consequências**:
+  - Switch atualizado a partir da `v1.0.7+` instala o novo `.nro` no caminho exato de execução (`argv[0]`) e reinicia automaticamente no Homebrew Loader após o usuário confirmar a instalação.
+  - Coberto por `test_switch_nro_installer` em `tests/cpp/test_platform_services.cpp`.

@@ -56,6 +56,7 @@ struct CliOptions {
     int frames = 0;
     std::string lang;
     std::filesystem::path ipa_path;
+    std::string self_exe_path;
 };
 
 void print_usage() {
@@ -75,6 +76,9 @@ void print_usage() {
 }
 
 bool parse_cli(int argc, char** argv, CliOptions& opts) {
+    if (argc > 0 && argv && argv[0]) {
+        opts.self_exe_path = argv[0];
+    }
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
         if (a == "-h" || a == "--help") {
@@ -123,6 +127,8 @@ void write_fatal_log(const std::filesystem::path& root, const std::string& msg) 
     } catch (...) {
     }
 }
+
+void release_switch_romfs();
 
 class PcHost {
 public:
@@ -473,7 +479,14 @@ private:
         cloud_ = std::make_unique<CloudSaveManager>();
         updater_ = std::make_unique<UpdateManager>(
             kPortVersion, kGithubRepo, std::filesystem::path{}, std::filesystem::path{},
-            std::filesystem::path{}, -1, HttpCallable{}, std::string{}, [this]() { running_ = false; });
+            std::filesystem::path{}, -1, HttpCallable{}, std::string{}, [this]() { running_ = false; },
+            opts_.self_exe_path,
+            [this]() {
+                if (rt_) rt_->flush_open_files();
+                if (audio_) audio_->save_config();
+                save_prefs_if_interactive();
+                release_switch_romfs();
+            });
 
         PortOptionsModal::Callbacks cb;
         cb.get_fps = [this]() { return cfg_.target_fps; };
@@ -797,7 +810,7 @@ private:
                 running_ = false;
                 break;
             }
-            if (!input_.process_sdl_event(ev, *rt_, modal_.get(), win_w_, win_h_)) {
+            if (!input_.process_sdl_event(ev, *rt_, modal_.get(), win_w_, win_h_) || !running_) {
                 break;
             }
         }
@@ -916,7 +929,10 @@ struct SwitchRuntimeGuard {
     bool socket_ok = false;
     std::FILE* log_fp = nullptr;
 
+    static inline SwitchRuntimeGuard* instance = nullptr;
+
     SwitchRuntimeGuard() {
+        instance = this;
         mkdir("sdmc:/switch", 0777);
         mkdir("sdmc:/switch/heroes_lore_3", 0777);
         log_fp = std::fopen("sdmc:/switch/heroes_lore_3/boot.log", "w");
@@ -940,8 +956,22 @@ struct SwitchRuntimeGuard {
         }
         if (socket_ok) socketExit();
         if (romfs_ok) romfsExit();
+        if (instance == this) instance = nullptr;
     }
 };
+
+void release_switch_romfs() {
+    if (SwitchRuntimeGuard::instance && SwitchRuntimeGuard::instance->romfs_ok) {
+        romfsExit();
+        SwitchRuntimeGuard::instance->romfs_ok = false;
+        if (SwitchRuntimeGuard::instance->log_fp) {
+            std::fprintf(SwitchRuntimeGuard::instance->log_fp, "[HL3 Switch] romfsExit() released before NRO swap\n");
+            std::fflush(SwitchRuntimeGuard::instance->log_fp);
+        }
+    }
+}
+#else
+void release_switch_romfs() {}
 #endif
 
 }  // namespace

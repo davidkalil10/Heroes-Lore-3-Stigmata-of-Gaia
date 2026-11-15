@@ -2,10 +2,10 @@
   "schema_version": 1,
   "project": "Heroes Lore 3: Stigmata of Gaia Recomp",
   "updated_at": "2026-11-15",
-  "overall_phase": "multiplatform_release_v1_0_6",
+  "overall_phase": "multiplatform_release_v1_0_7",
   "current_step": "S13",
   "next_recommended_step": "S14",
-  "summary": "Release v1.0.6 (Android versionCode 7): layout Nintendo Switch (A<->B e X<->Y), mapeamento completo de slots (LT/ZL Skill 1, RT/ZR Skill 2, R3 Skill 3, L3 Opcoes do Port, LB/RB Pocoes/Abas) sincronizado no README, Pack A (RAM host direta, libc zero-copy, cache ObjC, VBO quad batching GLES2) e Pack B (ArmFastCpu pre-decodificado ARMv6+VFPv2 com fallback Unicorn RAII), reduzindo o custo steady-state em Unicorn-TCI em 2.37x (9.68 -> 4.09 ms/frame).",
+  "summary": "Release v1.0.7 (Android versionCode 8): auto-instalador OTA .nro completo no Nintendo Switch (copia stdio sem copy_file, Sha256Hasher streaming, validacao NRO0 antes do romfsExit(), swap atomico com rollback, envSetNextLoad no caminho de argv[0] e relancamento automatico).",
   "steps": [
     {
       "id": "S00",
@@ -326,11 +326,15 @@
         "src/core/machine.cpp",
         "src/core/runtime.cpp",
         "src/platform/input_controller.cpp",
+        "src/platform/updater.h",
+        "src/platform/updater.cpp",
+        "src/main.cpp",
         "research/sessions/2026-11-14-03.md",
         "research/sessions/2026-11-14-04.md",
-        "research/sessions/2026-11-15-01.md"
+        "research/sessions/2026-11-15-01.md",
+        "research/sessions/2026-11-15-02.md"
       ],
-      "notes": "v1.0.6 otimizada para Nintendo Switch (HL3_TCI / HL3_SWITCH com HL3_USE_FAST_CPU=1): (1) layout nativo Switch A<->B e X<->Y + 3 slots de skill (LT/ZL, RT/ZR, R3) + L3 Port Options + LB/RB Pocoes/Abas; (2) Pack A + ArmFastCpu (Pack B) executor C++ pre-decodificado ARMv6+VFPv2 validado bit/pixel-a-pixel contra Unicorn Oracle (`fast=0` vs `fast=1`), acelerando Unicorn-TCI em 2.37x em steady-state (`2.324s` -> `0.981s` em 240 frames). Aguardando validacao em hardware Switch fisico com o .nro da v1.0.6."
+      "notes": "v1.0.7 para Nintendo Switch (HL3_TCI / HL3_SWITCH com HL3_USE_FAST_CPU=1): alem das otimizacoes Pack A + ArmFastCpu (2.37x steady-state) e layout Switch A<->B / X<->Y + slots completos da v1.0.6, implementa auto-instalacao OTA de .nro via install_portable_nro_update (fread/fwrite + Sha256Hasher + NRO0 + romfsExit() ordenado + swap atomico + envSetNextLoad em argv[0] + saida limpa para relancamento pelo hbmenu), coberta por test_switch_nro_installer."
     },
     {
       "id": "S14",

@@ -5,9 +5,12 @@
 #include "i18n.h"
 
 #include <algorithm>
-#include <chrono>
+#include <array>
 #include <cctype>
+#include <cerrno>
+#include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 
 #ifdef _WIN32
@@ -15,6 +18,10 @@
 #include <windows.h>
 #else
 #include <sys/stat.h>
+#endif
+
+#ifdef __SWITCH__
+#include <switch.h>
 #endif
 
 namespace hl3 {
@@ -355,6 +362,142 @@ try {
     return ss.str();
 }
 
+std::string normalize_switch_nro_path(const std::string& raw_exe_path) {
+    std::string p = trim_ascii(raw_exe_path);
+    std::replace(p.begin(), p.end(), '\\', '/');
+    if (p.rfind("sdmc:/", 0) != 0 && !p.empty() && p[0] == '/') {
+        p = "sdmc:" + p;
+    }
+    std::string low = to_lower(p);
+    if (p.rfind("sdmc:/", 0) == 0 && low.size() > 4 && low.rfind(".nro") == low.size() - 4) {
+        return p;
+    }
+    return {};
+}
+
+bool install_portable_nro_update(
+    const std::filesystem::path& package_path,
+    const std::filesystem::path& target_path,
+    size_t expected_size,
+    const std::string& expected_sha256,
+    const std::function<void()>& before_swap,
+    std::string& out_err) {
+    out_err.clear();
+    if (package_path.empty() || target_path.empty()) {
+        out_err = "Missing update package or target NRO path";
+        return false;
+    }
+
+    std::error_code ec;
+    if (target_path.has_parent_path()) {
+        std::filesystem::create_directories(target_path.parent_path(), ec);
+    }
+
+    std::string pkg_str = package_path.u8string();
+    std::string dst_str = target_path.u8string();
+    std::string staged_str = dst_str + ".new";
+    std::string backup_str = dst_str + ".old";
+
+    // libnx returns ENOSYS for std::filesystem::copy_file; stream with stdio instead.
+    std::FILE* in_fp = std::fopen(pkg_str.c_str(), "rb");
+    if (!in_fp) {
+        out_err = "Cannot open downloaded NRO package";
+        return false;
+    }
+    std::FILE* out_fp = std::fopen(staged_str.c_str(), "wb");
+    if (!out_fp) {
+        std::fclose(in_fp);
+        out_err = "Cannot stage new NRO on SD card";
+        return false;
+    }
+
+    std::vector<u8> buf(65536);
+    std::array<u8, 32> header{};
+    size_t header_got = 0;
+    size_t copied = 0;
+    bool io_ok = true;
+    Sha256Hasher sha;
+
+    while (true) {
+        size_t n = std::fread(buf.data(), 1, buf.size(), in_fp);
+        if (n > 0) {
+            if (copied + n > kMaxUpdatePackageBytes || (expected_size > 0 && copied + n > expected_size)) {
+                io_ok = false;
+                break;
+            }
+            if (std::fwrite(buf.data(), 1, n, out_fp) != n) {
+                io_ok = false;
+                break;
+            }
+            if (header_got < header.size()) {
+                size_t take = std::min(header.size() - header_got, n);
+                std::memcpy(header.data() + header_got, buf.data(), take);
+                header_got += take;
+            }
+            sha.update(buf.data(), n);
+            copied += n;
+        }
+        if (n < buf.size()) {
+            if (std::ferror(in_fp)) io_ok = false;
+            break;
+        }
+    }
+    if (std::fclose(in_fp) != 0) io_ok = false;
+    if (std::fclose(out_fp) != 0) io_ok = false;
+
+    if (!io_ok || copied < 32 || (expected_size > 0 && copied != expected_size)) {
+        std::remove(staged_str.c_str());
+        out_err = "Incomplete or corrupted NRO copy";
+        return false;
+    }
+    if (std::memcmp(header.data() + 16, "NRO0", 4) != 0) {
+        std::remove(staged_str.c_str());
+        out_err = "Downloaded file is not a valid Switch NRO0 binary";
+        return false;
+    }
+    if (!expected_sha256.empty()) {
+        std::string actual_sha = to_lower(sha.finish_hex());
+        if (actual_sha != to_lower(expected_sha256)) {
+            std::remove(staged_str.c_str());
+            out_err = "NRO SHA-256 verification failed";
+            return false;
+        }
+    }
+
+    // Release RomFS / flush configs strictly AFTER staging + validation succeeded.
+    if (before_swap) {
+        before_swap();
+    }
+
+    std::remove(backup_str.c_str());
+    bool had_target = false;
+    if (std::rename(dst_str.c_str(), backup_str.c_str()) == 0) {
+        had_target = true;
+    } else {
+        std::FILE* probe = std::fopen(dst_str.c_str(), "rb");
+        if (probe) {
+            std::fclose(probe);
+            std::remove(staged_str.c_str());
+            out_err = "Failed backing up running NRO (errno=" + std::to_string(errno) + ")";
+            return false;
+        }
+    }
+
+    if (std::rename(staged_str.c_str(), dst_str.c_str()) != 0) {
+        int commit_err = errno;
+        if (had_target) {
+            std::rename(backup_str.c_str(), dst_str.c_str());
+        }
+        std::remove(staged_str.c_str());
+        out_err = "Failed committing new NRO (errno=" + std::to_string(commit_err) + ")";
+        return false;
+    }
+
+    std::remove(backup_str.c_str());
+    std::filesystem::remove(package_path, ec);
+    return true;
+}
+
 UpdateManager::UpdateManager(
     const std::string& local_version,
     const std::string& repo,
@@ -364,7 +507,9 @@ UpdateManager::UpdateManager(
     int is_standalone_override,
     HttpCallable http_fn,
     const std::string& target_asset,
-    std::function<void()> request_quit_cb)
+    std::function<void()> request_quit_cb,
+    std::string self_exe_path,
+    std::function<void()> before_swap_cb)
     : repo_(repo.empty() ? kGithubRepo : repo),
       config_path_(config_path.empty() ? default_services_config_path() : config_path),
       updates_dir_(updates_dir.empty() ? default_updates_dir() : updates_dir),
@@ -374,7 +519,9 @@ UpdateManager::UpdateManager(
           return http_execute(m, u, h, b, t);
       }),
       target_asset_(target_asset.empty() ? get_target_asset_name() : target_asset),
-      request_quit_cb_(std::move(request_quit_cb)) {
+      request_quit_cb_(std::move(request_quit_cb)),
+      self_exe_path_(std::move(self_exe_path)),
+      before_swap_cb_(std::move(before_swap_cb)) {
     std::error_code ec;
     if (is_standalone_override >= 0) {
         is_standalone_ = (is_standalone_override != 0);
@@ -780,6 +927,50 @@ bool UpdateManager::install_ready_update(std::string* out_msg) {
         }
         if (out_msg) *out_msg = dl_path.string();
         return true;
+    }
+#elif defined(__SWITCH__)
+    if (ext == ".nro") {
+        std::string target_nro = normalize_switch_nro_path(self_exe_path_);
+        if (target_nro.empty()) {
+            static const char* kSwitchFallbacks[] = {
+                "sdmc:/switch/heroes_lore_3/heroes_lore_3.nro",
+                "sdmc:/switch/heroes_lore_3.nro",
+            };
+            for (const char* cand : kSwitchFallbacks) {
+                if (std::filesystem::exists(cand, ec)) {
+                    target_nro = cand;
+                    break;
+                }
+            }
+        }
+        if (!target_nro.empty()) {
+            size_t expected_size = 0;
+            std::string expected_sha;
+            {
+                std::lock_guard<std::mutex> lk(mutex_);
+                expected_size = state_.release.asset_size;
+                expected_sha = state_.release.asset_sha256;
+            }
+            std::string install_err;
+            if (!install_portable_nro_update(dl_path, std::filesystem::path(target_nro), expected_size, expected_sha,
+                                             before_swap_cb_, install_err)) {
+                std::lock_guard<std::mutex> lk(mutex_);
+                state_.phase = UpdatePhase::Error;
+                state_.error_detail = install_err;
+                if (out_msg) *out_msg = state_.error_detail;
+                return false;
+            }
+            Result rc_next = envSetNextLoad(target_nro.c_str(), target_nro.c_str());
+            std::fprintf(stderr, "[HL3 Switch] Updated NRO '%s', envSetNextLoad rc=0x%x\n",
+                         target_nro.c_str(), rc_next);
+            {
+                std::lock_guard<std::mutex> lk(mutex_);
+                state_.phase = UpdatePhase::Installing;
+            }
+            if (request_quit_cb_) request_quit_cb_();
+            if (out_msg) *out_msg = target_nro;
+            return true;
+        }
     }
 #elif !defined(_WIN32)
     if (ext == ".appimage") {

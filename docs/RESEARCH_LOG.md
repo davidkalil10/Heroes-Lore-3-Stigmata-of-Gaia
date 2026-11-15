@@ -469,3 +469,7 @@ Registro cronológico das descobertas técnicas sobre o pacote e o binário de *
   - Paridade lockstep ARMv6/VFPv2 contra oráculo Unicorn (`alu_flags_shifts`, `reg_shift_and_mul64`, `media_and_mem_extra`, `vfp_math_cmp_cvt`) + `macho_boot` (`52022` ARM32 executadas, `870` fallbacks Thumb-1) + `headless_runtime` bit/pixel-exato (`686201` pixels não-pretos, `presents=61`).
   - Benchmark Unicorn-TCI (`--headless`): `120f` caiu de `4.969s` para `3.7743s`; `360f` caiu de `7.293s` para `4.7552s`; steady-state `240f` (`360f - 120f`) melhorou **2.37x** (`2.324s` / `9.68 ms/f` -> `0.981s` / `4.09 ms/f`).
 - **Sessão detalhada**: [research/sessions/2026-11-15-01.md](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/research/sessions/2026-11-15-01.md)
+
+## 2026-11-15 - Sessão 29 (S13): Auto-Updater `.nro` no Nintendo Switch com `romfsExit()` + `envSetNextLoad` (`v1.0.7`)
+- **Resumo**: Implementada a instalação automática de `.nro` no Switch em `UpdateManager::install_ready_update` (`install_portable_nro_update` com `fread`/`fwrite`, `Sha256Hasher` em streaming, validação `NRO0`, `before_swap_cb_` executando flush + `romfsExit()` antes do `rename`, `envSetNextLoad(argv[0])` e saída limpa via `request_quit_cb_()`), além de correção de portabilidade SDL `2.0.20` (Ubuntu 22.04) e isolamento de diretórios temporários em `test_macho_boot` / `test_headless_runtime`.
+- **Sessão detalhada**: [research/sessions/2026-11-15-02.md](file:///C:/Users/david/Desktop/Projetos_Flutter/heroes_lore_3_recomp/research/sessions/2026-11-15-02.md)

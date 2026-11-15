@@ -87,6 +87,16 @@ std::string build_windows_updater_script(
     const std::string& exe_name = "HeroesLore3.exe",
     const std::filesystem::path& log_path = {});
 
+std::string normalize_switch_nro_path(const std::string& raw_exe_path);
+
+bool install_portable_nro_update(
+    const std::filesystem::path& package_path,
+    const std::filesystem::path& target_path,
+    size_t expected_size,
+    const std::string& expected_sha256,
+    const std::function<void()>& before_swap,
+    std::string& out_err);
+
 class UpdateManager {
 public:
     UpdateManager(
@@ -98,7 +108,9 @@ public:
         int is_standalone_override = -1,
         HttpCallable http_fn = {},
         const std::string& target_asset = {},
-        std::function<void()> request_quit_cb = {});
+        std::function<void()> request_quit_cb = {},
+        std::string self_exe_path = {},
+        std::function<void()> before_swap_cb = {});
     ~UpdateManager();
 
     UpdateManager(const UpdateManager&) = delete;
@@ -134,6 +146,8 @@ private:
     HttpCallable http_;
     std::string target_asset_;
     std::function<void()> request_quit_cb_;
+    std::string self_exe_path_;
+    std::function<void()> before_swap_cb_;
 
     mutable std::mutex mutex_;
     std::atomic<bool> stop_flag_{false};

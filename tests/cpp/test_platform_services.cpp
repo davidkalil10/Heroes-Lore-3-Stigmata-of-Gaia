@@ -372,6 +372,83 @@ void test_gamepad_switch_and_slots() {
           "Trigger after release remains unpressed below high threshold");
 }
 
+void test_switch_nro_installer(const std::filesystem::path& tmp_root) {
+    check(hl3::normalize_switch_nro_path("/switch/heroes_lore_3.nro") == "sdmc:/switch/heroes_lore_3.nro",
+          "normalize_switch_nro_path prefixes sdmc:");
+    check(hl3::normalize_switch_nro_path("sdmc:/switch/heroes_lore_3/heroes_lore_3.nro") ==
+              "sdmc:/switch/heroes_lore_3/heroes_lore_3.nro",
+          "normalize_switch_nro_path keeps valid sdmc:/ path");
+    check(hl3::normalize_switch_nro_path("sdmc:/switch/heroes_lore_3/game.zip").empty(),
+          "normalize_switch_nro_path rejects non-NRO extension");
+    check(hl3::normalize_switch_nro_path("heroes_lore_3.nro").empty(),
+          "normalize_switch_nro_path rejects relative path");
+
+    std::filesystem::path sw_dir = tmp_root / "switch_nro_test";
+    std::filesystem::create_directories(sw_dir);
+    std::filesystem::path target_nro = sw_dir / "heroes_lore_3.nro";
+    std::filesystem::path dl_bad_magic = sw_dir / "bad_magic.nro";
+    std::filesystem::path dl_good = sw_dir / "good_update.nro";
+
+    hl3::Bytes orig_bytes(512, 0x11);
+    orig_bytes[16] = 'N';
+    orig_bytes[17] = 'R';
+    orig_bytes[18] = 'O';
+    orig_bytes[19] = '0';
+    check(hl3::write_file_bytes(target_nro, orig_bytes.data(), orig_bytes.size()), "write original NRO");
+
+    // 1. Corrupt magic must fail BEFORE before_swap runs and leave original NRO intact
+    hl3::Bytes bad_bytes(512, 0x22);
+    check(hl3::write_file_bytes(dl_bad_magic, bad_bytes.data(), bad_bytes.size()), "write bad NRO");
+    bool before_swap_called = false;
+    std::string err;
+    check(!hl3::install_portable_nro_update(
+              dl_bad_magic, target_nro, bad_bytes.size(), "",
+              [&]() { before_swap_called = true; }, err) &&
+              !before_swap_called,
+          "reject invalid NRO0 magic before before_swap");
+
+    hl3::Bytes check_orig;
+    check(hl3::read_file_bytes(target_nro, check_orig) && check_orig == orig_bytes,
+          "original NRO untouched after magic rejection");
+
+    // 2. SHA-256 mismatch must fail BEFORE before_swap runs and leave original NRO intact
+    hl3::Bytes good_bytes(1024, 0x5A);
+    good_bytes[16] = 'N';
+    good_bytes[17] = 'R';
+    good_bytes[18] = 'O';
+    good_bytes[19] = '0';
+    good_bytes[100] = 0x77;
+    check(hl3::write_file_bytes(dl_good, good_bytes.data(), good_bytes.size()), "write valid NRO");
+    std::string good_sha = hl3::sha256_hex(good_bytes);
+    check(good_sha.size() == 64, "streaming/oneshot sha256 length 64");
+
+    before_swap_called = false;
+    check(!hl3::install_portable_nro_update(
+              dl_good, target_nro, good_bytes.size(), std::string(64, '0'),
+              [&]() { before_swap_called = true; }, err) &&
+              !before_swap_called,
+          "reject SHA-256 mismatch before before_swap");
+    check(hl3::read_file_bytes(target_nro, check_orig) && check_orig == orig_bytes,
+          "original NRO untouched after SHA rejection");
+
+    // 3. Valid NRO stages via stdio, calls before_swap once, swaps atomically, cleans backup + package
+    int before_swap_count = 0;
+    check(hl3::install_portable_nro_update(
+              dl_good, target_nro, good_bytes.size(), good_sha,
+              [&]() { ++before_swap_count; }, err),
+          "install valid NRO succeeds");
+    check(before_swap_count == 1, "before_swap called exactly once after validation");
+    hl3::Bytes replaced_bytes;
+    check(hl3::read_file_bytes(target_nro, replaced_bytes) && replaced_bytes == good_bytes,
+          "replaced NRO matches downloaded bytes exactly");
+    std::error_code ec;
+    check(!std::filesystem::exists(dl_good, ec), "downloaded NRO package removed after install");
+    check(!std::filesystem::exists(std::filesystem::path(target_nro.u8string() + ".new"), ec),
+          "staged .new removed after commit");
+    check(!std::filesystem::exists(std::filesystem::path(target_nro.u8string() + ".old"), ec),
+          "backup .old removed after commit");
+}
+
 }  // namespace
 
 int main() {
@@ -389,6 +466,7 @@ int main() {
     test_android_port_regressions();
     test_modal_live_poll_redraws(tmp_root);
     test_gamepad_switch_and_slots();
+    test_switch_nro_installer(tmp_root);
 
     std::filesystem::remove_all(tmp_root, ec);
 
